@@ -1,0 +1,737 @@
+
+
+//#include "config.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+#include <bfd.h>
+
+#include "monlib.h"
+#include "simcore.h"
+#include "consio.h"
+
+#define MAXARG	50
+
+static int debug = 0;
+static int wide_output = 1;
+extern int LPP;
+
+//--- from bucomm.c
+#define TARGET "riscv32-unknown-elf"
+#define TARGET_PREPENDS_UNDERSCORE 0
+
+char *program_name = "rvsim";
+
+void
+bfd_nonfatal (const char *string)
+{
+    const char *errmsg = bfd_errmsg (bfd_get_error ());
+
+    if (string)
+        fprintf (stderr, "%s: %s: %s\n", program_name, string, errmsg);
+    else
+        fprintf (stderr, "%s: %s\n", program_name, errmsg);
+}
+
+void
+set_default_bfd_target (void)
+{
+    /* The macro TARGET is defined by Makefile.  */
+    const char *target = TARGET;
+
+    if (! bfd_set_default_target (target))
+        fprintf(stderr, "can't set BFD default target to `%s': %s",
+                target, bfd_errmsg (bfd_get_error ()));
+}
+
+static void
+dump_section_header (bfd *abfd, asection *section,
+        void *ignored ATTRIBUTE_UNUSED)
+{
+    char *comma = "";
+    unsigned int opb = bfd_octets_per_byte (abfd, section);
+
+    /* Ignore linker created section.  See elfNN_ia64_object_p in
+     bfd/elfxx-ia64.c.  */
+    if (section->flags & SEC_LINKER_CREATED)
+        return;
+
+    printf ("%3d %-16s %8lx ", section->index,
+            bfd_section_name (section),
+            (unsigned long) bfd_section_size (section) / opb);	//, section);
+    bfd_printf_vma (abfd, bfd_section_vma (section));
+    printf ("  ");
+    bfd_printf_vma (abfd, section->lma);
+    printf ("  %08lx  2**%u", (unsigned long) section->filepos,
+            bfd_section_alignment (section));
+    if (! wide_output)
+        printf ("\n                ");
+    printf ("  ");
+
+#define PF(x, y) \
+        if (section->flags & x) { printf ("%s%s", comma, y); comma = ", "; }
+
+    PF (SEC_HAS_CONTENTS, "CONTENTS");
+    PF (SEC_ALLOC, "ALLOC");
+    PF (SEC_CONSTRUCTOR, "CONSTRUCTOR");
+    PF (SEC_LOAD, "LOAD");
+    PF (SEC_RELOC, "RELOC");
+    PF (SEC_READONLY, "READONLY");
+    PF (SEC_CODE, "CODE");
+    PF (SEC_DATA, "DATA");
+    PF (SEC_ROM, "ROM");
+    PF (SEC_DEBUGGING, "DEBUGGING");
+    PF (SEC_NEVER_LOAD, "NEVER_LOAD");
+    PF (SEC_EXCLUDE, "EXCLUDE");
+    PF (SEC_SORT_ENTRIES, "SORT_ENTRIES");
+    PF (SEC_SMALL_DATA, "SMALL_DATA");
+    PF (SEC_THREAD_LOCAL, "THREAD_LOCAL");
+    PF (SEC_GROUP, "GROUP");
+    if ((section->flags & SEC_LINK_ONCE) != 0)
+    {
+        const char *ls;
+
+        switch (section->flags & SEC_LINK_DUPLICATES)
+        {
+        default:
+            abort ();
+        case SEC_LINK_DUPLICATES_DISCARD:
+            ls = "LINK_ONCE_DISCARD";
+            break;
+        case SEC_LINK_DUPLICATES_ONE_ONLY:
+            ls = "LINK_ONCE_ONE_ONLY";
+            break;
+        case SEC_LINK_DUPLICATES_SAME_SIZE:
+            ls = "LINK_ONCE_SAME_SIZE";
+            break;
+        case SEC_LINK_DUPLICATES_SAME_CONTENTS:
+            ls = "LINK_ONCE_SAME_CONTENTS";
+            break;
+        }
+        printf ("%s%s", comma, ls);
+        comma = ", ";
+    }
+
+    printf ("\n");
+#undef PF
+}
+
+static void
+dump_headers (bfd *abfd)
+{
+    printf ("Sections:\n");
+    printf ("Idx Name                 Size  VMA       LMA       File off  Algn");
+    if (wide_output) printf ("  Flags");
+    //  if (abfd->flags & HAS_LOAD_PAGE) printf ("  Pg");
+    printf ("\n");
+
+    bfd_map_over_sections (abfd, dump_section_header, NULL);
+}
+
+static void
+dump_bfd_header (bfd *abfd)
+{
+    char *comma = "";
+
+    printf ("architecture: %s, ",
+            bfd_printable_arch_mach (bfd_get_arch (abfd),
+                    bfd_get_mach (abfd)));
+    printf ("flags 0x%08x:\n", abfd->flags);
+
+#define PF(x, y)    if (abfd->flags & x) {printf("%s%s", comma, y); comma=", ";}
+    PF (HAS_RELOC, "HAS_RELOC");
+    PF (EXEC_P, "EXEC_P");
+    PF (HAS_LINENO, "HAS_LINENO");
+    PF (HAS_DEBUG, "HAS_DEBUG");
+    PF (HAS_SYMS, "HAS_SYMS");
+    PF (HAS_LOCALS, "HAS_LOCALS");
+    PF (DYNAMIC, "DYNAMIC");
+    PF (WP_TEXT, "WP_TEXT");
+    PF (D_PAGED, "D_PAGED");
+    PF (BFD_IS_RELAXABLE, "BFD_IS_RELAXABLE");
+    //  PF (HAS_LOAD_PAGE, "HAS_LOAD_PAGE");
+    printf ("\nstart address 0x");
+    bfd_printf_vma (abfd, abfd->start_address);
+    printf ("\n");
+}
+
+bfd_byte    *memory = NULL;
+bfd_byte    *stack = NULL;
+bfd_size_type   memsize = 0;
+bfd_size_type   stacksize = 0x2000;
+bfd_vma     vaddr = (bfd_vma)-1;
+bfd_vma     stack_top = 0x3ffffd0;
+bfd         *abfd = NULL;
+
+asymbol **symbol_table;
+long number_of_symbols = 0;
+
+u32 _end_adr;
+
+void load_symtab(bfd *abfd)
+{
+    int i;
+    int storage_needed = bfd_get_symtab_upper_bound (abfd);
+    if (storage_needed <= 0) {
+        fprintf (stderr, "Error storage_needed < 0\n");
+        return ;
+    }
+    symbol_table = (asymbol **) malloc (storage_needed);
+    number_of_symbols = bfd_canonicalize_symtab (abfd, symbol_table);
+
+    fprintf (stdout, "number_of_symbols = %ld\n", number_of_symbols);
+
+    if (number_of_symbols < 0) {
+        fprintf (stderr, "Error: number_of_symbols < 0\n");
+        return ;
+    }
+    for (i = 0; i < number_of_symbols; i++) {
+        if ((symbol_table[i]->flags & BSF_GLOBAL) ){
+            if(!strcmp(bfd_asymbol_name (symbol_table[i]), "_end")){
+                _end_adr = bfd_asymbol_value (symbol_table[i]);
+                break;
+            }
+        }
+    }
+    if(debug){
+        for (i = 0; i < number_of_symbols; i++) {
+            ////    fprintf (stdout, "%08x %08x ", bfd_asymbol_base (symbol_table[i]), bfd_asymbol_value (symbol_table[i]));
+            fprintf (stdout, "%08lx ", bfd_asymbol_value (symbol_table[i]));
+            if ((symbol_table[i]->flags & BSF_FUNCTION) != 0x00) {
+                fprintf (stdout, "Func   : %s\n", bfd_asymbol_name (symbol_table[i]));
+                //} else if ((symbol_table[i]->flags & BSF_LOCAL) != 0x00) {
+                //    fprintf (stdout, "Local ");
+            } else if ((symbol_table[i]->flags & BSF_GLOBAL) != 0x00) {
+                fprintf (stdout, "global : %s\n", bfd_asymbol_name (symbol_table[i]));
+            }
+
+            //        if(symbol_table[i]->flags & BSF_FUNCTION)       // || symbol_table[i]->flags & BSF_GLOBAL)
+            //          show_debug_info(bfd_asymbol_value (symbol_table[i]));
+        }
+    }
+}
+
+char *search_symbol(u32 pc)
+{
+    int i;
+    for (i = 0; i < number_of_symbols; i++) {
+        if((symbol_table[i]->flags & (BSF_FUNCTION|BSF_GLOBAL)) && bfd_asymbol_value (symbol_table[i]) == pc)
+            return (char*)bfd_asymbol_name (symbol_table[i]);
+    }
+    return NULL;
+}
+
+static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UNUSED)
+{
+    bfd_byte *data = 0;
+    bfd_size_type datasize;
+
+    if ((section->flags & SEC_ALLOC) == 0) return;
+    if ((datasize = bfd_section_size (section)) == 0)
+        return;
+    printf ("load section %s:\n", section->name);
+    if(vaddr == (bfd_vma)-1) vaddr = section->vma;
+    memsize = section->vma - vaddr + datasize;
+    memory = (bfd_byte*) realloc(memory, memsize);
+    data = &memory[section->vma-vaddr];
+    if ((section->flags & SEC_HAS_CONTENTS) == 0) return;
+    bfd_get_section_contents (abfd, section, data, 0, datasize);
+}
+#if 0
+static void load_data (bfd *abfd)
+{
+    bfd_map_over_sections (abfd, load_section, NULL);
+    printf("vaddr:%x memsize:%x\n", (unsigned)vaddr, (unsigned)memsize);
+}
+#endif
+
+#define HEAP_SIZE	1024*16
+
+static void load_abs(char *filename)
+{
+    char **matching;
+
+    if(abfd) bfd_close (abfd);
+
+    if((abfd = bfd_openr (filename, NULL)) == NULL){
+        bfd_nonfatal (filename);
+    } else if(! bfd_check_format_matches(abfd, bfd_object, &matching)){
+        bfd_close (abfd);
+        abfd = NULL;
+    } else {
+        bfd_map_over_sections (abfd, load_section, NULL);
+        load_symtab(abfd);
+        printf("vaddr:%x memsize:%x _end:%x\n", (unsigned)vaddr, (unsigned)memsize, _end_adr);
+        //load_data(abfd);
+        memsize += HEAP_SIZE;
+        memory = (bfd_byte*) realloc(memory, memsize);
+
+        //        load_symtab(abfd);
+    }
+}
+
+void Header(int argc, char *argv[])
+{
+    dump_bfd_header (abfd);
+    bfd_print_private_bfd_data (abfd, stdout);
+    dump_headers(abfd);
+}
+
+void RegDump(int argc, char *argv[])
+{
+    reg_dump();
+}
+
+void Dump(int argc, char *argv[])
+{
+    int i, j, aofs = vaddr, padr, psize = memsize;
+    bfd_byte *mem = memory;
+    int adr = abfd->start_address;
+    int c;
+
+    for(i = 1; i < argc; i++){
+        if(!strcmp(argv[i], "-stk")){
+            mem = stack;
+            aofs = stack_top-stacksize;
+            psize = stacksize;
+            adr = stack_top-512;
+        }else if(isxdigit(*argv[i])){
+            adr = strtol(argv[i], NULL, 16);
+        }
+    }
+    initerm();
+    do{
+        if(adr >= vaddr && adr < vaddr+memsize){
+            mem = memory;
+            aofs = vaddr;
+            psize = memsize;
+        }else if(adr >= stack_top-stacksize && adr <= stack_top+0x100){
+            mem = stack;
+            aofs = stack_top-stacksize;
+            psize = stacksize;
+        }
+        printf(CLS "      : ");
+        for(j = 0; j < 16; j++) printf(" %x ", j);
+        printf("\n");
+
+        for(i = 0; i < 256; i+=16){
+            printf("%06x: ", adr);
+            for(j = 0; j < 16; j++){
+                padr = adr - aofs + j;
+                if(padr >= 0 && padr < psize)
+                    printf("%02x ", (unsigned)mem[padr]);
+                else
+                    printf("-- ");
+            }
+            for(j = 0; j < 16; j++){
+                padr = adr - aofs + j;
+                if(padr >= 0 && padr < psize){
+                    c = mem[padr];
+                    printf("%c", isprint(c) ? c : '.');
+                }else
+                    printf("-");
+            }
+            adr += j;
+            printf("\n");
+        }
+        c = inchr();
+        c = esc_seq(c);
+        switch(c){
+        case 'b': adr -= 256*2; break;
+        case 'n': break;
+        case K_Up: adr -= 256+16; break;
+        case K_Down: adr -= 256-16; break;
+        case K_PgUp: adr -= 256*2; break;
+        case K_PgDn: break;
+        default: adr -= 256; break; // stay
+        }
+//        if(c == 'b') adr -=1024;
+    }while(c != 'q');
+    deinitrm();
+}
+
+void Dis(int argc, char *argv[])
+{
+    //	dump_data(abfd);
+    char str[80], opstr[80], oprstr[80], *sym, *dpsym;
+    int i, inc, c;
+    u32 adr = vaddr;
+    int dsp;
+
+    for(i = 1; i < argc; i++){
+        if(isxdigit(*argv[i])){
+            adr = strtol(argv[i], NULL, 16);
+        }
+    }
+
+    if(adr < vaddr || adr >= vaddr+memsize){
+        printf(" ill address '%x'.\n", adr);
+        return ;
+    }
+    initerm();
+    for(i = 0; i < LPP-2; i++){
+        inc = disasm(adr, str, opstr, oprstr, &dsp);
+        sym = search_symbol(adr);
+        dpsym = dsp > 0 ? search_symbol(dsp) : NULL;
+        printf("%06x : %s%-20s %-8s %s %s\n", adr, str, sym?sym:"", opstr, oprstr, dpsym?dpsym:"");
+        adr += inc;
+    }
+    do{
+        c = inchr();
+        switch(c){
+        case 'b':
+            adr -= LPP * 3;
+        case ' ':
+            for(i = 0; i < LPP-2; i++){
+                inc = disasm(adr, str, opstr, oprstr, &dsp);
+                sym = search_symbol(adr);
+                dpsym = dsp > 0 ? search_symbol(dsp) : NULL;
+                printf("%06x : %s%-20s %-8s %s %s\n", adr, str, sym?sym:"", opstr, oprstr, dpsym?dpsym:"");
+                adr += inc;
+            }
+            break;
+        case '\n':
+            inc = disasm(adr, str, opstr, oprstr, &dsp);
+            sym = search_symbol(adr);
+            dpsym = dsp > 0 ? search_symbol(dsp) : NULL;
+            printf("%06x : %s%-20s %-8s %s %s\n", adr, str, sym?sym:"", opstr, oprstr, dpsym?dpsym:"");
+            adr += inc;
+            break;
+        default:
+            break;
+        }
+    }while(c != 'q');
+    deinitrm();
+}
+
+#define MAXBRK 100
+
+static u32 simadr;
+int     view_reg[100] = {1,2,3,10,11,12,13,20,21,0};
+int     nview = 9;
+int     reset = 1;
+int     sys_exit = 0;
+int     arch = 'i';
+int     Nregs = 32;
+
+
+int     n_break = 0;
+u32     break_adr[MAXBRK];
+int     break_en[MAXBRK];
+
+FILE    *ofp;
+
+void Load(int argc, char *argv[])
+{
+    if(argc >= 2){
+        load_abs(argv[1]);
+        reset = 1;
+        sys_exit = 0;
+    }
+}
+
+void Break(int argc, char *argv[])
+{
+    int i, j;
+
+    for(i = 1; i < argc; i++){
+        if(isxdigit(*argv[i])){
+            break_en[n_break] = 1;
+            break_adr[n_break++] = strtol(argv[i], NULL, 16);
+        }else if(!strcmp(argv[i], "-l")){
+            for(j = 0; j < n_break; j++)
+                printf("%3d : %8x %c\n", j, break_adr[j], break_en[j]?'@':'-');
+        }else if(!strcmp(argv[i], "-d")){
+            if(++i >= argc) break;
+            j = atoi(argv[i]);
+            break_en[j] = 0;
+            for(j = 0; j < n_break; j++)
+                printf("%3d : %8x %c\n", j, break_adr[j], break_en[j]?'@':'-');
+        }
+    }
+}
+
+void Run(int argc, char *argv[])
+{
+    int i, n = 30, adr;
+
+    for(i = 1; i < argc; i++){
+        if(isdigit(*argv[i])){
+            //			view_reg[nv++] = atoi(argv[i]);
+            n = atoi(argv[i]);
+        }else if(!strcmp(argv[i], "-all")){
+            n = -1;
+        }else if(!strcmp(argv[i], "-r")){	// reset start
+            adr = (mem_rd(0)&0xff);
+            adr = (adr<<8)|(mem_rd(1)&0xff);
+            adr = (adr<<8)|(mem_rd(2)&0xff);
+            adr = (adr<<8)|(mem_rd(3)&0xff);	// get reset vector
+            abfd->start_address = adr;
+        }
+    }
+    //	if(nv) nview = nv;
+    simadr = abfd->start_address;
+    reset = 1;
+    sys_exit = 0;
+    simrun(simadr, n, reset);
+    reset = 0;
+}
+
+void Cont(int argc, char *argv[])
+{
+    int i, n = 30;
+    for(i = 1; i < argc; i++){
+        if(isdigit(*argv[i])){
+            n = atoi(argv[i]);
+        }
+    }
+    simadr = abfd->start_address;
+    simrun(simadr, n, reset);
+    reset = 0;
+}
+
+void Trace(int argc, char *argv[])
+{
+    int i, j, n = 0;
+    char cmd[300];
+
+    for(i = 1; i < argc; i++){
+        if(isdigit(*argv[i])){
+            n = atoi(argv[i]);
+        }else if(!strcmp(argv[i], "-r")){
+            reset = 1;
+        }else if(!strcmp(argv[i], "|")){
+            if(++i >= argc) break;
+            j = 0;
+            for(; i < argc; i++){
+                sprintf(&cmd[j], "%s ", argv[i]);
+                j = strlen(cmd);
+            }
+            ofp = popen(cmd, "w");
+        }
+    }
+    simadr = abfd->start_address;
+    printf("simadr:%x, n:%d, reset:%d, LPP:%d\n",simadr,n,reset,LPP);
+    simtrace(simadr, n, reset);
+    if(ofp != stdout){
+        fflush(ofp);
+        pclose(ofp);
+    }
+    ofp = stdout;
+    reset = 0;
+}
+
+void Exit(int argc, char *argv[])
+{
+    exit(0);
+}
+
+/*============== Command Table =================================================*/
+void help(int argc, char *argv[]);
+
+struct {
+    void (*func) ();
+    char *cmdstr, *menustr, *helpstr;
+} CmdTab[] = {
+        {Load,  "lo$ad",    "<file>",               "\n             Load absolute binary."},
+        {Dump,  "du$mp",    "<-stk> <addr>",        "\n             Dump memory."},
+        {RegDump,"re$g",    "",                     "\n             Dump Register."},
+        {Run,   "r$un",     "<step> <-all> <-r>",   "\n             Run simulation."},
+        {Cont,  "c$ont",    "<step>",               "\n             Continue simulation."},
+        {Trace, "t$race",   "<step> <-r>",          "\n             Trace simulation."},
+        {Break, "b$reak",   "<addr> <-l> <-d (n)>", "\n             Break point."},
+        {Header,"he$ader",  "",                     "\n             Print Header."},
+        {Dis,   "di$s",     "<addr>",               "\n             Dis asm."},
+        {help,  "h$elp",    "<cmd>",                "print help information"},
+        {Exit,  "q$uit",    "",                     "terminate"},
+        {Exit,  "exit",     "",                     "terminate"},
+        {NULL,  "",         "",                     ""}
+};
+
+/*-------------- Command proccessor --------------------------------------------*/
+
+static int h_level = 0, menu_en = ON;
+
+char *cmddsp(char *cmd)
+{
+    static char tmp[20];
+    char *t, *s;
+
+    t = tmp;
+    s = ATR_BOARD;
+    while (*s)
+        *t++ = *s++;
+    s = cmd;
+    while (*s && (*s != '$'))
+        *t++ = *s++;
+    if (*s)
+        s++;
+    *t = '\0';
+    strcat(t, ATR_OFF);
+    strcat(t, s);
+
+    return tmp;
+}
+
+void help(int argc, char *argv[])
+{
+    int i;
+    char *hcmd = "";
+
+    for (i = 1; i < argc; i++) {
+        if (isdigit(*argv[i])) {
+            h_level = atoi(argv[i]);
+            printf("  help level set to %d.\n", h_level);
+            return;
+        } else {
+            hcmd = argv[i];
+        }
+    }
+
+    i = 0;
+    while ((AlmostSame(hcmd, CmdTab[i].cmdstr) != TRUE)
+            && (CmdTab[i].func != NULL))
+        i++;
+
+    if (CmdTab[i].func == NULL) {       /* command not found            */
+        i = 0;
+        while (CmdTab[i].func != NULL) {
+            printf("  %-18s %s %s\n", cmddsp(CmdTab[i].cmdstr)
+                    , CmdTab[i].menustr, CmdTab[i].helpstr);
+            i++;
+        }
+    } else {                    /* print command help           */
+        printf("  %-18s %s %s\n", cmddsp(CmdTab[i].cmdstr)
+                , CmdTab[i].menustr, CmdTab[i].helpstr);
+    }
+}
+
+int PrintMenu(int h_level)
+{
+    int i;
+
+    switch (h_level) {
+    case 0:
+        i = 0;
+        while (CmdTab[i].func != NULL) {
+            printf("  %-18s %s\n", cmddsp(CmdTab[i].cmdstr), CmdTab[i].menustr);
+            i++;
+        }
+    case 1:
+        //        PrintStatus();
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+
+void IssueCmd(char *cmd)
+{
+    char *argv[MAXARG], tmp[130];
+    int i, argc, rv;
+
+    strcpy(tmp, cmd);
+
+    argc = GetArgs(tmp, argv);
+
+    if (argc == 0) {            /* print menu           */
+        if (menu_en) {
+            PrintMenu(h_level);
+            menu_en = OFF;
+        }
+        printf("\n");
+    } else {                    /* search command table         */
+        menu_en = ON;
+        if (!isalnum(*argv[0])) {
+            PrintMenu(0);
+            menu_en = OFF;
+        } else {
+            i = 0;
+            while ((AlmostSame(argv[0], CmdTab[i].cmdstr) != TRUE)
+                    && (CmdTab[i].func != NULL))
+                i++;
+
+            if (CmdTab[i].func == NULL) {       /* command not found            */
+                rv = system(cmd);
+            } else {            /* exec command function        */
+                (CmdTab[i].func) (argc, argv);
+            }
+        }
+    }
+}
+
+
+int main (int argc, char **argv)
+{
+    int i;
+    char cmd[256], c, *s, *scr = NULL, *lfn = NULL, *prompt = "rvsim> ";
+    FILE *ifp = NULL;
+
+    for (i = 1; i < argc; i++) {
+        c = *argv[i];
+        if (!strcmp(argv[i], "-i")) {
+            if (++i >= argc)
+                break;
+            scr = argv[i];
+        } else if(!strcmp(argv[i], "-rv32e")){
+            arch = 'e';
+            Nregs = 16;
+        } else if(!strcmp(argv[i], "-stk")){
+            if(++i >= argc) break;
+            stack_top = strtol(argv[i], NULL, 16);
+        } else if (!strcmp(argv[i], "-debug")) {
+            debug = 1;
+        } else if (isalnum(c) || c == '.' || c == '/') {
+            lfn = argv[i];
+        }
+    }
+    if (scr != NULL) {
+        if ((ifp = fopen(scr, "r")) == NULL) {
+            printf("*** Can't open script file '%s'.\n", scr);
+            exit(0);
+        }
+    }
+
+    bfd_init ();
+    //    set_default_bfd_target ();
+    ofp = stdout;
+
+    printf("======= rvsim ==============================================\n"
+            "   rv32 processor simulator.\n");
+
+    if(lfn) load_abs(lfn);
+    stack = (bfd_byte*)malloc(stacksize+0x100);
+
+    prompt = arch == 'e' ? "rvsim-E> " : "rvsim-I> ";
+
+    if (ifp != NULL) {          /* exec script      */
+        while (fgets(cmd, 130, ifp) != NULL) {
+            RejectComment(cmd);
+            if (!IsComment(cmd) && !IsBlank(cmd)) {
+                //                add_history(cmd);
+                IssueCmd(cmd);
+            }
+        }
+    }
+
+    for (;;) {
+        if ((s = readline(prompt))) {
+            if (!IsBlank(s)) {
+                add_history(s);
+            }
+            strcpy(cmd, s);
+            IssueCmd(cmd);
+        } else
+            break;
+    }
+
+    //   display_file (argv[1], NULL);
+    return 0;
+}
+
+
+
