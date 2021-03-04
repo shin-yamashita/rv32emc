@@ -1,3 +1,7 @@
+//
+// rv32 insn table 
+// genarated by ./insntab.py RV-insn.csv
+//
 
 
 #define NA      -2
@@ -57,7 +61,7 @@ typedef struct _optab {
 
 static optab_t optab[] = {
 
-//  mnemonic, 	type, 	, 	func7, 	func3, 	opc, 	alu, 	mode, 	mar, 	ofs, 	mwe, 	rrd1, 	rrd2, 	rwa, 	rwd, 	pc, 	
+// mnemonic, 	type, 	, 	func7, 	func3, 	opc, 	alu, 	mode, 	mar, 	ofs, 	mwe, 	rrd1, 	rrd2, 	rwa, 	rwd, 	pc, 	
  { "lb",	type_I , I,	__,	0,	0X03,	__,	SQI,	RS1,	IMM,	RE,	__,	__,	RD,	MDR,	__,	 }, // 0
  { "lh",	type_I , I,	__,	1,	0X03,	__,	SHI,	RS1,	IMM,	RE,	__,	__,	RD,	MDR,	__,	 }, // 1
  { "lw",	type_I , I,	__,	2,	0X03,	__,	SI,	RS1,	IMM,	RE,	__,	__,	RD,	MDR,	__,	 }, // 2
