@@ -438,7 +438,7 @@ void reset_pc(u32 adr)
 char mem_rd(int adr);
 
 #include "syscall.h"
-u32 heap_ptr = 0x0;
+extern u32 heap_ptr;
 
 u32 syscall(u32 func, u32 a0, u32 a1, u32 a2){
     u32 rv = 0;
@@ -905,7 +905,7 @@ u32 simtrace (u32 addr, int steps, int reset)
     if(!steps) steps = LPP-5;
 
     print_regs_label();
-    for(i = 0; i < steps; i++){
+    for(i = 0; steps < 0 || i < steps; i++){
         print_regs();
         simcyc();
         if(break_chk() || sys_exit){

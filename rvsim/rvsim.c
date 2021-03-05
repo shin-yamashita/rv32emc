@@ -1,6 +1,8 @@
-
-
-//#include "config.h"
+//
+// rvsim.c
+//
+// RV32IMC/RV32EMC ISS
+//
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,7 +41,6 @@ bfd_nonfatal (const char *string)
 void
 set_default_bfd_target (void)
 {
-    /* The macro TARGET is defined by Makefile.  */
     const char *target = TARGET;
 
     if (! bfd_set_default_target (target))
@@ -54,8 +55,7 @@ dump_section_header (bfd *abfd, asection *section,
     char *comma = "";
     unsigned int opb = bfd_octets_per_byte (abfd, section);
 
-    /* Ignore linker created section.  See elfNN_ia64_object_p in
-     bfd/elfxx-ia64.c.  */
+    /* Ignore linker created section. */
     if (section->flags & SEC_LINKER_CREATED)
         return;
 
@@ -161,7 +161,7 @@ dump_bfd_header (bfd *abfd)
 bfd_byte    *memory = NULL;
 bfd_byte    *stack = NULL;
 bfd_size_type   memsize = 0;
-bfd_size_type   stacksize = 0x2000;
+bfd_size_type   stacksize = 0x20000;
 bfd_vma     vaddr = (bfd_vma)-1;
 bfd_vma     stack_top = 0x3ffffd0;
 bfd         *abfd = NULL;
@@ -170,6 +170,7 @@ asymbol **symbol_table;
 long number_of_symbols = 0;
 
 u32 _end_adr;
+u32 heap_ptr = 0x0;
 
 void load_symtab(bfd *abfd)
 {
@@ -224,6 +225,17 @@ char *search_symbol(u32 pc)
     return NULL;
 }
 
+u32 get_symbol_addr(char *symbol)
+{
+    int i;
+    for (i = 0; i < number_of_symbols; i++) {
+        if((symbol_table[i]->flags & (BSF_FUNCTION|BSF_GLOBAL))
+                && !strcmp(symbol, (char*)bfd_asymbol_name (symbol_table[i])))
+            return bfd_asymbol_value(symbol_table[i]);
+    }
+    return strtoul(symbol, NULL, 16);
+}
+
 static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UNUSED)
 {
     bfd_byte *data = 0;
@@ -240,13 +252,6 @@ static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UN
     if ((section->flags & SEC_HAS_CONTENTS) == 0) return;
     bfd_get_section_contents (abfd, section, data, 0, datasize);
 }
-#if 0
-static void load_data (bfd *abfd)
-{
-    bfd_map_over_sections (abfd, load_section, NULL);
-    printf("vaddr:%x memsize:%x\n", (unsigned)vaddr, (unsigned)memsize);
-}
-#endif
 
 #define HEAP_SIZE	1024*16
 
@@ -265,19 +270,42 @@ static void load_abs(char *filename)
         bfd_map_over_sections (abfd, load_section, NULL);
         load_symtab(abfd);
         printf("vaddr:%x memsize:%x _end:%x\n", (unsigned)vaddr, (unsigned)memsize, _end_adr);
-        //load_data(abfd);
         memsize += HEAP_SIZE;
         memory = (bfd_byte*) realloc(memory, memsize);
-
-        //        load_symtab(abfd);
     }
 }
 
 void Header(int argc, char *argv[])
 {
+    if(!abfd) return;
     dump_bfd_header (abfd);
     bfd_print_private_bfd_data (abfd, stdout);
     dump_headers(abfd);
+}
+void List_symbol(int argc, char *argv[])
+{
+    int i;
+
+    for (i = 0; i < number_of_symbols; i++) {
+        if ((symbol_table[i]->flags & BSF_GLOBAL) != 0x00) {
+            fprintf (stdout, "%08lx global : %s\n", bfd_asymbol_value (symbol_table[i]), bfd_asymbol_name (symbol_table[i]));
+        }
+    }
+    for (i = 0; i < number_of_symbols; i++) {
+        if ((symbol_table[i]->flags & BSF_FUNCTION) != 0x00) {
+            fprintf (stdout, "%08lx Func   : %s\n", bfd_asymbol_value (symbol_table[i]), bfd_asymbol_name (symbol_table[i]));
+        }
+    }
+}
+
+void Info(int argc, char *argv[])
+{
+    if(!abfd) return;
+    printf("vaddr     (memsize)   : %8x (%ld)\n", (u32)vaddr, memsize);
+    printf("stack_top (stacksize) : %8x (%ld)\n", (u32)stack_top, stacksize);
+    printf("heap_ptr  (heapsize)  : %8x (%d)\n", heap_ptr, HEAP_SIZE);
+    printf("end_addr              : %8x\n", _end_adr);
+    printf("start_address         : %8x\n", (u32)abfd->start_address);
 }
 
 void RegDump(int argc, char *argv[])
@@ -287,6 +315,7 @@ void RegDump(int argc, char *argv[])
 
 void Dump(int argc, char *argv[])
 {
+    if(!abfd) return;
     int i, j, aofs = vaddr, padr, psize = memsize;
     bfd_byte *mem = memory;
     int adr = abfd->start_address;
@@ -355,7 +384,7 @@ void Dump(int argc, char *argv[])
 
 void Dis(int argc, char *argv[])
 {
-    //	dump_data(abfd);
+    if(!abfd) return;
     char str[80], opstr[80], oprstr[80], *sym, *dpsym;
     int i, inc, c;
     u32 adr = vaddr;
@@ -420,6 +449,7 @@ int     Nregs = 32;
 
 int     n_break = 0;
 u32     break_adr[MAXBRK];
+char   *break_sym[MAXBRK];
 int     break_en[MAXBRK];
 
 FILE    *ofp;
@@ -438,54 +468,82 @@ void Break(int argc, char *argv[])
     int i, j;
 
     for(i = 1; i < argc; i++){
-        if(isxdigit(*argv[i])){
-            break_en[n_break] = 1;
-            break_adr[n_break++] = strtol(argv[i], NULL, 16);
-        }else if(!strcmp(argv[i], "-l")){
-            for(j = 0; j < n_break; j++)
-                printf("%3d : %8x %c\n", j, break_adr[j], break_en[j]?'@':'-');
+        if(!strcmp(argv[i], "-l")){
+            break;
         }else if(!strcmp(argv[i], "-d")){
             if(++i >= argc) break;
             j = atoi(argv[i]);
-            break_en[j] = 0;
-            for(j = 0; j < n_break; j++)
-                printf("%3d : %8x %c\n", j, break_adr[j], break_en[j]?'@':'-');
+            if(j < n_break){
+                break_en[j] = 0;
+                printf(" disable %d\n", j);
+           }else{
+                printf(" ill break point number '%s'\n", argv[i]);
+            }
+        }else if(!strcmp(argv[i], "-e")){
+            if(++i >= argc) break;
+            j = atoi(argv[i]);
+            if(j < n_break){
+                break_en[j] = 1;
+                printf(" enable %d\n", j);
+           }else{
+                printf(" ill break point number '%s'\n", argv[i]);
+           }
+        }else{
+            u32 adr = get_symbol_addr(argv[i]);
+            if(adr){
+                for(j = 0; j < n_break; j++){
+                    if(adr == break_adr[j]) {
+                        break_en[j] = 1;
+                        printf("%3d : %8x %c %s\n", j, break_adr[j], break_en[j]?'@':'-', break_sym[j]);
+                        return;
+                    }
+                }
+                break_en[n_break] = 1;
+                break_sym[n_break] = strdup(argv[i]);
+                break_adr[n_break++] = adr;
+                printf("%3d : %8x %c %s\n", j, break_adr[j], break_en[j]?'@':'-', break_sym[j]);
+            }else{
+                printf(" ill symbol or address '%s'\n", argv[i]);
+            }
+            return;
         }
     }
+    for(j = 0; j < n_break; j++)
+        printf("%3d : %8x %c %s\n", j, break_adr[j], break_en[j]?'@':'-', break_sym[j]);
 }
 
 void Run(int argc, char *argv[])
 {
-    int i, n = 30, adr;
-
+    if(!abfd) return;
+    int i, n = 30;	//, adr;
+    //  dump_data(abfd);
     for(i = 1; i < argc; i++){
         if(isdigit(*argv[i])){
             //			view_reg[nv++] = atoi(argv[i]);
             n = atoi(argv[i]);
         }else if(!strcmp(argv[i], "-all")){
             n = -1;
-        }else if(!strcmp(argv[i], "-r")){	// reset start
-            adr = (mem_rd(0)&0xff);
-            adr = (adr<<8)|(mem_rd(1)&0xff);
-            adr = (adr<<8)|(mem_rd(2)&0xff);
-            adr = (adr<<8)|(mem_rd(3)&0xff);	// get reset vector
-            abfd->start_address = adr;
         }
     }
     //	if(nv) nview = nv;
     simadr = abfd->start_address;
     reset = 1;
     sys_exit = 0;
+    heap_ptr = 0;
     simrun(simadr, n, reset);
     reset = 0;
 }
 
 void Cont(int argc, char *argv[])
 {
-    int i, n = 30;
+    if(!abfd) return;
+    int i;
+    static int n = 30;
     for(i = 1; i < argc; i++){
         if(isdigit(*argv[i])){
             n = atoi(argv[i]);
+        }else if(!strcmp(argv[i], "-all")){
+            n = -1;
         }
     }
     simadr = abfd->start_address;
@@ -495,14 +553,19 @@ void Cont(int argc, char *argv[])
 
 void Trace(int argc, char *argv[])
 {
+    if(!abfd) return;
     int i, j, n = 0;
     char cmd[300];
 
     for(i = 1; i < argc; i++){
         if(isdigit(*argv[i])){
             n = atoi(argv[i]);
+        }else if(!strcmp(argv[i], "-all")){
+            n = -1;
         }else if(!strcmp(argv[i], "-r")){
             reset = 1;
+            sys_exit = 0;
+            heap_ptr = 0;
         }else if(!strcmp(argv[i], "|")){
             if(++i >= argc) break;
             j = 0;
@@ -536,19 +599,21 @@ struct {
     void (*func) ();
     char *cmdstr, *menustr, *helpstr;
 } CmdTab[] = {
-        {Load,  "lo$ad",    "<file>",               "\n             Load absolute binary."},
-        {Dump,  "du$mp",    "<-stk> <addr>",        "\n             Dump memory."},
-        {RegDump,"re$g",    "",                     "\n             Dump Register."},
-        {Run,   "r$un",     "<step> <-all> <-r>",   "\n             Run simulation."},
-        {Cont,  "c$ont",    "<step>",               "\n             Continue simulation."},
-        {Trace, "t$race",   "<step> <-r>",          "\n             Trace simulation."},
-        {Break, "b$reak",   "<addr> <-l> <-d (n)>", "\n             Break point."},
-        {Header,"he$ader",  "",                     "\n             Print Header."},
-        {Dis,   "di$s",     "<addr>",               "\n             Dis asm."},
-        {help,  "h$elp",    "<cmd>",                "print help information"},
-        {Exit,  "q$uit",    "",                     "terminate"},
-        {Exit,  "exit",     "",                     "terminate"},
-        {NULL,  "",         "",                     ""}
+        {Load,  "lo$ad",    "<file>",                "\n             Load absolute binary (elf)."},
+        {Dump,  "du$mp",    "<-stk> <addr>",         "\n             Dump memory."},
+        {RegDump,"re$g",    "",                      "\n             Dump Register."},
+        {Run,   "r$un",     "<N cyc|-all>",          "\n             Run simulation."},
+        {Cont,  "c$ont",    "<N cyc|-all>",          "\n             Continue simulation."},
+        {Trace, "t$race",   "<N cyc|-all> <-r> <| tee (fn)>", "\n             Trace simulation. -r : reset"},
+        {Break, "b$reak",   "<addr> <-d|-e (n)>",    "\n             Break point.  -d/-e : disable/enable"},
+        {Info,  "in$fo",    "",                      "\n             Print simulator info."},
+        {Header,"he$ader",  "",                      "\n             Print Header."},
+        {List_symbol,"sy$mbol", "",                  "\n             Print symbol table."},
+        {Dis,   "di$s",     "<addr>",                "\n             Dis asm."},
+        {help,  "h$elp",    "<cmd>",                 "print help information"},
+        {Exit,  "q$uit",    "",                      "terminate"},
+        {Exit,  "exit",     "",                      "terminate"},
+        {NULL,  "",         "",                      ""}
 };
 
 /*-------------- Command proccessor --------------------------------------------*/
@@ -632,7 +697,8 @@ int PrintMenu(int h_level)
 void IssueCmd(char *cmd)
 {
     char *argv[MAXARG], tmp[130];
-    int i, argc, rv;
+    int i, argc;
+    int rv __attribute__ ((unused)) = 0;
 
     strcpy(tmp, cmd);
 
@@ -677,7 +743,7 @@ int main (int argc, char **argv)
             if (++i >= argc)
                 break;
             scr = argv[i];
-        } else if(!strcmp(argv[i], "-rv32e")){
+        } else if(!strcmp(argv[i], "-e")){	// rv32E
             arch = 'e';
             Nregs = 16;
         } else if(!strcmp(argv[i], "-stk")){

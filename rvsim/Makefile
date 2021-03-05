@@ -3,6 +3,8 @@
 CC      = gcc
 LD      = $(CC)
 
+DEST	= /usr/local
+
 CFLAGS  = -g -Wall -O2 -I./include
 LDFLAGS = -g -Wall -O2 
 
@@ -21,6 +23,9 @@ optab.h:	RV-insn.csv
 
 c-optab.h:	c-insn.csv
 	./c-insntab.py $^ > c-optab.h
+
+install:	rvsim
+	cp $^ $(DEST)/bin/
 
 clean:
 	rm -f *.o \#*\# *~ rvsim
