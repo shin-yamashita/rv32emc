@@ -8,7 +8,7 @@ DEST	= /usr/local
 CFLAGS  = -g -Wall -O2 -I./include
 LDFLAGS = -g -Wall -O2 
 
-LDLIBS	= -lbfd -lreadline -lcurses 
+LDLIBS	= -lbfd -lreadline -ltinfo
 
 SRCS	= rvsim.c  monlib.c simcore.c consio.c
 OBJS	= $(SRCS:.c=.o)

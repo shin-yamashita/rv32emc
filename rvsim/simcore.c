@@ -64,7 +64,8 @@ static reg16 d_stall = {0,0};	// data stall
 //static int drw_chk = 0;
 u32 insncount = 0;
 
-FILE *debfp = NULL;
+FILE *debfp_reg = NULL;
+FILE *debfp_mem = NULL;
 
 void clock()
 {
@@ -141,16 +142,6 @@ void fetch()
     //        printf("pc: %x %x\n", pc.d, pc.q);
 }
 
-#if 0
-void wd2insn()
-{
-    f_state.d = 1;
-}
-void wd3insn()
-{
-    f_state.d = 2;
-}
-#endif
 void illinsn()
 {
 }
@@ -183,8 +174,11 @@ u32 Reg_fwd(int ix) // Register read with fowarding
 }
 
 const char *regnam[] = 
+// 0    1    2    3    4    5    6    7    8    9   10    11    12   13   14   15
 {"x0","ra","sp","gp","tp","t0","t1","t2","s0","s1","a0", "a1", "a2","a3","a4","a5",
-        "a6","a7","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","t3","t4","t5","t6"};
+//16   17   18   19   20   21   22   23   24   25   26    27    28   29   30   31
+ "a6","a7","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","t3","t4","t5","t6"};
+
 const char *fregnam[] =
 {"ft0","ft1","ft2","ft3","ft4","ft5","ft6","ft7","fs0","fs1", "fa0", "fa1","fa2","fa3","fa4","fa5",
         "fa6","fa7","fs2","fs3","fs4","fs5","fs6","fs7","fs8","fs9","fs10","fs11","ft3","ft4","ft5","ft6"};
@@ -193,9 +187,10 @@ void Reg_wr(int ix, u32 data)
 {
     if(ix <= 0) return ;
     if(ix < NREG) R[ix].d = data;
-    if(debfp){
+    if(debfp_reg){
         if(ix < NREG){
-            fprintf(debfp, "%5d %s 0x%x\n", insncount, regnam[ix], data);
+            char *sym = search_symbol(data);
+            fprintf(debfp_reg, "%5d %2d %s %x %s\n", insncount, ix, regnam[ix], data, sym ? sym : "");
         }
     }
     return ;
@@ -418,7 +413,7 @@ u32 bra_dest(optab_t *op, u32 rs1, u32 rs2, u32 imm, u32 bdst, int pcinc)
     return pc_nxt;
 }
 
-int sys_func = 17;
+int sys_func = 17;	// a7
 
 void reset_pc(u32 adr)
 {
@@ -430,7 +425,7 @@ void reset_pc(u32 adr)
     mwe.d   = NA;
     bra_stall.d = 0;
     R[2].d = stack_top; // x2 == stack pointer
-    sys_func = arch == 'e' ? 5 : 17;
+    sys_func = arch == 'e' ? 5 : 17;	// t0 : a7
     Nregs = arch == 'e' ? 16 : 32;
     printf("reset_pc()\n");
 }
@@ -446,8 +441,8 @@ u32 syscall(u32 func, u32 a0, u32 a1, u32 a2){
     extern u32 _end_adr;
     //printf(" ecall %x %x %x %x\n", func, a0, a1, a2);
     switch(func){
-    case SYS_fstat:
-        break;
+//    case SYS_fstat:
+//        break;
     case SYS_exit:
         sys_exit = 1;
         printf("exit(): %d\n", a0);
@@ -466,30 +461,10 @@ u32 syscall(u32 func, u32 a0, u32 a1, u32 a2){
         rv = heap_ptr;
 //        printf("sbrk %x %x %x (%x %x)\n", rv, heap_ptr, _end_adr, a0, a1);
         break;
-    case SYS_close:
-        break;
-    }
-    return rv;
-}
-u32 interrupt(int imm, u32 func, u32 arg1, u32 arg2, u32 arg3)
-{
-    int adr, i, rv = 0;
-
-    switch(func){
-    case 1: sys_exit = 1;
-    break;
-    case 5: 	// write()
-        adr = arg2;
-        //printf("write(%x,%x,%x):adr=%x\n",arg1,arg2,arg3, adr);
-        for(i = 0; i < arg3; i++)
-            putchar(mem_rd(adr++));
-        ////		 putchar(memory[adr++]);
-        fflush(stdout);
-        rv = arg3;
-        break;
+//    case SYS_close:
+//        break;
     default:
-        printf("**** int #%d : r0:%x,r4:%x,r5:%x,r6:%x\n",imm, func, arg1, arg2, arg3);
-        rv = 0;
+        printf(" ecall %d %x %x %x\n", func, a0, a1, a2);
         break;
     }
     return rv;
@@ -630,19 +605,32 @@ void RAM_access(int wr)
         }else{
             mem = memory;
         }
-#if 1
         if(wr == WE){   // lsb first
+            u32 mask = 0;
+            char *wmd = "";
             switch(mmd.q){
             case SI: adr &= ~3;
-            mem[adr++] = mdw.q;
-            mem[adr++] = mdw.q>>8;
-            mem[adr++] = mdw.q>>16;
-            mem[adr] = mdw.q>>24;	break;
+              mask = 0xffffffff;
+              wmd = "SI";
+              mem[adr++] = mdw.q;
+              mem[adr++] = mdw.q>>8;
+              mem[adr++] = mdw.q>>16;
+              mem[adr] = mdw.q>>24;	break;
             case HI: adr &= ~1;
-            mem[adr++] = mdw.q;
-            mem[adr] = mdw.q>>8;	break;
+              mask = 0xffff;
+              wmd = "HI";
+              mem[adr++] = mdw.q;
+              mem[adr] = mdw.q>>8;	break;
             case QI:
-                mem[adr] = mdw.q;	break;
+              mask = 0xff;
+              wmd = "QI";
+              mem[adr] = mdw.q;	break;
+            }
+            if(debfp_mem){
+                char *sym = search_symbol(mar.q);
+                char *symd = mmd.q == SI ? search_symbol(mdw.q) : NULL;
+                fprintf(debfp_mem, "%6d %8x %x %s %s %s\n",
+                        insncount, mar.q, mdw.q & mask, wmd, sym ? sym : "-", symd ? symd : "-");
             }
         }else if(wr == RE){	// memory read
             switch(mmd.q){
@@ -667,7 +655,6 @@ void RAM_access(int wr)
         }
     }else if((wr == WE)||(wr == RE)){
         printf("%-8d: ill memory address : mar=%x  %s\n", insncount, mar.q, wr == WE ? "WE" : "RE");
-#endif
     }
     return ;
 }
@@ -853,8 +840,8 @@ int break_chk()
 {
     int i;
     for(i = 0; i < n_break; i++){
-        if(break_en[i] && break_adr[i] == pc.q){
-            printf("***** break @ %8x\n", pc.q);
+        if(!bra_stall.q && break_en[i] && break_adr[i] == pc1.q){
+            printf("***** break @ %8x\n", pc1.q);
             return 1;
         }
     }
@@ -892,7 +879,7 @@ u32 simrun (u32 addr, int steps, int reset)
 u32 simtrace (u32 addr, int steps, int reset)
 {
     int i, c;
-    debfp = fopen("regtrace.log","w");
+//    debfp = fopen("regtrace.log","w");
 
     if(reset){
         stat_clear();

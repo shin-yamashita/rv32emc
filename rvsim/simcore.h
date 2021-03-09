@@ -21,3 +21,5 @@ void reg_dump();
 
 char mem_rd(int adr);
 
+char *search_symbol(u32 pc);
+

@@ -51,7 +51,9 @@ rvsim-E> trace
 
 ## build
 
-require : libbfd libreadline libcurses
+Ubuntu 20.04  
+
+$ apt install binutils-dev libreadline8 libtinfo6  
 
 ```
 $ make

@@ -10,20 +10,50 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <bfd.h>
+#include <elf.h>
 
 #include "monlib.h"
 #include "simcore.h"
 #include "consio.h"
 
+//--- rvsim grobals -------------------------
+
 #define MAXARG	50
 
 static int debug = 0;
-static int wide_output = 1;
 extern int LPP;
 
-//--- from bucomm.c
-#define TARGET "riscv32-unknown-elf"
-#define TARGET_PREPENDS_UNDERSCORE 0
+bfd_byte    *memory = NULL;
+bfd_byte    *stack = NULL;
+bfd_size_type   memsize = 0;
+bfd_size_type   stacksize = 0x20000;
+bfd_vma     vaddr = (bfd_vma)-1;
+bfd_vma     stack_top = 0x3ffffd0;
+bfd         *abfd = NULL;
+
+asymbol **symbol_table;
+long number_of_symbols = 0;
+
+u32     _end_adr;
+u32     heap_ptr = 0x0;
+
+static u32 simadr;
+int     view_reg[100] = {1,2,3,10,11,12,13,20,21,0};
+int     nview = 9;
+int     reset = 1;
+int     sys_exit = 0;
+int     arch = 'i';
+int     compress = 0;
+int     Nregs = 32;
+
+#define MAXBRK 100
+int     n_break = 0;
+u32     break_adr[MAXBRK];
+char   *break_sym[MAXBRK];
+int     break_en[MAXBRK];
+
+FILE    *ofp;
+//---------------------------------------------
 
 char *program_name = "rvsim";
 
@@ -36,16 +66,6 @@ bfd_nonfatal (const char *string)
         fprintf (stderr, "%s: %s: %s\n", program_name, string, errmsg);
     else
         fprintf (stderr, "%s: %s\n", program_name, errmsg);
-}
-
-void
-set_default_bfd_target (void)
-{
-    const char *target = TARGET;
-
-    if (! bfd_set_default_target (target))
-        fprintf(stderr, "can't set BFD default target to `%s': %s",
-                target, bfd_errmsg (bfd_get_error ()));
 }
 
 static void
@@ -65,11 +85,8 @@ dump_section_header (bfd *abfd, asection *section,
     bfd_printf_vma (abfd, bfd_section_vma (section));
     printf ("  ");
     bfd_printf_vma (abfd, section->lma);
-    printf ("  %08lx  2**%u", (unsigned long) section->filepos,
+    printf ("  %08lx  2**%u  ", (unsigned long) section->filepos,
             bfd_section_alignment (section));
-    if (! wide_output)
-        printf ("\n                ");
-    printf ("  ");
 
 #define PF(x, y) \
         if (section->flags & x) { printf ("%s%s", comma, y); comma = ", "; }
@@ -123,10 +140,7 @@ static void
 dump_headers (bfd *abfd)
 {
     printf ("Sections:\n");
-    printf ("Idx Name                 Size  VMA       LMA       File off  Algn");
-    if (wide_output) printf ("  Flags");
-    //  if (abfd->flags & HAS_LOAD_PAGE) printf ("  Pg");
-    printf ("\n");
+    printf ("Idx Name                 Size  VMA       LMA       File off  Algn  Flags\n");
 
     bfd_map_over_sections (abfd, dump_section_header, NULL);
 }
@@ -136,10 +150,6 @@ dump_bfd_header (bfd *abfd)
 {
     char *comma = "";
 
-    printf ("architecture: %s, ",
-            bfd_printable_arch_mach (bfd_get_arch (abfd),
-                    bfd_get_mach (abfd)));
-    printf ("flags 0x%08x:\n", abfd->flags);
 
 #define PF(x, y)    if (abfd->flags & x) {printf("%s%s", comma, y); comma=", ";}
     PF (HAS_RELOC, "HAS_RELOC");
@@ -158,20 +168,6 @@ dump_bfd_header (bfd *abfd)
     printf ("\n");
 }
 
-bfd_byte    *memory = NULL;
-bfd_byte    *stack = NULL;
-bfd_size_type   memsize = 0;
-bfd_size_type   stacksize = 0x20000;
-bfd_vma     vaddr = (bfd_vma)-1;
-bfd_vma     stack_top = 0x3ffffd0;
-bfd         *abfd = NULL;
-
-asymbol **symbol_table;
-long number_of_symbols = 0;
-
-u32 _end_adr;
-u32 heap_ptr = 0x0;
-
 void load_symtab(bfd *abfd)
 {
     int i;
@@ -182,8 +178,6 @@ void load_symtab(bfd *abfd)
     }
     symbol_table = (asymbol **) malloc (storage_needed);
     number_of_symbols = bfd_canonicalize_symtab (abfd, symbol_table);
-
-    fprintf (stdout, "number_of_symbols = %ld\n", number_of_symbols);
 
     if (number_of_symbols < 0) {
         fprintf (stderr, "Error: number_of_symbols < 0\n");
@@ -244,7 +238,7 @@ static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UN
     if ((section->flags & SEC_ALLOC) == 0) return;
     if ((datasize = bfd_section_size (section)) == 0)
         return;
-    printf ("load section %s:\n", section->name);
+    printf (" section %s:\n", section->name);
     if(vaddr == (bfd_vma)-1) vaddr = section->vma;
     memsize = section->vma - vaddr + datasize;
     memory = (bfd_byte*) realloc(memory, memsize);
@@ -254,6 +248,33 @@ static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UN
 }
 
 #define HEAP_SIZE	1024*16
+
+//----- elf header  riscv
+typedef struct elf_internal_ehdr {      // from  binutils/include/elf/internal.h
+  unsigned char         e_ident[EI_NIDENT]; /* ELF "magic number" */
+  bfd_vma               e_entry;        /* Entry point virtual address */
+  bfd_size_type         e_phoff;        /* Program header table file offset */
+  bfd_size_type         e_shoff;        /* Section header table file offset */
+  unsigned long         e_version;      /* Identifies object file version */
+  unsigned long         e_flags;        /* Processor-specific flags */
+  unsigned short        e_type;         /* Identifies object file type */
+  unsigned short        e_machine;      /* Specifies required architecture */
+  unsigned int          e_ehsize;       /* ELF header size in bytes */
+  unsigned int          e_phentsize;    /* Program header table entry size */
+  unsigned int          e_phnum;        /* Program header table entry count */
+  unsigned int          e_shentsize;    /* Section header table entry size */
+  unsigned int          e_shnum;        /* Section header table entry count */
+  unsigned int          e_shstrndx;     /* Section header string table index */
+} Elf_Internal_Ehdr;
+struct elf_obj_tdata
+{
+  Elf_Internal_Ehdr elf_header[1];      /* Actual data, but ref like ptr */
+};
+#define elf_tdata(bfd)          ((bfd) -> tdata.elf_obj_data)   // from binutils/bfd/elf-bfd.h
+#define EF_RISCV_RVE 0x0008
+#define EF_RISCV_FLOAT_ABI 0x0006
+
+//----------------------------
 
 static void load_abs(char *filename)
 {
@@ -267,11 +288,45 @@ static void load_abs(char *filename)
         bfd_close (abfd);
         abfd = NULL;
     } else {
-        bfd_map_over_sections (abfd, load_section, NULL);
-        load_symtab(abfd);
-        printf("vaddr:%x memsize:%x _end:%x\n", (unsigned)vaddr, (unsigned)memsize, _end_adr);
-        memsize += HEAP_SIZE;
-        memory = (bfd_byte*) realloc(memory, memsize);
+        if (abfd->xvec->flavour == bfd_target_elf_flavour){
+          unsigned long e_flags = elf_tdata(abfd)->elf_header->e_flags;
+
+          printf(" load ELF file '%s' :", filename);
+          int elfclass = elf_tdata(abfd)->elf_header->e_ident[4];
+          if(elfclass != 1){
+              printf("\n not a elf32 excutable\n");
+              return;
+          }
+          if(elf_tdata(abfd)->elf_header->e_machine == EM_RISCV) {
+              printf(" RISCV");
+          } else {
+              printf("\n not a risc-v excutable\n");
+              return;
+          }
+          //printf("e_flags:   %lx\n", e_flags);
+          if(e_flags & EF_RISCV_RVC) {
+              compress = 'c';
+              printf(" RVC");
+          }
+          if(e_flags & EF_RISCV_RVE) {
+              arch = 'e';
+              printf(" RVE");
+          }
+          printf("\n");
+          if(e_flags & EF_RISCV_FLOAT_ABI){
+              printf(" float insn not supported.\n");
+              return;
+          }
+
+          bfd_map_over_sections (abfd, load_section, NULL);
+          load_symtab(abfd);
+          printf (" number_of_symbols = %ld\n", number_of_symbols);
+          printf(" vaddr:%x memsize:%x _end:%x start:%x\n", (unsigned)vaddr, (unsigned)memsize, _end_adr, (u32)abfd->start_address);
+          memsize += HEAP_SIZE;
+          memory = (bfd_byte*) realloc(memory, memsize);
+        } else {
+            printf(" not a elf excutable.\n");
+        }
     }
 }
 
@@ -301,11 +356,14 @@ void List_symbol(int argc, char *argv[])
 void Info(int argc, char *argv[])
 {
     if(!abfd) return;
-    printf("vaddr     (memsize)   : %8x (%ld)\n", (u32)vaddr, memsize);
-    printf("stack_top (stacksize) : %8x (%ld)\n", (u32)stack_top, stacksize);
-    printf("heap_ptr  (heapsize)  : %8x (%d)\n", heap_ptr, HEAP_SIZE);
-    printf("end_addr              : %8x\n", _end_adr);
-    printf("start_address         : %8x\n", (u32)abfd->start_address);
+    printf(" architecture : RV32");
+    if(arch=='e') putchar('E');
+    if(compress=='c') putchar('C');
+    printf("\n vaddr     (memsize)   : %8x (%ld)\n", (u32)vaddr, memsize);
+    printf(" stack_top (stacksize) : %8x (%ld)\n", (u32)stack_top, stacksize);
+    printf(" heap_ptr  (heapsize)  : %8x (%d)\n", heap_ptr, HEAP_SIZE);
+    printf(" end_addr              : %8x\n", _end_adr);
+    printf(" start_address         : %8x\n", (u32)abfd->start_address);
 }
 
 void RegDump(int argc, char *argv[])
@@ -328,7 +386,8 @@ void Dump(int argc, char *argv[])
             psize = stacksize;
             adr = stack_top-512;
         }else if(isxdigit(*argv[i])){
-            adr = strtol(argv[i], NULL, 16);
+            adr = get_symbol_addr(argv[i]);
+//            adr = strtol(argv[i], NULL, 16);
         }
     }
     initerm();
@@ -392,7 +451,8 @@ void Dis(int argc, char *argv[])
 
     for(i = 1; i < argc; i++){
         if(isxdigit(*argv[i])){
-            adr = strtol(argv[i], NULL, 16);
+            adr = get_symbol_addr(argv[i]);
+//            adr = strtol(argv[i], NULL, 16);
         }
     }
 
@@ -435,24 +495,6 @@ void Dis(int argc, char *argv[])
     }while(c != 'q');
     deinitrm();
 }
-
-#define MAXBRK 100
-
-static u32 simadr;
-int     view_reg[100] = {1,2,3,10,11,12,13,20,21,0};
-int     nview = 9;
-int     reset = 1;
-int     sys_exit = 0;
-int     arch = 'i';
-int     Nregs = 32;
-
-
-int     n_break = 0;
-u32     break_adr[MAXBRK];
-char   *break_sym[MAXBRK];
-int     break_en[MAXBRK];
-
-FILE    *ofp;
 
 void Load(int argc, char *argv[])
 {
@@ -587,6 +629,41 @@ void Trace(int argc, char *argv[])
     reset = 0;
 }
 
+extern FILE *debfp_reg;
+extern FILE *debfp_mem;
+
+void DebugDump(int argc, char *argv[])
+{
+    int i;
+    for(i = 1; i < argc; i++){
+        if(!strcmp(argv[i], "-r")){
+            if(++i >= argc) break;
+            debfp_reg = fopen(argv[i], "w");
+            if(debfp_reg){
+                printf(" Register write log : '%s'\n", argv[i]);
+                fprintf(debfp_reg, "insncount reg wdata label\n");
+            }
+        } else if(!strcmp(argv[i], "-m")){
+            if(++i >= argc) break;
+            debfp_mem = fopen(argv[i], "w");
+            if(debfp_mem){
+                printf(" Memory write log : '%s'\n", argv[i]);
+                fprintf(debfp_mem, "insncount memadr wdata mode label-a label-d\n");
+            }
+        } else if(!strcmp(argv[i], "-c")){
+            if(debfp_reg) {
+                fclose(debfp_reg);
+                debfp_reg = NULL;
+            }
+            if(debfp_mem) {
+                 fclose(debfp_mem);
+                 debfp_mem = NULL;
+             }
+        }
+    }
+
+}
+
 void Exit(int argc, char *argv[])
 {
     exit(0);
@@ -610,6 +687,7 @@ struct {
         {Header,"he$ader",  "",                      "\n             Print Header."},
         {List_symbol,"sy$mbol", "",                  "\n             Print symbol table."},
         {Dis,   "di$s",     "<addr>",                "\n             Dis asm."},
+        {DebugDump, "deb$ug","<-r (fn)> <-m (fn)> <-c>","\n             Register / memory write log out."},
         {help,  "h$elp",    "<cmd>",                 "print help information"},
         {Exit,  "q$uit",    "",                      "terminate"},
         {Exit,  "exit",     "",                      "terminate"},
@@ -763,7 +841,6 @@ int main (int argc, char **argv)
     }
 
     bfd_init ();
-    //    set_default_bfd_target ();
     ofp = stdout;
 
     printf("======= rvsim ==============================================\n"
@@ -771,8 +848,6 @@ int main (int argc, char **argv)
 
     if(lfn) load_abs(lfn);
     stack = (bfd_byte*)malloc(stacksize+0x100);
-
-    prompt = arch == 'e' ? "rvsim-E> " : "rvsim-I> ";
 
     if (ifp != NULL) {          /* exec script      */
         while (fgets(cmd, 130, ifp) != NULL) {
@@ -785,6 +860,7 @@ int main (int argc, char **argv)
     }
 
     for (;;) {
+        prompt = arch == 'e' ? "rvsim-E> " : "rvsim-I> ";
         if ((s = readline(prompt))) {
             if (!IsBlank(s)) {
                 add_history(s);
@@ -798,6 +874,4 @@ int main (int argc, char **argv)
     //   display_file (argv[1], NULL);
     return 0;
 }
-
-
 
