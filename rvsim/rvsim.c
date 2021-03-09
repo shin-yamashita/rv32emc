@@ -676,21 +676,21 @@ struct {
     void (*func) ();
     char *cmdstr, *menustr, *helpstr;
 } CmdTab[] = {
-        {Load,  "lo$ad",    "<file>",                "\n             Load absolute binary (elf)."},
-        {Dump,  "du$mp",    "<-stk> <addr>",         "\n             Dump memory."},
-        {RegDump,"re$g",    "",                      "\n             Dump Register."},
-        {Run,   "r$un",     "<N cyc|-all>",          "\n             Run simulation."},
-        {Cont,  "c$ont",    "<N cyc|-all>",          "\n             Continue simulation."},
+        {Load,  "lo$ad",    "<file (rv32 executable)>", "\n             Load absolute binary (elf)."},
+        {Dump,  "du$mp",    "<-stk> <addr|label>",      "\n             Dump memory."},
+        {RegDump,"re$g",    "",                         "\n             Dump Register."},
+        {Run,   "r$un",     "<N cyc|-all>",             "\n             Run simulation."},
+        {Cont,  "c$ont",    "<N cyc|-all>",             "\n             Continue simulation."},
         {Trace, "t$race",   "<N cyc|-all> <-r> <| tee (fn)>", "\n             Trace simulation. -r : reset"},
-        {Break, "b$reak",   "<addr> <-d|-e (n)>",    "\n             Break point.  -d/-e : disable/enable"},
-        {Info,  "in$fo",    "",                      "\n             Print simulator info."},
-        {Header,"he$ader",  "",                      "\n             Print Header."},
-        {List_symbol,"sy$mbol", "",                  "\n             Print symbol table."},
-        {Dis,   "di$s",     "<addr>",                "\n             Dis asm."},
-        {DebugDump, "deb$ug","<-r (fn)> <-m (fn)> <-c>","\n             Register / memory write log out."},
-        {help,  "h$elp",    "<cmd>",                 "print help information"},
-        {Exit,  "q$uit",    "",                      "terminate"},
-        {Exit,  "exit",     "",                      "terminate"},
+        {Break, "b$reak",   "<addr|label> <-d|-e (n)>", "\n             Break point.  -d/-e : disable/enable"},
+        {Info,  "in$fo",    "",                         "\n             Print simulator info."},
+        {Header,"he$ader",  "",                         "\n             Print Header."},
+        {List_symbol,"sy$mbol", "",                     "\n             Print symbol table."},
+        {Dis,   "di$s",     "<addr|lable>",             "\n             Dis asm."},
+        {DebugDump, "deb$ug","<-r (fn)> <-m (fn)> <-c>","\n             Register / Memory write log out."},
+        {help,  "h$elp",    "<cmd>",                    "print help information"},
+        {Exit,  "q$uit",    "",                         "terminate"},
+        {Exit,  "exit",     "",                         "terminate"},
         {NULL,  "",         "",                      ""}
 };
 
@@ -821,9 +821,6 @@ int main (int argc, char **argv)
             if (++i >= argc)
                 break;
             scr = argv[i];
-        } else if(!strcmp(argv[i], "-e")){	// rv32E
-            arch = 'e';
-            Nregs = 16;
         } else if(!strcmp(argv[i], "-stk")){
             if(++i >= argc) break;
             stack_top = strtol(argv[i], NULL, 16);
@@ -849,6 +846,9 @@ int main (int argc, char **argv)
     if(lfn) load_abs(lfn);
     stack = (bfd_byte*)malloc(stacksize+0x100);
 
+    Nregs = arch == 'e' ? 16 : 32;
+    prompt = arch == 'e' ? "rvsim-E> " : "rvsim-I> ";
+
     if (ifp != NULL) {          /* exec script      */
         while (fgets(cmd, 130, ifp) != NULL) {
             RejectComment(cmd);
@@ -860,7 +860,6 @@ int main (int argc, char **argv)
     }
 
     for (;;) {
-        prompt = arch == 'e' ? "rvsim-E> " : "rvsim-I> ";
         if ((s = readline(prompt))) {
             if (!IsBlank(s)) {
                 add_history(s);

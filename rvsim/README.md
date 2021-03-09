@@ -6,21 +6,22 @@ Target architecture : RV32IMC / RV32EMC
 ## usage
 
 ```
-$ rvsim {-e (rv32e)} {rv32 executable (elf)}
+$ rvsim {rv32 executable (elf)}
 ======= rvsim ==============================================
    rv32 processor simulator.
 rvsim-I> 
-  load       <file>
-  dump       <-stk> <addr>
+  load       <file (rv32 executable)>
+  dump       <-stk> <addr|label>
   reg        
   run        <N cyc|-all>
   cont       <N cyc|-all>
   trace      <N cyc|-all> <-r> <| tee (fn)>
-  break      <addr> <-d|-e (n)>
+  break      <addr|label> <-d|-e (n)>
   info       
   header     
   symbol     
-  dis        <addr>
+  dis        <addr|lable>
+  debug      <-r (fn)> <-m (fn)> <-c>
   help       <cmd>
   quit       
   exit       
