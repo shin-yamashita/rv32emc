@@ -66,13 +66,13 @@ typedef struct _optab {
   int    rwa;
   int    rwd;
   int    pc;
-  int    rp;
+  int    excyc;
 } optab_t;
 
 static optab_t optab[] = {
 ''')
 
-#//  mnemonic,   type,   ex,     func7,  func3,  opc,    alu,    mode,   mar,    ofs,    mwe,    rrd1,   rrd2,   rwa,    rwd,    pc,     rp
+#//  mnemonic,   type,   ex,     func7,  func3,  opc,    alu,    mode,   mar,    ofs,    mwe,    rrd1,   rrd2,   rwa,    rwd,    pc,   excyc
 
 table = []
 
@@ -82,7 +82,7 @@ with open(sys.argv[1], "r") as f:
     if row[0] == "#2":
       break
   print("// ", end='')
-  for i in range(1,17):
+  for i in range(1,18):
     print("%s, \t"%row[i], end='')
   print()
   
@@ -92,7 +92,7 @@ with open(sys.argv[1], "r") as f:
       line = ' { "%s",\t'%c	# mnemonic
       c = 'type_%s'%row[2]
       line += '%-7s, '%c		# type
-      for i in range(3,17):
+      for i in range(3,18):
         c = row[i].upper()
         if c == "": c = "__"
         line += "%s,\t"%c

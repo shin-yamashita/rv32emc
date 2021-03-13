@@ -43,9 +43,7 @@ typedef struct _regint { int d; int q; }    regint;
 
 static reg32 R[NREG];
 static reg32 pc, pc1, bdst;	// 18
-//static reg16 ccr;	// 16
 static reg32 ir, irh;
-static reg32 ir1;
 static reg32 mar, mdr, _mdr, mdw;
 static reg16 mmd, mwe;	// mem-mode, mem-we
 static reg32 rrd1, rrd2;
@@ -53,7 +51,6 @@ static regint rwa[3], rwd[3];	// reg-wadr, reg-wr-data
 static reg32 rwdat[3];	// alu out data
 static regalu alu;	// alu mode
 
-//static reg16 f_state = {0,0};	// fetch state (2 or 3 word insn)
 static reg16 bra_stall = {0,0};	// branch stall
 static reg16 ex_stall = {0,0};	// exec stall
 static reg16 d_stall = {0,0};	// data stall
@@ -75,7 +72,6 @@ void clock()
 
     latch(ir);
     latch(irh);
-    latch(ir1);
 
     latch(mar);
     latch(mdr);
@@ -104,11 +100,8 @@ void clock()
     latch(pc);
     latch(pc1);
     latch(bdst);
-    //	latch(ccr);
     pc1.d = pc.q;
 
-//    latch(f_state);
-//    f_state.d = f_state.q > 0 ? f_state.q - 1 : 0;
     latch(bra_stall);
     if(!d_stall.d){
         latch(ex_stall);
@@ -122,24 +115,17 @@ void clock()
 void fetch()
 {
     int a;
-    u32 ir0;
 
     a = pc.q - (int)vaddr;
     if(a < 0 || a >= memsize){
         printf("%-8d: ill memory address : pc=%x  vaddr:%x a:%d\n", insncount, pc.q, (int)vaddr, a);
-        //        printf("%-8d: ill memory address : pc=%x  vaddr:%x a:%d\n", insncount, pc.d, (int)vaddr, a);
         return;
     }
-    ir0 = (u32)((memory[a+3]<<24)|(memory[a+2]<<16)|(memory[a+1]<<8)|memory[a]);
-    //	ir0 = (u32)((memory[adr]<<8)|memory[adr+1]);
-//    if(f_state.d) ir1.d = (ir1.q<<16)|ir0;
-//    else
-    ir.d = ir0;
+    ir.d = (u32)((memory[a+3]<<24)|(memory[a+2]<<16)|(memory[a+1]<<8)|memory[a]);
 
     if(pc.d == (u32)-1){
-        pc.d = pc.q + (isCinsn(ir0) ? 2 : 4);
+        pc.d = pc.q + (isCinsn(ir.d) ? 2 : 4);
     }
-    //        printf("pc: %x %x\n", pc.d, pc.q);
 }
 
 void illinsn()
@@ -506,36 +492,19 @@ void decode()
             bra_stall.d = 0;
             return ;
         }
-#if 0
-        if(f_state.q == 0){
-            //	if(optab[i].len == 2) wd2insn();
-            //	else if(optab[i].len == 3) wd3insn();
-            //	if(optab[i].len > 1){
-            //		return ;
-            //	}
-        }else if(f_state.q == 2){
-            return ;
-        }
-        //       mld = mst = 0;
-#endif
+#if 1
         if(ex_stall.q == 0){
-            //    if(optab[i].ex > 0){
-            //        ex_stall.d = optab[i].ex;
-            //        pc.d = pc.q;	// pc hold
-            //	if(!(optab[i].spfunc == POPM || optab[i].spfunc == PUSHM))
-            //		return;
-            //    }
+            if(optab[i].excyc > 0){ // multi cycle op
+                ex_stall.d = optab[i].excyc;
+                pc.d = pc.q;	// pc hold
+                return;
+            }
         }else if(ex_stall.q){
-            //if(optab[i].spfunc == POPM){
-            //	mld = 1;	// multi load
-            //}else if(optab[i].spfunc == PUSHM){
-            //	mst = 1;	// multi store
-            //}else{
-            //    pc.d = pc.q;	// pc hold
-            //    if(ex_stall.q > 1) return;
-            //    else pc.d = pc.q + 2;
-            //}
+            pc.d = pc.q;	// pc hold
+            if(ex_stall.q > 1) return;
+            else pc.d = pc.q + pcinc;
         }
+#endif
         // rrd1
         rrd1.d = (optab[i].rrd1 == PC) ? pc1.q :
                 (optab[i].rrd1 == X0) ? 0 :
@@ -767,12 +736,10 @@ void print_regs()
     sprintf(opr, " ");
 
     if(bra_stall.q)     sprintf(opc, "-b-");
-//    else if(f_state.q)  sprintf(opc, ".%d", f_state.q);
     else if(ex_stall.q||d_stall.q)
         sprintf(opc, "-%c%c-", ex_stall.q?'x':' ', d_stall.q?'d':' ');
     else 		    disasm(pc1.q, dat, opc, opr, &dsp);
 
-//    Ir = (ex_stall.q || d_stall.q) ? irh.q : (f_state.q>0?(ir1.q):ir.q);
     Ir = (ex_stall.q || d_stall.q) ? irh.q : ir.q;
 
     if(isCinsn(Ir)){
@@ -784,7 +751,7 @@ void print_regs()
             " %-8s %-15s %8x %8x %8s"
             " %8x %8x %4s %3s %3s %8x "
             , opc, opr, mar.q, mdr.q, wrstr()
-            , rrd1.q, rrd2.q, alu_nam(alu.q), Reg_nam(rwa[0].q, I), regs_nam(rwd[0].q)  //, ccr.q
+            , rrd1.q, rrd2.q, alu_nam(alu.q), Reg_nam(rwa[0].q, I), regs_nam(rwd[0].q)
             , rwdat[1].q);
 
     for(n = 0; n < nview; n++) fprintf(ofp, " %8x", Reg(view_reg[n]));
