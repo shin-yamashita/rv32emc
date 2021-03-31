@@ -171,7 +171,7 @@ post = """
 
   exir[31:25] = c_dec.func7;
   exir[14:12] = c_dec.func3;
-  exir[1:0] = 2'h3;
+  exir[6:0] = c_dec.opc;
 
   return {exir, c_imm};
 

@@ -718,7 +718,7 @@ void print_regs_label()
 
 const char *alu_nam(u32 alu)
 {
-    if(alu+1 < sizeof(_alu_nam)/sizeof(char*)) return _alu_nam[alu+1];
+    if(alu < sizeof(_alu_nam)/sizeof(char*)) return _alu_nam[alu];
     else return "xx";
 }
 const char *regs_nam(u32 reg)
