@@ -873,7 +873,7 @@ int main (int argc, char **argv)
         }
     }
     if(s){
-        if(!lfn){
+        if(lfn){
             load_abs(lfn, 0);
             if(*s == 'r') Run(2, argvall);
             if(*s == 't') Trace(2, argvall);
