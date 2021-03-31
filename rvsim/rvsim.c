@@ -238,7 +238,7 @@ static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UN
     if ((section->flags & SEC_ALLOC) == 0) return;
     if ((datasize = bfd_section_size (section)) == 0)
         return;
-    printf (" section %s:\n", section->name);
+//    printf (" section %s:\n", section->name);
     if(vaddr == (bfd_vma)-1) vaddr = section->vma;
     memsize = section->vma - vaddr + datasize;
     memory = (bfd_byte*) realloc(memory, memsize);
@@ -276,7 +276,7 @@ struct elf_obj_tdata
 
 //----------------------------
 
-static void load_abs(char *filename)
+static void load_abs(char *filename, int verb)
 {
     char **matching;
 
@@ -291,14 +291,14 @@ static void load_abs(char *filename)
         if (abfd->xvec->flavour == bfd_target_elf_flavour){
           unsigned long e_flags = elf_tdata(abfd)->elf_header->e_flags;
 
-          printf(" load ELF file '%s' :", filename);
+          if(verb) printf(" load ELF file '%s' :", filename);
           int elfclass = elf_tdata(abfd)->elf_header->e_ident[4];
           if(elfclass != 1){
               printf("\n not a elf32 excutable\n");
               return;
           }
           if(elf_tdata(abfd)->elf_header->e_machine == EM_RISCV) {
-              printf(" RISCV");
+              if(verb) printf(" RISCV");
           } else {
               printf("\n not a risc-v excutable\n");
               return;
@@ -306,13 +306,13 @@ static void load_abs(char *filename)
           //printf("e_flags:   %lx\n", e_flags);
           if(e_flags & EF_RISCV_RVC) {
               compress = 'c';
-              printf(" RVC");
+              if(verb) printf(" RVC");
           }
           if(e_flags & EF_RISCV_RVE) {
               arch = 'e';
-              printf(" RVE");
+              if(verb) printf(" RVE");
           }
-          printf("\n");
+          if(verb) printf("\n");
           if(e_flags & EF_RISCV_FLOAT_ABI){
               printf(" float insn not supported.\n");
               return;
@@ -320,8 +320,8 @@ static void load_abs(char *filename)
 
           bfd_map_over_sections (abfd, load_section, NULL);
           load_symtab(abfd);
-          printf (" number_of_symbols = %ld\n", number_of_symbols);
-          printf(" vaddr:%x memsize:%x _end:%x start:%x\n", (unsigned)vaddr, (unsigned)memsize, _end_adr, (u32)abfd->start_address);
+          if(verb) printf (" number_of_symbols = %ld\n", number_of_symbols);
+          if(verb) printf(" vaddr:%x memsize:%x _end:%x start:%x\n", (unsigned)vaddr, (unsigned)memsize, _end_adr, (u32)abfd->start_address);
           memsize += HEAP_SIZE;
           memory = (bfd_byte*) realloc(memory, memsize);
         } else {
@@ -441,6 +441,21 @@ void Dump(int argc, char *argv[])
     deinitrm();
 }
 
+void disasm_all()
+{
+    if(!abfd) return;
+    char str[80], opstr[80], oprstr[80], *sym, *dpsym;
+    int inc, dsp;
+    u32 adr = vaddr;
+    while(adr <= _end_adr){
+        inc = disasm(adr, str, opstr, oprstr, &dsp);
+        sym = search_symbol(adr);
+        dpsym = dsp > 0 ? search_symbol(dsp) : NULL;
+        printf("%06x : %s%-20s %-8s %s %s\n", adr, str, sym?sym:"", opstr, oprstr, dpsym?dpsym:"");
+        adr += inc;
+    }
+}
+
 void Dis(int argc, char *argv[])
 {
     if(!abfd) return;
@@ -450,9 +465,11 @@ void Dis(int argc, char *argv[])
     int dsp;
 
     for(i = 1; i < argc; i++){
-        if(isxdigit(*argv[i])){
+        if(!strcmp(argv[i], "-all")){
+            disasm_all();
+            return;
+        }else{
             adr = get_symbol_addr(argv[i]);
-//            adr = strtol(argv[i], NULL, 16);
         }
     }
 
@@ -499,7 +516,7 @@ void Dis(int argc, char *argv[])
 void Load(int argc, char *argv[])
 {
     if(argc >= 2){
-        load_abs(argv[1]);
+        load_abs(argv[1], 1);
         reset = 1;
         sys_exit = 0;
     }
@@ -808,12 +825,30 @@ void IssueCmd(char *cmd)
     }
 }
 
+void help_message()
+{
+    printf("=== rv32emc simulator ===\n");
+    printf(
+    "Usage: rvsim {opts} {elf32 binary}\n"
+    "Options:\n"
+    "  -i SCR-FILE  Execute command script\n"
+    "  -r           Run all and exit\n"
+    "  -t           Trace all and exit\n"
+    );
+
+}
 
 int main (int argc, char **argv)
 {
     int i;
     char cmd[256], c, *s, *scr = NULL, *lfn = NULL, *prompt = "rvsim> ";
+    char *argvall[2] = {"","-all"};
     FILE *ifp = NULL;
+
+    bfd_init ();
+    ofp = stdout;
+    stack = (bfd_byte*)malloc(stacksize+0x100);
+    s = NULL;
 
     for (i = 1; i < argc; i++) {
         c = *argv[i];
@@ -824,10 +859,25 @@ int main (int argc, char **argv)
         } else if(!strcmp(argv[i], "-stk")){
             if(++i >= argc) break;
             stack_top = strtol(argv[i], NULL, 16);
+        } else if (!strcmp(argv[i], "-h")||!strcmp(argv[i], "--help")) {
+            help_message();
+            return 0;
         } else if (!strcmp(argv[i], "-debug")) {
             debug = 1;
+        } else if (!strcmp(argv[i], "-r")) {
+            s = "r";
+        } else if (!strcmp(argv[i], "-t")) {
+            s = "t";
         } else if (isalnum(c) || c == '.' || c == '/') {
             lfn = argv[i];
+        }
+    }
+    if(s){
+        if(!lfn){
+            load_abs(lfn, 0);
+            if(*s == 'r') Run(2, argvall);
+            if(*s == 't') Trace(2, argvall);
+            return 0;
         }
     }
     if (scr != NULL) {
@@ -837,14 +887,14 @@ int main (int argc, char **argv)
         }
     }
 
-    bfd_init ();
-    ofp = stdout;
+ //   bfd_init ();
+ //   ofp = stdout;
 
     printf("======= rvsim ==============================================\n"
             "   rv32 processor simulator.\n");
 
-    if(lfn) load_abs(lfn);
-    stack = (bfd_byte*)malloc(stacksize+0x100);
+    if(lfn) load_abs(lfn, 1);
+//    stack = (bfd_byte*)malloc(stacksize+0x100);
 
     Nregs = arch == 'e' ? 16 : 32;
     prompt = arch == 'e' ? "rvsim-E> " : "rvsim-I> ";
