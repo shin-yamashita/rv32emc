@@ -14,6 +14,9 @@ typedef int8_t   s8;
 #define XLEN	32	// word length
 #define NREG	32	// # of register
 
+#define IOBEGIN 0xffff0000
+#define IOEND   0xffffffff
+
 u32 simrun (u32 addr, int steps, int reset);
 u32 simtrace (u32 addr, int steps, int reset);
 int disasm(int adr, char *dat, char *opc, char *opr, int *dsp);

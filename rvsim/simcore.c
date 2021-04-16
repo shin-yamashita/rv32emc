@@ -160,10 +160,10 @@ u32 Reg_fwd(int ix) // Register read with fowarding
 }
 
 const char *regnam[] = 
-// 0    1    2    3    4    5    6    7    8    9   10    11    12   13   14   15
+        // 0    1    2    3    4    5    6    7    8    9   10    11    12   13   14   15
 {"x0","ra","sp","gp","tp","t0","t1","t2","s0","s1","a0", "a1", "a2","a3","a4","a5",
-//16   17   18   19   20   21   22   23   24   25   26    27    28   29   30   31
- "a6","a7","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","t3","t4","t5","t6"};
+        //16   17   18   19   20   21   22   23   24   25   26    27    28   29   30   31
+        "a6","a7","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","t3","t4","t5","t6"};
 
 const char *fregnam[] =
 {"ft0","ft1","ft2","ft3","ft4","ft5","ft6","ft7","fs0","fs1", "fa0", "fa1","fa2","fa3","fa4","fa5",
@@ -260,23 +260,23 @@ u32 expand_c_insn(u32 ir)
             case CIMM1: imm = ((ir >> 7) & 0x3c) | ((ir >> 1) & 0xc0);  break;
             case CIMM2: imm = ((ir >> 2) & 0x1c) | ((ir << 4) & 0xc0) | ((ir >> 7) & 0x20); break;
             case CIMM3: simm = ((ir << 1) & 0xc0) | ((ir >> 2) & 0x6) | ((ir << 3) & 0x20)
-                    | ((ir >> 7) & 0x18) | ((ir >> 4) & 0x100);
-                    sext(8); break;
+                            | ((ir >> 7) & 0x18) | ((ir >> 4) & 0x100);
+            sext(8); break;
             case CIMM4: imm = ((ir >> 2) & 0x1f) | ((ir >> 7) & 0x20);
-                    exir |= imm << 20; break;  // shmat
+            exir |= imm << 20; break;  // shmat
             case CIMM5: simm = ((ir >> 1) & 0xb40) | ((ir >> 2) & 0xe) | ((ir << 3) & 0x20)
-                    | ((ir << 1) & 0x80) | ((ir << 2) & 0x400) |((ir >> 7) & 0x10);
-                    sext(11);   break;
+                            | ((ir << 1) & 0x80) | ((ir << 2) & 0x400) |((ir >> 7) & 0x10);
+            sext(11);   break;
             case CIMM6: simm = ((ir << 10) & 0x1f000) | ((ir << 5) & 0x20000);
-                    sext(17);   break;
+            sext(17);   break;
             case CIMM7: simm = ((ir >> 3) & 0x200) | ((ir << 4) & 0x180) | ((ir << 1) & 0x40)
-                    | ((ir >> 2) & 0x10) | ((ir << 3) & 0x20);
-                    sext(9);    break;
+                            | ((ir >> 2) & 0x10) | ((ir << 3) & 0x20);
+            sext(9);    break;
             case CIMM8: imm = ((ir >> 7) & 0x38) | ((ir >> 4) & 0x4) | ((ir << 1) & 0x40);  break;
             case CIMM9: imm = ((ir >> 7) & 0x30) | ((ir >> 1) & 0x3c0) | ((ir >> 4) & 0x4)
-                    | ((ir >> 2) & 0x8); break;
+                            | ((ir >> 2) & 0x8); break;
             case CIMM10: simm = ((ir >> 2) & 0x1f) | ((ir >> 7) & 0x20);
-                    sext(5);    break;
+            sext(5);    break;
             default: break;
             }
             switch(c_optab[i].rs1){
@@ -310,7 +310,7 @@ u32 expand_c_insn(u32 ir)
     }
     cop.imm = imm | simm;
     cop.exir = exir;
-//    if(!strcmp(cop.mnemonic, "c.slli")) printf("%s %d %x\n",cop.mnemonic,imm,exir );
+    //    if(!strcmp(cop.mnemonic, "c.slli")) printf("%s %d %x\n",cop.mnemonic,imm,exir );
     return exir;
 }
 
@@ -427,8 +427,8 @@ u32 syscall(u32 func, u32 a0, u32 a1, u32 a2){
     extern u32 _end_adr;
     //printf(" ecall %x %x %x %x\n", func, a0, a1, a2);
     switch(func){
-//    case SYS_fstat:
-//        break;
+    //    case SYS_fstat:
+    //        break;
     case SYS_exit:
         sys_exit = 1;
         printf("exit(): %d\n", a0);
@@ -439,16 +439,16 @@ u32 syscall(u32 func, u32 a0, u32 a1, u32 a2){
             fputc(mem_rd(a1 + i), stderr);
         }
         rv = i;
-//        printf("write(%x %x %x) : %x\n", a0,a1,a2,rv);
+        //        printf("write(%x %x %x) : %x\n", a0,a1,a2,rv);
         break;
     case SYS_brk:
         if(!a0) heap_ptr = _end_adr;
         else    heap_ptr = a0;
         rv = heap_ptr;
-//        printf("sbrk %x %x %x (%x %x)\n", rv, heap_ptr, _end_adr, a0, a1);
+        //        printf("sbrk %x %x %x (%x %x)\n", rv, heap_ptr, _end_adr, a0, a1);
         break;
-//    case SYS_close:
-//        break;
+        //    case SYS_close:
+        //        break;
     default:
         printf(" ecall %d %x %x %x\n", func, a0, a1, a2);
         break;
@@ -495,7 +495,7 @@ void decode()
 #if 1
         if(ex_stall.q == 0){
             if(optab[i].excyc > 0){ // multi cycle op
-                ex_stall.d = optab[i].excyc;
+                ex_stall.d = optab[i].excyc + 1;
                 pc.d = pc.q;	// pc hold
                 return;
             }
@@ -528,7 +528,7 @@ void decode()
         mwe.d 	 = d_stall.d ? NA : optab[i].mwe;
         rwd[0].d = d_stall.d ? NA : optab[i].rwd;
         alu.d	 = d_stall.d ? __ : optab[i].alu;
-//        if(optab[i].opc == 0x73 && optab[i].func3 == 0){
+        //        if(optab[i].opc == 0x73 && optab[i].func3 == 0){
         if(optab[i].ex == E){
             u32 rv = syscall(Reg_fwd(sys_func),Reg_fwd(10),Reg_fwd(11),Reg_fwd(12));
             Reg_wr(10, rv);
@@ -559,13 +559,37 @@ char mem_rd(int adr)
     return 0;
 }
 
+#define DBG_PUTC    0xffff0004
+
+void IO_write(u32 adr, u16 mmd, u32 wd)
+{
+    u32 mask = 0;
+    switch(mmd){
+    case QI: mask = 0xff;   break;
+    case HI: mask = 0xffff; break;
+    case SI: mask = 0xffffffff; break;
+    }
+    switch(adr){
+    case DBG_PUTC:  fputc(wd & mask, stderr);   break;
+    }
+}
+u32 IO_read(u32 adr, u16 mmd)
+{
+    u32 rd = 0;
+    return rd;
+}
 void RAM_access(int wr)
 {
     int adr = mar.q - (u32)vaddr;
     int stk = mar.q;
     bfd_byte *mem;
 
-    if((adr >= 0 && adr < memsize)		// data/bss area
+    if((mar.q >= IOBEGIN && mar.q <= IOEND)){   // IO area
+        if(wr == WE)
+            IO_write(mar.q, mmd.q, mdw.q);
+        else if(wr == RE)
+            _mdr.d = IO_read(mar.q, mmd.q);
+    } else if((adr >= 0 && adr < memsize)		// data/bss area
             || (stk > stack_top-stacksize && stk <= stack_top)){	// stack area
 
         if(!(adr < memsize)){
@@ -579,21 +603,21 @@ void RAM_access(int wr)
             char *wmd = "";
             switch(mmd.q){
             case SI: adr &= ~3;
-              mask = 0xffffffff;
-              wmd = "SI";
-              mem[adr++] = mdw.q;
-              mem[adr++] = mdw.q>>8;
-              mem[adr++] = mdw.q>>16;
-              mem[adr] = mdw.q>>24;	break;
+            mask = 0xffffffff;
+            wmd = "SI";
+            mem[adr++] = mdw.q;
+            mem[adr++] = mdw.q>>8;
+            mem[adr++] = mdw.q>>16;
+            mem[adr] = mdw.q>>24;	break;
             case HI: adr &= ~1;
-              mask = 0xffff;
-              wmd = "HI";
-              mem[adr++] = mdw.q;
-              mem[adr] = mdw.q>>8;	break;
+            mask = 0xffff;
+            wmd = "HI";
+            mem[adr++] = mdw.q;
+            mem[adr] = mdw.q>>8;	break;
             case QI:
-              mask = 0xff;
-              wmd = "QI";
-              mem[adr] = mdw.q;	break;
+                mask = 0xff;
+                wmd = "QI";
+                mem[adr] = mdw.q;	break;
             }
             if(debfp_mem){
                 char *sym = search_symbol(mar.q);
@@ -614,8 +638,7 @@ void RAM_access(int wr)
             case SHI: adr &= ~1;
             _mdr.d =  mem[adr++];
             _mdr.d |= mem[adr]<<8;
-            _mdr.d = (s32)((s16)_mdr.d);
-            break;
+            _mdr.d = (s32)((s16)_mdr.d); break;
             case QI:
                 _mdr.d =  mem[adr];	break;
             case SQI:
@@ -633,7 +656,6 @@ void exec()
     RAM_access(mwe.q);
     // ALU operation
     switch(alu.q){	// rrd1 op rrd2
-    case CMP:   break;
     case ADD:   rwdat[1].d = rrd1.q + rrd2.q;  break;
     case S2:    rwdat[1].d = rrd2.q;	break;
     case SLT:   rwdat[1].d = (s32)rrd1.q < (s32)rrd2.q;	break;
@@ -708,7 +730,7 @@ extern FILE *ofp;
 void print_regs_label()
 {
     int n;
-    fprintf(ofp, "   cnt     pc:       ir                               mar      mdr      mdw "
+    fprintf(ofp, "   cnt     pc       ir opc      opr                  mar      mdr      mdw "
             "    rrd1     rrd2  alu rwa rwd    rwdat ");
     for(n = 0; n < nview; n++){
         fprintf(ofp, "    %5s", Reg_nam(view_reg[n], I));
@@ -733,19 +755,19 @@ void print_regs()
     u32 Ir;
     char opc[80], dat[80], opr[80];
 
-    sprintf(opr, " ");
+    sprintf(opr, "--");
 
     if(bra_stall.q)     sprintf(opc, "-b-");
     else if(ex_stall.q||d_stall.q)
-        sprintf(opc, "-%c%c-", ex_stall.q?'x':' ', d_stall.q?'d':' ');
+        sprintf(opc, "-%c%c-", ex_stall.q?'x':'-', d_stall.q?'d':'-');
     else 		    disasm(pc1.q, dat, opc, opr, &dsp);
 
     Ir = (ex_stall.q || d_stall.q) ? irh.q : ir.q;
 
     if(isCinsn(Ir)){
-        fprintf(ofp, "%6d %6x:     %04x", insncount, pc1.q, Ir & 0xffff);
+        fprintf(ofp, "%6d %6x     %04x", insncount, pc1.q, Ir & 0xffff);
     }else{
-        fprintf(ofp, "%6d %6x: %08x", insncount, pc1.q, Ir);
+        fprintf(ofp, "%6d %6x %08x", insncount, pc1.q, Ir);
     }
     fprintf(ofp,
             " %-8s %-15s %8x %8x %8s"
@@ -846,7 +868,7 @@ u32 simrun (u32 addr, int steps, int reset)
 u32 simtrace (u32 addr, int steps, int reset)
 {
     int i, c;
-//    debfp = fopen("regtrace.log","w");
+    //    debfp = fopen("regtrace.log","w");
 
     if(reset){
         stat_clear();

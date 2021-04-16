@@ -20,7 +20,7 @@ typedef enum _citype {
 } citype_t;
 
 typedef enum _cregs {
-  CX0=0, CX1, CX2, CRS1, CRS2, CRS1D, CRS2D
+  CX0=0, CX1, CX2, CRS1, CRS2, CRS1D, CRS2D, CRS2I
 } cregs_t;
 
 typedef enum _cimm {
@@ -104,7 +104,7 @@ typedef enum u4_t {
 } citype_t;
 
 typedef enum u4_t {
-  CX_NA, CX0, CX1, CX2, CRS1, CRS2, CRS1D, CRS2D
+  CX_NA, CX0, CX1, CX2, CRS1, CRS2, CRS1D, CRS2D, CRS2I
 } cregs_t;
 
 typedef enum u4_t {
@@ -132,29 +132,30 @@ post = """
   CIMM0:  c_imm = 'h00000000;
   CIMM1:  c_imm = u32_t'({ir[8:7],ir[12:9],2'b0});
   CIMM2:  c_imm = u32_t'({ir[3:2],ir[12],ir[6:4],2'b0});
-  CIMM3:  c_imm = u32_t'(s32_t'({ir[12],ir[6:5],ir[2],ir[11:10],ir[4:3],1'b0}));
+  CIMM3:  c_imm = u32_t'(signed'({ir[12],ir[6:5],ir[2],ir[11:10],ir[4:3],1'b0}));
   CIMM4:  c_imm = u32_t'({ir[12],ir[6:2]});
-  CIMM5:  c_imm = u32_t'(s32_t'({ir[12],ir[8],ir[10:9],ir[6],ir[7],ir[2],ir[5:3],1'b0}));
-  CIMM6:  c_imm = u32_t'(s32_t'({ir[12],ir[6:2],12'b0}));
-  CIMM7:  c_imm = u32_t'(s32_t'({ir[12],ir[4:3],ir[5],ir[2],ir[6],4'b0}));
+  CIMM5:  c_imm = u32_t'(signed'({ir[12],ir[8],ir[10:9],ir[6],ir[7],ir[2],ir[11],ir[5:3],1'b0}));
+  CIMM6:  c_imm = u32_t'(signed'({ir[12],ir[6:2],12'b0}));
+  CIMM7:  c_imm = u32_t'(signed'({ir[12],ir[4:3],ir[5],ir[2],ir[6],4'b0}));
   CIMM8:  c_imm = u32_t'({ir[5],ir[12:10],ir[6],2'b0});
-  CIMM9:  c_imm = u32_t'({ir[10:7],ir[12],ir[5],ir[6],2'b0});
-  CIMM10: c_imm = u32_t'(s32_t'({ir[12],ir[6:2]}));
+  CIMM9:  c_imm = u32_t'({ir[10:7],ir[12],ir[11],ir[5],ir[6],2'b0});
+  CIMM10: c_imm = u32_t'(signed'({ir[12],ir[6:2]}));
   default: c_imm = 'h00000000;
   endcase
 
   case (c_dec.rs1)
   CX0:   exir[19:15] = 5'h0;
   CX2:   exir[19:15] = 5'h2;
-  CRS1D: exir[19:15] = {2'h2,ir[9:7]};
+  CRS1D: exir[19:15] = {2'h1,ir[9:7]};
   CRS1:  exir[19:15] = ir[11:7];
   default: exir[19:15] = 5'h0;
   endcase
 
   case (c_dec.rs2)
   CX0:   exir[24:20] = 5'h0;
-  CRS2D: exir[24:20] = {2'h2,ir[4:2]};
+  CRS2D: exir[24:20] = {2'h1,ir[4:2]};
   CRS2:  exir[24:20] = ir[6:2];
+  CRS2I: exir[24:20] = c_imm[4:0];
   default: exir[24:20] = 5'h0;
   endcase
 
@@ -163,8 +164,8 @@ post = """
   CX1:   exir[11:7] = 5'h1;
   CX2:   exir[11:7] = 5'h2;
   CRS1:  exir[11:7] = ir[11:7];
-  CRS1D: exir[11:7] = {2'h2,ir[9:7]};
-  CRS2D: exir[11:7] = {2'h2,ir[4:2]};
+  CRS1D: exir[11:7] = {2'h1,ir[9:7]};
+  CRS2D: exir[11:7] = {2'h1,ir[4:2]};
   CRS2:  exir[11:7] = ir[11:7];
   default: exir[11:7] = 5'h0;
   endcase

@@ -230,6 +230,8 @@ u32 get_symbol_addr(char *symbol)
     return strtoul(symbol, NULL, 16);
 }
 
+#define RAMSIZE 65536   // Min RAM size
+
 static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UNUSED)
 {
     bfd_byte *data = 0;
@@ -241,6 +243,7 @@ static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UN
 //    printf (" section %s:\n", section->name);
     if(vaddr == (bfd_vma)-1) vaddr = section->vma;
     memsize = section->vma - vaddr + datasize;
+    memsize = memsize > RAMSIZE ? memsize : RAMSIZE;
     memory = (bfd_byte*) realloc(memory, memsize);
     data = &memory[section->vma-vaddr];
     if ((section->flags & SEC_HAS_CONTENTS) == 0) return;

@@ -31,13 +31,13 @@ typedef enum _mode {
 } wmode_t;
 
 typedef enum _alu {
-  A_NA, CMP, S2, ADD, SLT, SLTU, XOR, OR, AND, SLL, SRL, SRA, SUB,
+  A_NA, S2, ADD, SLT, SLTU, XOR, OR, AND, SLL, SRL, SRA, SUB,
   MUL, MULH, MULHSU, MULHU, DIV, DIVU, REM, REMU,
   FLD, FST, FMADD, FMSUB, FADD, FSUB, FMUL, FDIV, FSQRT, FSGN, FMIN, FMAX, FCVT
 } alu_t;
 
 const char* _alu_nam[] = {
-  "--",  "CMP", "S2", "ADD", "SLT",  "SLTU", "XOR", "OR",   "AND", "SLL", "SRL", "SRA", "SUB",
+  "--", "S2", "ADD", "SLT",  "SLTU", "XOR", "OR",   "AND", "SLL", "SRL", "SRA", "SUB",
   "MUL", "MULH","MHSU", "MHU",  "DIV", "DIVU", "REM", "REMU",
   "FLD", "FST", "FMAD", "FMSB", "FADD","FSUB", "FMUL","FDIV", "FSQR", "FSGN", "FMIN", "FMAX", "FCVT"
 };
@@ -160,8 +160,8 @@ typedef enum u3_t {
   SI, HI, QI, SHI, SQI
 } wmode_t;
 
-typedef enum u8_t {
-  A_NA, CMP, S2, ADD, SLT, SLTU, XOR, OR, AND, SLL, SRL, SRA, SUB,
+typedef enum u6_t {
+  A_NA, S2, ADD, SLT, SLTU, XOR, OR, AND, SLL, SRL, SRA, SUB,
   MUL, MULH, MULHSU, MULHU, DIV, DIVU, REM, REMU,
   FLD, FST, FMADD, FMSUB, FADD, FSUB, FMUL, FDIV, FSQRT, FSGN, FMIN, FMAX, FCVT
 } alu_t;
