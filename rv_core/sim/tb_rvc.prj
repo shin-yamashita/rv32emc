@@ -1,0 +1,15 @@
+
+
+verilog work ../hdl/dpram_h.v
+sv work ../hdl/pkg_rv_decode.sv
+sv work ../hdl/rv_alu.sv
+sv work ../hdl/rv_muldiv.sv
+sv work ../hdl/rv_regf.sv
+sv work ../hdl/rv_core.sv
+sv work ../hdl/dpram.sv
+sv work ./rvc.sv
+
+verilog work  /opt/Xilinx/Vivado/2019.2/data/verilog/src/glbl.v
+
+sv work tb_rvc.sv
+

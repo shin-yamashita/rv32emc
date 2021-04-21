@@ -1,0 +1,9 @@
+*.log
+*.jou
+*.mem
+*.out
+*.rvsim
+*.rpt
+sim/*.wdb
+sim/xsim.dir/
+syn/rev/
