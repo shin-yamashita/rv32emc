@@ -97,15 +97,20 @@ GFN mul(GFN a, GFN b)	// a * b
   return x;
 }
 
+int mod255(int x)
+{
+  return x >= 255 ? x - 255 : x;
+}
+
 GFN vmul(GFN a, GFN b)	// a * b
 {
   if(!a || !b) return 0;
-  return gexp[(glog[a] + glog[b]) % 255];
+  return gexp[mod255(glog[a] + glog[b])];
 }
 
 GFN vinv(GFN a)
 {
-  return gexp[(255-glog[a])%255];
+  return gexp[mod255(255-glog[a])];
 }
 
 GFN vdiv(GFN a, GFN b)	// a / b
@@ -126,7 +131,8 @@ GFN alpham1(GFN x)	// alpha^-1 x
 
 GFN alphan(GFN x, int n)	// alpha^n x
 {
-  return vmul(x, gexp[n%255]);
+  return vmul(x, gexp[mod255(n)]);
+//  return vmul(x, gexp[n%255]);
 }
 
 GFN sq(GFN a)
@@ -180,6 +186,13 @@ Poly_t *p_resize(Poly_t *y, int n)	// resize
   return y;
 }
 
+Poly_t *p_cpy(Poly_t *a, Poly_t *y)
+{
+  y = p_resize(y, a->n);
+  memcpy(y->x, a->x, a->n+1);
+  return y;
+}
+
 GFN elem(Poly_t *a, int i)
 {
   return a->n < i ? 0 : a->x[i];
@@ -189,41 +202,41 @@ Poly_t *p_add(Poly_t *a, Poly_t *b, Poly_t *y)	// a + b => y
 {
   int i;
   int n = a->n > b->n ? a->n : b->n;
-  y = p_resize(y, n);
+  static Poly_t *tmp = NULL;
+
+  tmp = p_resize(tmp, n);
   for(i = 0; i <= n; i++){
-    y->x[i] = elem(a, i) ^ elem(b, i);
+    tmp->x[i] = elem(a, i) ^ elem(b, i);
   }
-  return y;
+  return p_cpy(tmp, y);
 }
 
 Poly_t *p_mul(Poly_t *a, Poly_t *b, Poly_t *y)  // a * b => y
 {
   int i, j;
   int n = a->n + b->n;
-  y = p_resize(y, n); 
+  static Poly_t *tmp = NULL;
+
+  tmp = p_resize(tmp, n); 
   for(i = 0; i <= a->n; i++){
     for(j = 0; j <= b->n; j++){
-      y->x[i+j] ^= vmul(elem(a,i), elem(b,j));
+      tmp->x[i+j] ^= vmul(elem(a,i), elem(b,j));
     }
   }
-  return y;
+  return p_cpy(tmp, y);
 }
 
 Poly_t *p_mul_xn(Poly_t *a, GFN x, int n, Poly_t *y)  // a * s x^n => y
 {
   int i;
   int m = a->n + n;
-  y = p_resize(y, m);
-  for(i = 0; i <= a->n; i++)
-    y->x[i+n] = vmul(a->x[i], x);
-  return y;
-}
+  static Poly_t *tmp = NULL;
 
-Poly_t *p_cpy(Poly_t *a, Poly_t *y)
-{
-  y = p_resize(y, a->n);
-  memcpy(y->x, a->x, a->n+1);
-  return y;
+  tmp = p_resize(tmp, m);
+  for(i = 0; i <= a->n; i++)
+    tmp->x[i+n] = vmul(a->x[i], x);
+
+  return p_cpy(tmp, y);
 }
 
 Poly_t *p_reduc(Poly_t *a)
@@ -248,7 +261,7 @@ Poly_t *p_mod(Poly_t *a, Poly_t *b, Poly_t *q, Poly_t *r)	// a / b => q ... r
     qe = vdiv(r->x[n], b->x[m]);
     xr = p_mul_xn(b, qe, n-m, xr);
     if(q) q->x[n-m] = qe;
-    r = p_add(r, xr, NULL);
+    r = p_add(r, xr, r);
     n--;
   }
   return r;
@@ -265,12 +278,12 @@ Poly_t *encode(Poly_t *info, int npar)
   g->x[1] = 1;	// x-a^0
   for(i = 0; i < npar; i++){
     g->x[0] = gexp[i];	// x-a^i
-    G = p_mul(G, g, NULL);
+    G = p_mul(G, g, G);
   }
   for(i = 0; i <= info->n; i++){
     code->x[i+npar] = info->x[i];
   }
-  r = p_mod(code, G, NULL, NULL);
+  r = p_mod(code, G, NULL, r);
   for(i = 0; i < npar; i++){
     code->x[i] = r->x[i];
   }
@@ -325,6 +338,7 @@ int decode(Poly_t *s, errdata_t *edat)
   Poly_t *r   = NULL;
   Poly_t *ea  = NULL;
   Poly_t *q   = p_new(s->n+1);
+  Poly_t *b   = p_new(0);
   Poly_t *sgm = p_new(0);
   Poly_t *sgm0 = p_new(0);
   Poly_t *tmp = p_new(0);
@@ -336,7 +350,8 @@ int decode(Poly_t *s, errdata_t *edat)
     r = p_mod(A, B, q, NULL);
 
     tmp = sgm;
-    sgm = p_add(sgm0, p_mul(sgm, q, NULL), NULL);
+    b = p_mul(sgm, q, b);
+    sgm = p_add(sgm0, b, sgm0);
     sgm = p_reduc(sgm);
     sgm0 = tmp;
 
