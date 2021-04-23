@@ -6,9 +6,6 @@
 `timescale 1ns/1ns
 `include "rv_types.svh"
 
-//`include "rv_exp_cinsn.sv"	// C-insn expand table
-//`include "rv_dec_insn.sv"	// insn decode table 
-
 import  pkg_rv_decode::*;
 
 module rv_core #(parameter Nregs = 16,
@@ -62,7 +59,6 @@ function logic [32:0] bra_dest(logic bra_stall, f_insn_t f_dec, u3_t func3, u32_
   end else begin
     pc_nxt = pc + pcinc;
   end
-//  pc_nxt[0] = bra;	// lsb : bra_stall.d
   return {bra,pc_nxt};        // bra_stall, bra_dest
 endfunction
 
@@ -123,9 +119,6 @@ assign d_re = 1'b1;
   u16_t i_dr1;
   assign ira = i_dr;
   assign i_adr = pca;
-
-//  assign ex_stall = 'd0;
-//  assign d_stall = 1'b0;
 
   always_ff @ (posedge clk) begin
     if(!xreset) begin
@@ -260,8 +253,7 @@ assign d_re = 1'b1;
 
 //---- wback ----
   always_comb begin
-  //  awd = rwa[2];	// write reg address
-    case(rwd[2])
+    case(rwd[2])	// write reg address
     ALU: begin
          we = 1'b1;
          wd = rwdat[2];
@@ -277,7 +269,6 @@ assign d_re = 1'b1;
     endcase
   end
 
-
   always_ff @ (posedge clk) begin
     bra_stall <= bra_stall ? 1'b0 : bstall;
     if(!xreset)
@@ -287,26 +278,25 @@ assign d_re = 1'b1;
     else if(f_dec.excyc > 0)
       ex_stall <= 1'b1;
    
-    d_stall <= (ds1 | ds2);	// && !bra_stall;
+    d_stall <= (ds1 | ds2);
     if(f_dec.excyc == 0 || cmpl)
       pc  <= pca;
+
     pc1 <= pc;
-//   if(!ex_stall) begin
-      rwdat[1] <= rwdat[0];
-      rwdat[2] <= rwdat[1];
-      rwd[1] <= rwd[0];
-      rwd[2] <= rwd[1];
-      rwa[1] <= rwa[0];
-      rwa[2] <= rwa[1];
-      mmd1[0] <= mmd;
-      mmd1[1] <= mmd1[0];
-      mwe1[0] <= mwe;
-      mwe1[1] <= mwe1[0];
-      mar1[0] <= mar[1:0];
-      mar1[1] <= mar1[0];
-//    end
+    rwdat[1] <= rwdat[0];
+    rwdat[2] <= rwdat[1];
+    rwd[1] <= rwd[0];
+    rwd[2] <= rwd[1];
+    rwa[1] <= rwa[0];
+    rwa[2] <= rwa[1];
+    mmd1[0] <= mmd;
+    mmd1[1] <= mmd1[0];
+    mwe1[0] <= mwe;
+    mwe1[1] <= mwe1[0];
+    mar1[0] <= mar[1:0];
+    mar1[1] <= mar1[0];
     mdr1 <= d_dr;
-//    if(!(bra_stall | ex_stall | busy)) begin
+
     if(!(bra_stall)) begin
       if(!ex_stall) begin
         rrd1 <= rrd1a;
