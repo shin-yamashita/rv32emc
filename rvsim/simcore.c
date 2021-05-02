@@ -2,7 +2,7 @@
 // simcore.c
 // rvsim simulation core
 //
-//#include "config.h"
+// 2021/4/24 add csr access
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +14,7 @@
 #include "simcore.h"
 #include "optab.h"
 #include "c-optab.h"
+#include "csrtab.h"
 
 #include "consio.h"
 
@@ -50,6 +51,8 @@ static reg32 rrd1, rrd2;
 static regint rwa[3], rwd[3];	// reg-wadr, reg-wr-data
 static reg32 rwdat[3];	// alu out data
 static regalu alu;	// alu mode
+
+static u32 csr_rd;	// CSR read data
 
 static reg16 bra_stall = {0,0};	// branch stall
 static reg16 ex_stall = {0,0};	// exec stall
@@ -240,6 +243,16 @@ int optab_search(u32 ir)
     return i;
 }
 
+int csrtab_search(u16 csr)
+{
+    int i;
+    for(i = 0; i < Ncsr; i++){
+        //printf("%8x/%x,",ir,optab[i].opc);
+        if(csrtab[i].csr == csr) break;
+    }
+    if(i == Ncsr) return -1;
+    return i;
+}
 struct {
     char *mnemonic;
     u32 exir;
@@ -352,11 +365,25 @@ int disasm(int adr, char *dat, char *opc, char *opr, int *dsp)
         //        sprintf(opc, "%-6s", optab[i].mnemonic);
         *dsp = -1;
         switch(optab[i].type){
-        case type_R:  if(optab[i].rrd2 == SHAMT) sprintf(opr, "%s,%s,%d", Rd, Rs1, iRs2(ir));
-        else sprintf(opr, "%s,%s,%s", Rd, Rs1, Rs2);
+        case type_R:  if(optab[i].rrd2 == SHAMT)
+                        sprintf(opr, "%s,%s,%d", Rd, Rs1, iRs2(ir));
+                      else
+                        sprintf(opr, "%s,%s,%s", Rd, Rs1, Rs2);
         break;
         case type_RF: sprintf(opr, "%s,%s,%s", Rd, Rs1, Rs2);	break;
-        case type_I:  sprintf(opr, "%s,%s,%d", Rd, Rs1, imm);	break;
+
+        case type_I:  if(optab[i].ex == C){
+                        char *csrnam;
+                        i = csrtab_search(imm & 0xfff);
+                        if(i < 0) csrnam = "???";
+                        else csrnam = csrtab[i].name;
+                        if(optab[i].rrd1 == SHAMT)
+                          sprintf(opr, "%s,%02x,%s", Rd, iRs1(ir), csrnam);
+                        else
+                          sprintf(opr, "%s,%s,%s", Rd, Rs1, csrnam);
+                      }else{
+                        sprintf(opr, "%s,%s,%d", Rd, Rs1, imm);
+                      } break;
         case type_S:  sprintf(opr, "%s,%s,%d", Rs1, Rs2, imm);	break;
         case type_SB: sprintf(opr, "%s,%s,(%x)", Rs1, Rs2, adr+imm); *dsp = adr + imm;	break;
         case type_U:  sprintf(opr, "%s,%d", Rd, imm);	break;
@@ -456,6 +483,24 @@ u32 syscall(u32 func, u32 a0, u32 a1, u32 a2){
     return rv;
 }
 
+u32 csr_op(u32 func3, u32 csr_adr, u32 rrd1, const char *rd)
+{
+  char *mn = "xxx", *csr = "???";
+  switch(func3){
+  case 1: mn = "csrrw"; break;	// csrrw
+  case 2: mn = "csrrs"; break;	// csrrs
+  case 3: mn = "csrrc"; break;	// csrrc
+  case 5: mn = "csrrwi"; break;	// csrrwi
+  case 6: mn = "csrrsi"; break;	// csrrsi
+  case 7: mn = "csrrci"; break;	// csrrci
+  default: break;
+  }
+  int i = csrtab_search(csr_adr);
+  if(i >= 0) csr = csrtab[i].name;
+  printf("*** %s %s, %x, %03x(%s) \n", mn, rd, rrd1, csr_adr, csr);
+  return 0;
+}
+
 void decode()
 {
     int i, pcinc;
@@ -507,13 +552,15 @@ void decode()
 #endif
         // rrd1
         rrd1.d = (optab[i].rrd1 == PC) ? pc1.q :
-                (optab[i].rrd1 == X0) ? 0 :
+                 (optab[i].rrd1 == X0) ? 0 :
+                 (optab[i].rrd1 == SHAMT) ? iRs1(IR) :
                         Reg_fwd(iRs1(IR));
         // rrd2
         rrd2.d = (optab[i].rrd2 == IMM) ? imm :
-                (optab[i].rrd2 == INC) ? pc1.q + pcinc :
-                        (optab[i].rrd2 == SHAMT) ? iRs2(IR) :
-                                Reg_fwd(iRs2(IR));
+                 (optab[i].rrd2 == INC) ? pc1.q + pcinc :
+                 (optab[i].rrd2 == SHAMT) ? iRs2(IR) :
+                        Reg_fwd(iRs2(IR));
+
         // forward logic here!
         // mar
         mar.d = d_stall.d ? NA : (optab[i].mar == RS1 ? rrd1.d + imm : 0x0);
@@ -532,6 +579,8 @@ void decode()
         if(optab[i].ex == E){
             u32 rv = syscall(Reg_fwd(sys_func),Reg_fwd(10),Reg_fwd(11),Reg_fwd(12));
             Reg_wr(10, rv);
+        }else if(optab[i].ex == C){	// CSR access
+            csr_op(optab[i].func3, imm & 0xfff, rrd1.d, Reg_nam(iRd(IR), C));
         }
     }
 
@@ -675,6 +724,7 @@ void exec()
     case DIVU:  rwdat[1].d = rrd1.q / rrd2.q; 	break;
     case REM:   rwdat[1].d = (s32)rrd1.q % (s32)rrd2.q;	break;
     case REMU:  rwdat[1].d = rrd1.q % rrd2.q;	break;
+    case CSR:   rwdat[1].d = csr_rd;	break;
     case FLD:
     case FST:
     case FMADD:

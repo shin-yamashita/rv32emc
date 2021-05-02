@@ -24,6 +24,9 @@ optab.h:	RV-insn.csv
 c-optab.h:	c-insn.csv
 	./c-insntab.py $^ > c-optab.h
 
+csrtab.h:	CSR.csv
+	./csrtab.py $^ > $@
+
 install:	rvsim
 	cp $^ $(DEST)/bin/
 
@@ -40,5 +43,5 @@ depend: $(SRCS)
 
 rvsim.o: rvsim.c monlib.h simcore.h consio.h
 monlib.o: monlib.c monlib.h
-simcore.o: simcore.c simcore.h optab.h c-optab.h consio.h syscall.h
+simcore.o: simcore.c simcore.h optab.h c-optab.h consio.h syscall.h csrtab.h
 consio.o: consio.c consio.h

@@ -32,7 +32,7 @@ typedef enum _mode {
 
 typedef enum _alu {
   A_NA, S2, ADD, SLT, SLTU, XOR, OR, AND, SLL, SRL, SRA, SUB,
-  MUL, MULH, MULHSU, MULHU, DIV, DIVU, REM, REMU,
+  MUL, MULH, MULHSU, MULHU, DIV, DIVU, REM, REMU, CSR,
   FLD, FST, FMADD, FMSUB, FADD, FSUB, FMUL, FDIV, FSQRT, FSGN, FMIN, FMAX, FCVT
 } alu_t;
 
@@ -161,9 +161,9 @@ typedef enum u3_t {
 } wmode_t;
 
 typedef enum u6_t {
-  A_NA, S2, ADD, SLT, SLTU, XOR, OR, AND, SLL, SRL, SRA, SUB,
-  MUL, MULH, MULHSU, MULHU, DIV, DIVU, REM, REMU,
-  FLD, FST, FMADD, FMSUB, FADD, FSUB, FMUL, FDIV, FSQRT, FSGN, FMIN, FMAX, FCVT
+  A_NA, S2, ADD, SLT,  SLTU, XOR, OR, AND,  SLL, SRL, SRA, SUB,
+  MUL, MULH, MULHSU, MULHU,  DIV, DIVU, REM, REMU,
+  CSR, FLD, FST, FMADD,  FMSUB, FADD, FSUB, FMUL,  FDIV, FSQRT, FSGN, FMIN,  FMAX, FCVT
 } alu_t;
 
 typedef enum u4_t {
