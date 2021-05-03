@@ -8,7 +8,8 @@ function chkerr
  fi
 }
 
-prj=dec
+#prj=dec
+prj=rvc
 if [ $# = 1 ] ; then
  prj=$1
 fi

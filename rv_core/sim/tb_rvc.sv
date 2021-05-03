@@ -6,6 +6,7 @@
 `include "rv_types.svh"
 
 parameter SYS_exit = 93;
+parameter debug = 0;
 
 module tb_rvc (
   input  u8_t  pin,
@@ -28,7 +29,7 @@ module tb_rvc (
 
  u32_t ir, rwdat;
 
- rvc u_rvc (.clk, .xreset, .pin, .pout);
+ rvc #(.debug(debug)) u_rvc (.clk, .xreset, .pin, .pout);
 
 // bit i_dr_match, d_dr_match;
 // assign i_dr_match = u_rvc.i_dr == u_rvc.i_dr_b;

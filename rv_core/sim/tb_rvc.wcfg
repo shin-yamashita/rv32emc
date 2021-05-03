@@ -18,15 +18,18 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="558959fs"></ZoomEndTime>
-      <Cursor1Time time="180224968fs"></Cursor1Time>
+      <ZoomStartTime time="28116105fs"></ZoomStartTime>
+      <ZoomEndTime time="28252779fs"></ZoomEndTime>
+      <Cursor1Time time="28195701fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="129"></NameColumnWidth>
-      <ValueColumnWidth column_width="65"></ValueColumnWidth>
+      <NameColumnWidth column_width="122"></NameColumnWidth>
+      <ValueColumnWidth column_width="70"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="93" />
+   <WVObjectSize size="108" />
+   <wave_markers>
+      <marker label="" time="28195701" />
+   </wave_markers>
    <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/clk">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -226,6 +229,15 @@
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/rwdat">
       <obj_property name="ElementShortName">rwdat[0:2][31:0]</obj_property>
       <obj_property name="ObjectShortName">rwdat[0:2][31:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/rwdat1">
+      <obj_property name="ElementShortName">rwdat1[31:0]</obj_property>
+      <obj_property name="ObjectShortName">rwdat1[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/rwdatx">
+      <obj_property name="ElementShortName">rwdatx[31:0]</obj_property>
+      <obj_property name="ObjectShortName">rwdatx[31:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/alu">
       <obj_property name="ElementShortName">alu[5:0]</obj_property>
@@ -242,6 +254,15 @@
    <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/ex_stall">
       <obj_property name="ElementShortName">ex_stall</obj_property>
       <obj_property name="ObjectShortName">ex_stall</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/mulop">
+      <obj_property name="ElementShortName">mulop</obj_property>
+      <obj_property name="ObjectShortName">mulop</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/rwdx">
+      <obj_property name="ElementShortName">rwdx[0:2]</obj_property>
+      <obj_property name="ObjectShortName">rwdx[0:2]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/pcinc">
       <obj_property name="ElementShortName">pcinc[3:0]</obj_property>
@@ -294,6 +315,50 @@
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/Nregs">
       <obj_property name="ElementShortName">Nregs[31:0]</obj_property>
       <obj_property name="ObjectShortName">Nregs[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider131" type="divider">
+      <obj_property name="label">alu</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/xreset">
+      <obj_property name="ElementShortName">xreset</obj_property>
+      <obj_property name="ObjectShortName">xreset</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/rdy">
+      <obj_property name="ElementShortName">rdy</obj_property>
+      <obj_property name="ObjectShortName">rdy</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/alu">
+      <obj_property name="ElementShortName">alu[5:0]</obj_property>
+      <obj_property name="ObjectShortName">alu[5:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/rrd1">
+      <obj_property name="ElementShortName">rrd1[31:0]</obj_property>
+      <obj_property name="ObjectShortName">rrd1[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/rrd2">
+      <obj_property name="ElementShortName">rrd2[31:0]</obj_property>
+      <obj_property name="ObjectShortName">rrd2[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/rwdat">
+      <obj_property name="ElementShortName">rwdat[31:0]</obj_property>
+      <obj_property name="ObjectShortName">rwdat[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/cmpl">
+      <obj_property name="ElementShortName">cmpl</obj_property>
+      <obj_property name="ObjectShortName">cmpl</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/mulop">
+      <obj_property name="ElementShortName">mulop</obj_property>
+      <obj_property name="ObjectShortName">mulop</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/rwd">
+      <obj_property name="ElementShortName">rwd[31:0]</obj_property>
+      <obj_property name="ObjectShortName">rwd[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider69" type="divider">
       <obj_property name="label">muldiv</obj_property>
