@@ -226,6 +226,7 @@ int getchar(void)
 #define FLG_LEFT	1
 #define FLG_CAPS	2
 #define FLG_PAD0	4
+#define FLG_UNSGN	8
 
 static int print_str(FILE *fp, const char *str, int digit, int flg)
 {
@@ -290,16 +291,19 @@ static int print_dec(FILE *fp, int data, int digit, int flg)
 {
 	int i, c, l = 0, sgn = 0, cnt = 0;
 	char buf[11];
+	uint32_t udata = data;
 
-	if(data < 0){
-		sgn = 1;
-		data = -data;
+	if(!(flg & FLG_UNSGN)){
+		if(data < 0){
+			sgn = 1;
+			udata = -data;
+		}
 	}
 	for(i = 10 ; i > 0 ; i--){
-		buf[i] = (data % 10) + '0';
-		data /= 10;
+		buf[i] = (udata % 10) + '0';
+		udata /= 10;
 		l++;
-		if(!data){
+		if(!udata){
 			if(sgn){
 				if(flg & FLG_PAD0){
 					if(fputc('-', fp) == EOF) return EOF;
@@ -444,6 +448,10 @@ int vfprintf(FILE *fp, const char *fmt, va_list ap)
 			case 'd':
 			    d = va_arg(ap, int);
 			    rv = print_dec(fp, d, digit, flg);
+			    break;
+			case 'u':
+			    d = va_arg(ap, int);
+			    rv = print_dec(fp, d, digit, flg|FLG_UNSGN);
 			    break;
 			case 'f':
 			    f.u = va_arg(ap, int);
