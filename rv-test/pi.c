@@ -181,7 +181,8 @@ int calc_pi3(int n, uint32_t *at1, uint32_t *at2, uint32_t *at3, uint32_t *at4, 
   return i/2;
 }
 
-#define N 113
+//#define N 113
+#define N 57
 
 int main()
 {

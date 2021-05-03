@@ -11,7 +11,6 @@ vpath	%.s	./startup
 #ARCH = RV32IMC
 ARCH = RV32EMC
 
-
 ifeq ($(ARCH), RV32I)
  PREFIX  = /opt/riscv/bin/riscv64-unknown-elf-
  PREFIX32  = /opt/riscv/bin/riscv32-unknown-elf-
@@ -51,14 +50,21 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x -nostdlib -L./lib
 # -L$(LDSCRIPT)
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= hello.c fptest.c gauss.c pi.c ecc.c endian.c
+SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c
+# endian.c
 #fplib.c sr_test.c
 
 PRGS    = $(SRCS:.c=)
 OBJS    = $(SRCS:.c=.o)
 DEPS	= $(SRCS:.c=.dep) crt0.dep
+MEM	= $(SRCS:.c=.mem)
+REF	= $(SRCS:.c=.ref)
 
 all:	$(PRGS)
+
+mem:	$(MEM)
+
+ref:	$(REF)
 
 list:	$(SRCS:.c=.lst)
 
@@ -81,6 +87,9 @@ list:	$(SRCS:.c=.lst)
 %:	crt0.o %.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
+%.ref:	%
+	rvsim -r $< 2> $@
+
 %.lst:	%
 	$(OBJDUMP) -D -S -h $< > $@
 #	$(OBJDUMP) -D -h $< > $@
@@ -93,6 +102,9 @@ list:	$(SRCS:.c=.lst)
 
 %.o:	%.S
 	$(CC) $(CFLAGS) -c $<
+
+install:	$(MEM) $(REF)
+	cp -p $^ ../rv_core/sim/
 
 clean:
 	@rm -f $(PRGS) *.o core* a.out *~ \#*\# *.map *.lst *.ref *.gcc *.out *.bin *.mot *.mem
@@ -114,10 +126,9 @@ depend:	$(DEPS)
 
 crt0.o: crt0.S
 ecc.o: ecc.c include/stdio.h include/types.h include/stdint.h
-endian.o: endian.c include/stdint.h include/stdio.h include/types.h
 fptest.o: fptest.c include/stdio.h include/types.h include/ulib.h \
  include/uartdrv.h
 gauss.o: gauss.c include/stdio.h include/types.h
-hello.o: hello.c include/stdio.h include/types.h
+hello.o: hello.c include/stdio.h include/types.h include/stdint.h
+mul.o: mul.c include/stdio.h include/types.h include/stdint.h
 pi.o: pi.c include/stdio.h include/types.h include/stdint.h
-sr_test.o: sr_test.c include/stdio.h include/types.h include/stdint.h

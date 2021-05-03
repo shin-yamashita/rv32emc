@@ -79,7 +79,8 @@ int main()
 	int i, ig;
 	float g;
 	float rms;
-	int N = 10000;
+//	int N = 10000;
+	int N = 800;
 	int hist[120], *hp = &hist[60];
 
 	for(i = 0; i < 120; i++) hist[i] = 0;
