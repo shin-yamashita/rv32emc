@@ -717,9 +717,9 @@ void exec()
     case SRA:   rwdat[1].d = (s32)rrd1.q >> (rrd2.q & 0x3f);	break;
     case SUB:   rwdat[1].d = rrd1.q - rrd2.q;	break;
     case MUL:   rwdat[1].d = rrd1.q * rrd2.q;	break;
-    case MULH:  rwdat[1].d = ((s64)rrd1.q * rrd2.q) >> 32;	break;
-    case MULHSU: rwdat[1].d = ((s64)rrd1.q * (s32)rrd2.q) >> 32;	break;
-    case MULHU:  rwdat[1].d = ((u64)rrd1.q * rrd2.q) >> 32;	break;
+    case MULH:  rwdat[1].d =  ((s64)((s32)rrd1.q) * (s32)rrd2.q) >> 32;	break;
+    case MULHSU: rwdat[1].d = ((s64)((s32)rrd1.q) * rrd2.q) >> 32;	break;
+    case MULHU:  rwdat[1].d = ((u64)rrd1.q * (u32)rrd2.q) >> 32;	break;
     case DIV:   rwdat[1].d = (s32)rrd1.q / (s32)rrd2.q;	break;
     case DIVU:  rwdat[1].d = rrd1.q / rrd2.q; 	break;
     case REM:   rwdat[1].d = (s32)rrd1.q % (s32)rrd2.q;	break;
