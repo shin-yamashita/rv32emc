@@ -18,14 +18,18 @@ module rv_alu (
   input  u32_t rrd1,
   input  u32_t rrd2,
   output u32_t rwdat,
-  output logic cmpl
+  output u32_t rwdatx,
+  output logic cmpl,
+  output logic mulop
   );
 
   u32_t rwd;
   rv_muldiv u_rv_muldiv(	// multiply / divide unit
-    .clk(clk), .xreset(xreset), .rdy(rdy),
-    .alu(alu), .rrd1(rrd1), .rrd2(rrd2),
-    .rwdat(rwd), .cmpl(cmpl)
+    .clk(clk),   .xreset(xreset), .rdy(rdy),
+    .alu(alu),
+    .rrd1(rrd1), .rrd2(rrd2),
+    .rwdat(rwd), .rwdatx(rwdatx),
+    .cmpl(cmpl), .mulop(mulop)
   );
 
   always_comb begin

@@ -17,7 +17,9 @@ module rv_muldiv (
   input  u32_t rrd1,
   input  u32_t rrd2,
   output u32_t rwdat,
-  output logic cmpl
+  output u32_t rwdatx,
+  output logic cmpl,
+  output logic mulop
   );
 
   typedef struct {
@@ -28,20 +30,58 @@ module rv_muldiv (
   logic sgn, msgn;
   div_t Q;
 
+  alu_t alu1;
   u64_t umul;
   s64_t smul, sumul;
 
+  s17_t al, ah, bl, bh;	// rrd1:a rrd2:b
+  s16_t sah, sbh;
+
+  assign al = {1'b0,rrd1[15:0]};
+  assign ah = {1'b0,rrd1[31:16]};
+  assign bl = {1'b0,rrd2[15:0]};
+  assign bh = {1'b0,rrd2[31:16]};
+  assign sah = rrd1[31:16];
+  assign sbh = rrd2[31:16];
+
+  s33_t xl, xm, sxm, xh, sxh, suxh;
+  s34_t suxm;
+
+//  s64_t rsmul, rsumul;
+
+  always_ff@(posedge clk) begin
+    alu1 <= alu;
+    xl   <= al * bl;
+    xm   <= bh * al + ah * bl;
+    sxm  <= sbh * al + sah * bl;
+    suxm <= bh * al + sah * bl;
+    xh   <= ah * bh;
+    sxh  <= sah * sbh;
+    suxh <= sah * bh;
+//    rsmul  <= 64'(signed'(rrd1) * signed'(rrd2));        // s32*s32-> s64
+//    rsumul <= 64'(signed'(rrd1) * signed'({1'b0,rrd2})); // s32*u32-> s64
+//    if(smul != rsmul) $display("s  ref: %d dut: %d", rsmul, smul);
+//    if(sumul != rsumul) $display("su ref: %d dut: %d", rsumul, sumul);
+  end
+
+  assign umul  = u64_t'(xl) + (xm << 16) + (xh << 32);
+  assign smul  = xl + (sxm <<< 16)  + (sxh <<< 32);
+  assign sumul = xl + (suxm <<< 16) + (suxh <<< 32);
+
   always_comb begin
-    umul  <= rrd1 * rrd2;	// u32*u32-> u64
-    smul  <= 64'(signed'(rrd1) * signed'(rrd2));	// s32*s32-> s64
-    sumul <= 64'(signed'(rrd1) * signed'({1'b0,rrd2}));	// s32*u32-> s64
+    case(alu)	// rrd1 op rrd2
+    MUL,MULH,MULHSU,MULHU: mulop = 1'b1;
+    default: mulop = 1'b0;
+    endcase
+    case(alu1)	// pipe'd mulop out
+    MUL:    rwdatx = umul[31:0];	// u32*u32 & 0xffffffff
+    MULH:   rwdatx = smul[63:32];	// s32*s32 >> 32
+    MULHSU: rwdatx = sumul[63:32];	// s32*u32 >> 32
+    MULHU:  rwdatx = umul[63:32];	// u32*u32 >> 32
+    default: rwdatx = 'd0;
+    endcase
 
     case(alu)	// rrd1 op rrd2
-    MUL:    rwdat = umul[31:0];	// u32*u32 & 0xffffffff
-    MULH:   rwdat = smul[63:32];	// s32*s32 >> 32
-    MULHSU: rwdat = sumul[63:32];	// s32*u32 >> 32
-    MULHU:  rwdat = umul[63:32];	// u32*u32 >> 32
-
     DIV:    rwdat = sgn ? 32'd0 - Q.A : Q.A;	// rrd1 / rrd2
     DIVU:   rwdat = Q.A;
     REM:    rwdat = msgn ? 2'd0 - Q.B : Q.B;	// rrd1 % rrd2

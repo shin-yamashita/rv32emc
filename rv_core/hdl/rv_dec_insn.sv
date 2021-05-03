@@ -19,9 +19,9 @@ typedef enum u3_t {
 } wmode_t;
 
 typedef enum u6_t {
-  A_NA, S2, ADD, SLT, SLTU, XOR, OR, AND, SLL, SRL, SRA, SUB,
-  MUL, MULH, MULHSU, MULHU, DIV, DIVU, REM, REMU,
-  FLD, FST, FMADD, FMSUB, FADD, FSUB, FMUL, FDIV, FSQRT, FSGN, FMIN, FMAX, FCVT
+  A_NA, S2, ADD, SLT,  SLTU, XOR, OR, AND,  SLL, SRL, SRA, SUB,
+  MUL, MULH, MULHSU, MULHU,  DIV, DIVU, REM, REMU,
+  CSR, FLD, FST, FMADD,  FMSUB, FADD, FSUB, FMUL,  FDIV, FSQRT, FSGN, FMIN,  FMAX, FCVT
 } alu_t;
 
 typedef enum u4_t {
@@ -98,12 +98,12 @@ function f_insn_t dec_insn(input u32_t ir);
   17'b??????????1101111 : f_dec = '{type_UJ,      I,     S2,     SI,   R_NA,    IMM,   R_NA,   R_NA,    INC,     RD,    ALU,    JMP,   5'd0 }; // "jal"
   17'b00000000001110011 : f_dec = '{ type_I,      E,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "ecall"
   17'b00000000001110011 : f_dec = '{ type_I,      E,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "ebreak"
-  17'b???????0011110011 : f_dec = '{ type_I,      C,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "csrrw"
-  17'b???????0101110011 : f_dec = '{ type_I,      C,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "csrrs"
-  17'b???????0111110011 : f_dec = '{ type_I,      C,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "csrrc"
-  17'b???????1011110011 : f_dec = '{ type_I,      C,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "csrrwi"
-  17'b???????1101110011 : f_dec = '{ type_I,      C,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "csrrsi"
-  17'b???????1111110011 : f_dec = '{ type_I,      C,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "csrrci"
+  17'b???????0011110011 : f_dec = '{ type_I,      C,    CSR,     SI,   R_NA,   R_NA,   R_NA,    RS1,   R_NA,     RD,    ALU,   R_NA,   5'd0 }; // "csrrw"
+  17'b???????0101110011 : f_dec = '{ type_I,      C,    CSR,     SI,   R_NA,   R_NA,   R_NA,    RS1,   R_NA,     RD,    ALU,   R_NA,   5'd0 }; // "csrrs"
+  17'b???????0111110011 : f_dec = '{ type_I,      C,    CSR,     SI,   R_NA,   R_NA,   R_NA,    RS1,   R_NA,     RD,    ALU,   R_NA,   5'd0 }; // "csrrc"
+  17'b???????1011110011 : f_dec = '{ type_I,      C,    CSR,     SI,   R_NA,   R_NA,   R_NA,  SHAMT,   R_NA,     RD,    ALU,   R_NA,   5'd0 }; // "csrrwi"
+  17'b???????1101110011 : f_dec = '{ type_I,      C,    CSR,     SI,   R_NA,   R_NA,   R_NA,  SHAMT,   R_NA,     RD,    ALU,   R_NA,   5'd0 }; // "csrrsi"
+  17'b???????1111110011 : f_dec = '{ type_I,      C,    CSR,     SI,   R_NA,   R_NA,   R_NA,  SHAMT,   R_NA,     RD,    ALU,   R_NA,   5'd0 }; // "csrrci"
   17'b00000000001110011 : f_dec = '{ type_R,      E,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "uret"
   17'b00010000001110011 : f_dec = '{ type_R,      E,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "sret"
   17'b00110000001110011 : f_dec = '{ type_R,      E,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 }; // "mret"

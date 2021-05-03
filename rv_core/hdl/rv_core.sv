@@ -62,12 +62,13 @@ function logic [32:0] bra_dest(logic bra_stall, f_insn_t f_dec, u3_t func3, u32_
   return {bra,pc_nxt};        // bra_stall, bra_dest
 endfunction
 
-function logic [32:0] Reg_fwd(u5_t ix, u32_t rd, u32_t mdr, u5_t rwa[3], regs_t rwd[3], u32_t rwdat[3]); // Register read with fowarding
+function logic [32:0] Reg_fwd(u5_t ix, u32_t rd, u32_t mdr, u5_t rwa[3], regs_t rwd[3], logic rwdx[3], u32_t rwdat[3]); // Register read with fowarding
   logic d_stall;
   d_stall = 1'b0;
   if(ix == 5'd0) return 'd0;
   if(rwa[0] == ix) begin
-    if(rwd[0] == ALU) rd = rwdat[0];
+    if(rwd[0] == ALU && rwdx[0]) d_stall = 1'b1;
+    else if(rwd[0] == ALU) rd = rwdat[0];
     else if(rwd[0] == MDR) d_stall = 1'b1;
   end else if(rwa[1] == ix) begin
     if(rwd[1] == ALU) rd = rwdat[1];
@@ -79,7 +80,7 @@ function logic [32:0] Reg_fwd(u5_t ix, u32_t rd, u32_t mdr, u5_t rwa[3], regs_t 
   return {d_stall,rd};
 endfunction
 
-logic rdy, cmpl;
+logic rdy, cmpl, mulop;
 logic bstall, ds1, ds2; // stall signal
 
 assign rdy = i_rdy & d_rdy;
@@ -107,7 +108,10 @@ assign d_re = 1'b1;
   u32_t   rrd1, rrd2;	// regs read data
   u5_t    rwa[3];	// regs write adr
   regs_t  rwd[3];	// regs write data mode
+  logic   rwdx[3];	// regs write data mode (mul op)
   u32_t   rwdat[3];	// alu out data
+  u32_t   rwdat1;	// alu out data
+  u32_t   rwdatx;	// alu out data (mul op)
   alu_t   alu;		// alu mode
   logic   bra_stall;	// branch stall
   logic   d_stall;	// data stall
@@ -169,8 +173,8 @@ assign d_re = 1'b1;
   u32_t rrd1a, rrd2a, bdsta;
   u32_t rs1f, rs2f;
 
-  assign {ds1,rs1f} = bra_stall ? 'd0 : Reg_fwd(ars1, rs1, mdr, rwa, rwd, rwdat);
-  assign {ds2,rs2f} = bra_stall ? 'd0 : Reg_fwd(ars2, rs2, mdr, rwa, rwd, rwdat);
+  assign {ds1,rs1f} = bra_stall ? 'd0 : Reg_fwd(ars1, rs1, mdr, rwa, rwd, rwdx, rwdat);
+  assign {ds2,rs2f} = bra_stall ? 'd0 : Reg_fwd(ars2, rs2, mdr, rwa, rwd, rwdx, rwdat);
 
   assign rrd1a = f_dec.rrd1 == PC ? pc1 :
                 (f_dec.rrd1 == X0 ? 'd0 : rs1f);
@@ -192,7 +196,9 @@ assign d_re = 1'b1;
     .rrd1(rrd1),
     .rrd2(rrd2),
     .rwdat(rwdat[0]),	// out
-    .cmpl(cmpl)	// out
+    .rwdatx(rwdatx),	// out
+    .cmpl(cmpl),	// out
+    .mulop(mulop)	// out
   );
 
 //---- mem ----
@@ -269,6 +275,9 @@ assign d_re = 1'b1;
     endcase
   end
 
+  assign rwdat[1] = rwdx[1] ? rwdatx : rwdat1;
+  assign rwdx[0] = mulop;
+
   always_ff @ (posedge clk) begin
     bra_stall <= bra_stall ? 1'b0 : bstall;
     if(!xreset)
@@ -283,12 +292,14 @@ assign d_re = 1'b1;
       pc  <= pca;
 
     pc1 <= pc;
-    rwdat[1] <= rwdat[0];
+    rwdat1   <= rwdat[0];
     rwdat[2] <= rwdat[1];
-    rwd[1] <= rwd[0];
-    rwd[2] <= rwd[1];
-    rwa[1] <= rwa[0];
-    rwa[2] <= rwa[1];
+    rwd[1]   <= rwd[0];
+    rwd[2]   <= rwd[1];
+    rwdx[1]  <= rwdx[0];
+    rwdx[2]  <= rwdx[1];
+    rwa[1]   <= rwa[0];
+    rwa[2]   <= rwa[1];
     mmd1[0] <= mmd;
     mmd1[1] <= mmd1[0];
     mwe1[0] <= mwe;
@@ -311,7 +322,6 @@ assign d_re = 1'b1;
       mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
       rwd[0] <= ds1 | ds2 ? R_NA : f_dec.rwd;
       alu    <= ds1 | ds2 ? A_NA : f_dec.alu;
-      
     end
   end
 

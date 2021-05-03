@@ -17,10 +17,16 @@
  typedef logic signed [11:0] s12_t;
  typedef logic [15:0]        u16_t;
  typedef logic signed [15:0] s16_t;
+ typedef logic [16:0]        u17_t;
+ typedef logic signed [16:0] s17_t;
  typedef logic [23:0]        u24_t;
  typedef logic signed [23:0] s24_t;
  typedef logic [31:0]        u32_t;
  typedef logic signed [31:0] s32_t;
+ typedef logic [32:0]        u33_t;
+ typedef logic signed [32:0] s33_t;
+ typedef logic [33:0]        u34_t;
+ typedef logic signed [33:0] s34_t;
  typedef logic [63:0]        u64_t;
  typedef logic signed [63:0] s64_t;
 
