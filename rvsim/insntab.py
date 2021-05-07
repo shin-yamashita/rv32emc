@@ -23,7 +23,7 @@ typedef enum _itype {
 } itype_t;
 
 typedef enum _ex {
-  I, M, F, E, C
+  ex_I, ex_M, ex_F, ex_E, ex_C
 } ex_t;
 
 typedef enum _mode {
@@ -68,12 +68,13 @@ typedef struct _optab {
   int    rwd;
   int    pc;
   int    excyc;
+  int    rs2;
 } optab_t;
 
 static optab_t optab[] = {
 ''')
 
-#//  mnemonic,   type,   ex,     func7,  func3,  opc,    alu,    mode,   mar,    ofs,    mwe,    rrd1,   rrd2,   rwa,    rwd,    pc,   excyc
+#//  mnemonic,   type,   ex,     func7,  func3,  opc,    alu,    mode,   mar,    ofs,    mwe,    rrd1,   rrd2,   rwa,    rwd,    pc,   excyc, rs2
 
 table = []
 
@@ -83,7 +84,7 @@ with open(sys.argv[1], "r") as f:
     if row[0] == "#2":
       break
   print("// ", end='')
-  for i in range(1,18):
+  for i in range(1,19):
     print("%s, \t"%row[i], end='')
   print()
   
@@ -93,7 +94,9 @@ with open(sys.argv[1], "r") as f:
       line = ' { "%s",\t'%c	# mnemonic
       c = 'type_%s'%row[2]
       line += '%-7s, '%c		# type
-      for i in range(3,18):
+      c = 'ex_%s'%row[3]
+      line += '%s, '%c		# ex
+      for i in range(4,19):
         c = row[i].upper()
         if c == "": c = "__"
         line += "%s,\t"%c
@@ -121,13 +124,17 @@ print("""
 # print opc
 
 
-def maskedcode(func7, func3, opc):
+def maskedcode(func7, rs2, func3, opc):
   op = format(int(opc, 16), '07b')
   mc = ''
   if func7 == '__':
     mc += "???????"
   else:
     mc += format(int(func7, 16), '07b')
+  if rs2 == '__':
+    mc += "???"
+  else:
+    mc += format(int(rs2, 16), '03b')
   if func3 == '__':
     mc += "???"
   else:
@@ -153,7 +160,7 @@ typedef enum u3_t {
 } itype_t;
 
 typedef enum u3_t {
-  I, M, F, E, C
+  ex_I, ex_M, ex_F, ex_E, ex_C
 } ex_t;
 
 typedef enum u3_t {
@@ -189,17 +196,17 @@ typedef struct {
 function f_insn_t dec_insn(input u32_t ir);
   f_insn_t f_dec;
 
-  case ({ir[31:25],ir[14:12],ir[6:0]}) inside""", file=f)
+  case ({ir[31:25],ir[22:20],ir[14:12],ir[6:0]}) inside""", file=f)
 
-  print("                     // : f_dec = '{   type,     ex,    alu,   mode,    mar,    ofs,    mwe,   rrd1,   rrd2,    rwa,    rwd,     pc,  excyc }; // mnemonic", file=f)
+  print("                        // : f_dec = '{   type,     ex,    alu,   mode,    mar,    ofs,    mwe,   rrd1,   rrd2,    rwa,    rwd,     pc,  excyc }; // mnemonic", file=f)
 
   opcs = {}
   for i,line in enumerate(table):
     if(line[0] not in opcs ) : opcs[line[0]] = i
-  #  print(line[1], "//", i)
+#    print(line[1], "//", i)
     cols = re.sub('[ \t{}]','',line[1]).split(',')
-
-    mnemonic, type, ex, func7, func3, opc, alu, mode, mar, ofs, mwe, rrd1, rrd2, rwa, rwd, pc, excyc, _,_ = cols
+#    print(len(cols), cols)
+    mnemonic, type, ex, func7, func3, opc, alu, mode, mar, ofs, mwe, rrd1, rrd2, rwa, rwd, pc, excyc, rs2,_,_ = cols
     alu = alu.replace("__", "A_NA")
     mar = mar.replace("__", "R_NA")
     ofs = ofs.replace("__", "R_NA")
@@ -211,12 +218,12 @@ function f_insn_t dec_insn(input u32_t ir);
     pc = pc.replace("__", "R_NA")
     excyc = "5'd" + excyc
 
-    print("  17'b%s :" % maskedcode(func7, func3, opc),"f_dec = '{", end='', file=f)
+    print("  20'b%s :" % maskedcode(func7, rs2, func3, opc),"f_dec = '{", end='', file=f)
     for j,c in enumerate([type, ex, alu, mode, mar, ofs, mwe, rrd1, rrd2, rwa, rwd, pc, excyc]):
       dlm = ',' if j < 12 else ' '
       print("%7s"%c, end=dlm, file=f)
     print("}; //", mnemonic, file=f)
-  print("  default               : f_dec = '{ type_I,      I,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 };", file=f)
+  print("  default                  : f_dec = '{ type_I,   ex_I,   A_NA,     SI,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   R_NA,   5'd0 };", file=f)
   print("  endcase", file=f)
   print("""
   return f_dec;

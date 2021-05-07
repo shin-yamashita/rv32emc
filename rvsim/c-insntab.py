@@ -153,6 +153,8 @@ post = """
 
   case (c_dec.rs2)
   CX0:   exir[24:20] = 5'h0;
+  CX1:   exir[24:20] = 5'h1;
+  CX2:   exir[24:20] = 5'h2;
   CRS2D: exir[24:20] = {2'h1,ir[4:2]};
   CRS2:  exir[24:20] = ir[6:2];
   CRS2I: exir[24:20] = c_imm[4:0];

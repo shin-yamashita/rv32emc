@@ -14,8 +14,15 @@ typedef int8_t   s8;
 #define XLEN	32	// word length
 #define NREG	32	// # of register
 
+// IO area
 #define IOBEGIN 0xffff0000
 #define IOEND   0xffffffff
+
+// IO deffs
+#define DBG_PUTC    0xffff0004
+#define MTIME       0xffff8000
+#define MTIMECMP    0xffff8008
+
 
 u32 simrun (u32 addr, int steps, int reset);
 u32 simtrace (u32 addr, int steps, int reset);

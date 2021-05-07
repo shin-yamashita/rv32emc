@@ -54,7 +54,7 @@ with open(sys.argv[1], "r") as f:
       desc = row[4].lower()
       if csr:
         line = ' { 0x%03x, %-16s }, \t// %s %s'%(int(csr, 0), '"%s"'%name, mode(csr), desc)	# mnemonic
-        print( line)
+#        print( line)
         table.append((int(csr, 0), line))
 
 from operator import itemgetter

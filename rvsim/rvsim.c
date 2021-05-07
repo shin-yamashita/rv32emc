@@ -38,7 +38,7 @@ u32     _end_adr;
 u32     heap_ptr = 0x0;
 
 static u32 simadr;
-int     view_reg[100] = {1,2,3,10,11,12,13,20,21,0};
+int     view_reg[100] = {1,2,3,10,11,12,13,8,9,0};
 int     nview = 9;
 int     reset = 1;
 int     sys_exit = 0;
@@ -871,6 +871,9 @@ int main (int argc, char **argv)
             s = "r";
         } else if (!strcmp(argv[i], "-t")) {
             s = "t";
+        } else if (!strcmp(argv[i], "-n")) {
+            if(++i >= argc) break;
+            argvall[1] = argv[i];
         } else if (isalnum(c) || c == '.' || c == '/') {
             lfn = argv[i];
         }

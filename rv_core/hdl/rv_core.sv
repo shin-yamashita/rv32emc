@@ -166,8 +166,10 @@ assign d_re = 1'b1;
     default : f_imm = 'h00000000;
     endcase
 
-  assign ars1 = exir[19:15];
-  assign ars2 = exir[24:20];
+  assign ars1 = f_dec.rrd1 == RS1 ? exir[19:15] : 'd0;
+  assign ars2 = f_dec.rrd2 == RS2 ? exir[24:20] : 'd0;
+//  assign ars1 = exir[19:15];
+//  assign ars2 = exir[24:20];
   assign awd  = exir[10:7];
 
   u32_t rrd1a, rrd2a, bdsta;
@@ -177,10 +179,13 @@ assign d_re = 1'b1;
   assign {ds2,rs2f} = bra_stall ? 'd0 : Reg_fwd(ars2, rs2, mdr, rwa, rwd, rwdx, rwdat);
 
   assign rrd1a = f_dec.rrd1 == PC ? pc1 :
-                (f_dec.rrd1 == X0 ? 'd0 : rs1f);
+                (f_dec.rrd1 == X0 ? 'd0 :
+                (f_dec.rrd1 == SHAMT ? exir[19:15] : rs1f));
+
   assign rrd2a = f_dec.rrd2 == IMM ? imm :
                 (f_dec.rrd2 == INC ? pc1 + pcinc :
-                (f_dec.rrd2 == SHAMT ? ars2 : rs2f));
+                (f_dec.rrd2 == SHAMT ? exir[24:20] : rs2f));
+
   assign bdsta = d_stall ? bdst : pc1 + imm;
   
   assign {bstall,pca} = xreset ? 

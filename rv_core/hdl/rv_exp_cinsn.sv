@@ -62,7 +62,7 @@ function u64_t exp_cinsn (input u16_t ir);
   16'b011???????????10 : c_dec = '{ type_CI,   CIMM2,   CX_NA,     CX2,    CRS1,    7'h0,    3'h2,   7'h07 };  //  c.flwsp
   16'b1000?????0000010 : c_dec = '{ type_CI, CIMM_NA,   CX_NA,    CRS1,     CX0,    7'h0,    3'h0,   7'h67 };  //  c.jr
   16'b1000??????????10 : c_dec = '{ type_CR, CIMM_NA,    CRS2,     CX0,    CRS1,   7'h00,    3'h0,   7'h33 };  //  c.mv
-  16'b1001000000000010 : c_dec = '{ type_CI, CIMM_NA,   CX_NA,   CX_NA,   CX_NA,    7'h0,    3'h0,   7'h73 };  //  c.ebreak
+  16'b1001000000000010 : c_dec = '{ type_CI, CIMM_NA,     CX1,   CX_NA,   CX_NA,    7'h0,    3'h0,   7'h73 };  //  c.ebreak
   16'b1001?????0000010 : c_dec = '{ type_CR,   CIMM0,   CX_NA,    CRS1,     CX1,    7'h0,    3'h0,   7'h67 };  //  c.jalr
   16'b1001??????????10 : c_dec = '{ type_CR, CIMM_NA,    CRS2,    CRS1,    CRS1,   7'h00,    3'h0,   7'h33 };  //  c.add
   16'b110???????????10 : c_dec = '{type_CSS,   CIMM1,    CRS2,     CX2,   CX_NA,    7'h0,    3'h2,   7'h23 };  //  c.swsp
@@ -95,6 +95,8 @@ function u64_t exp_cinsn (input u16_t ir);
 
   case (c_dec.rs2)
   CX0:   exir[24:20] = 5'h0;
+  CX1:   exir[24:20] = 5'h1;
+  CX2:   exir[24:20] = 5'h2;
   CRS2D: exir[24:20] = {2'h1,ir[4:2]};
   CRS2:  exir[24:20] = ir[6:2];
   CRS2I: exir[24:20] = c_imm[4:0];

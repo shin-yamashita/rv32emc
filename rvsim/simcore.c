@@ -35,6 +35,12 @@ extern int n_break;
 extern u32 break_adr[];
 extern int break_en[];
 
+// CSR registers
+uint64_t mtime, mtimecmp;	// machine timer
+u32 mtvec = 0;
+u32 mie = 0, mip = 0;
+u32 mepc = 0;
+u32 mcause = 0;
 
 //struct _reg32 { u32 d; u32 q; };
 typedef struct _reg32 { u32 d; u32 q; }	reg32;
@@ -113,6 +119,7 @@ void clock()
     latch(d_stall);
     d_stall.d = 0;
 
+    mtime++;
 }
 
 void fetch()
@@ -164,12 +171,12 @@ u32 Reg_fwd(int ix) // Register read with fowarding
 
 const char *regnam[] = 
         // 0    1    2    3    4    5    6    7    8    9   10    11    12   13   14   15
-{"x0","ra","sp","gp","tp","t0","t1","t2","s0","s1","a0", "a1", "a2","a3","a4","a5",
+        {"x0","ra","sp","gp","tp","t0","t1","t2","s0","s1","a0", "a1", "a2","a3","a4","a5",
         //16   17   18   19   20   21   22   23   24   25   26    27    28   29   30   31
         "a6","a7","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","t3","t4","t5","t6"};
 
 const char *fregnam[] =
-{"ft0","ft1","ft2","ft3","ft4","ft5","ft6","ft7","fs0","fs1", "fa0", "fa1","fa2","fa3","fa4","fa5",
+       {"ft0","ft1","ft2","ft3","ft4","ft5","ft6","ft7","fs0","fs1", "fa0", "fa1","fa2","fa3","fa4","fa5",
         "fa6","fa7","fs2","fs3","fs4","fs5","fs6","fs7","fs8","fs9","fs10","fs11","ft3","ft4","ft5","ft6"};
 
 void Reg_wr(int ix, u32 data)
@@ -188,7 +195,7 @@ void Reg_wr(int ix, u32 data)
 const char *Reg_nam(int ix, ex_t ex)
 {
     if(ix == NA) return "--";
-    else if(ix < NREG) return ex != F ? regnam[ix] : fregnam[ix];
+    else if(ix < NREG) return ex != ex_F ? regnam[ix] : fregnam[ix];
     else return "??";
 }
 
@@ -228,7 +235,13 @@ int optab_search(u32 ir)
                 if(((ir>>12)&0x7) == optab[i].func3){
                     if(optab[i].func7 != __){
                         if(((ir>>25)&0x7f) == optab[i].func7){
-                            break;
+                            if(optab[i].rs2 != __){
+                                if(((ir>>20)&0x1f) == optab[i].rs2){
+                                    break;
+                                }
+                            }else{
+                                break;
+                            }
                         }
                     }else{
                         break;
@@ -294,6 +307,7 @@ u32 expand_c_insn(u32 ir)
             }
             switch(c_optab[i].rs1){
             case CX0: break;
+            case CX1: exir |= 0x1 << 15;    break;
             case CX2: exir |= 0x2 << 15;    break;
             case CRS1D: exir |= (((ir << 8) & 0x38000) | 0x40000);    break;
             case CRS1:  exir |= ((ir << 8) & 0xf8000); break;
@@ -301,6 +315,8 @@ u32 expand_c_insn(u32 ir)
             }
             switch(c_optab[i].rs2){
             case CX0: break;
+            case CX1: exir |= 0x1 << 20;    break;
+            case CX2: exir |= 0x2 << 20;    break;
             case CRS2D: exir |= (((ir << 18) & 0x700000) | 0x800000);   break;
             case CRS2: exir |= ((ir << 18) & 0x1f00000); break;
             default: break;
@@ -372,7 +388,7 @@ int disasm(int adr, char *dat, char *opc, char *opr, int *dsp)
         break;
         case type_RF: sprintf(opr, "%s,%s,%s", Rd, Rs1, Rs2);	break;
 
-        case type_I:  if(optab[i].ex == C){
+        case type_I:  if(optab[i].ex == ex_C){
                         char *csrnam;
                         i = csrtab_search(imm & 0xfff);
                         if(i < 0) csrnam = "???";
@@ -440,6 +456,12 @@ void reset_pc(u32 adr)
     R[2].d = stack_top; // x2 == stack pointer
     sys_func = arch == 'e' ? 5 : 17;	// t0 : a7
     Nregs = arch == 'e' ? 16 : 32;
+    mtime = 0l;
+    mtvec = 0;
+    mie = 0;
+    mip = 0;
+    mepc = 0;
+    mcause = 0;
     printf("reset_pc()\n");
 }
 
@@ -483,22 +505,46 @@ u32 syscall(u32 func, u32 a0, u32 a1, u32 a2){
     return rv;
 }
 
-u32 csr_op(u32 func3, u32 csr_adr, u32 rrd1, const char *rd)
+/*
+  assign csrwe  = csren && (func3 == 1 || func3 == 5);
+  assign csrset = csren && (func3 == 2 || func3 == 6):
+  assign csrclr = csren && (func3 == 3 || func3 == 7):
+*/
+
+u32 csr_wsc(int we, u32 csr, u32 wd)
+{
+  if(we & 1) return wd;
+  if(we & 2) return csr | wd;
+  if(we & 4) return csr & ~wd;
+  return csr;
+}
+
+u32 csr_op(u32 func3, u32 csr_adr, u32 rrd1, const char *rn)
 {
   char *mn = "xxx", *csr = "???";
+  int we = 0;
+  u32 rd = 0;
   switch(func3){
-  case 1: mn = "csrrw"; break;	// csrrw
-  case 2: mn = "csrrs"; break;	// csrrs
-  case 3: mn = "csrrc"; break;	// csrrc
-  case 5: mn = "csrrwi"; break;	// csrrwi
-  case 6: mn = "csrrsi"; break;	// csrrsi
-  case 7: mn = "csrrci"; break;	// csrrci
+  case 1: mn = "csrrw"; we = 1; break;	// csrrw
+  case 2: mn = "csrrs"; we = 2; break;	// csrrs
+  case 3: mn = "csrrc"; we = 4; break;	// csrrc
+  case 5: mn = "csrrwi"; we = 1; break;	// csrrwi
+  case 6: mn = "csrrsi"; we = 2; break;	// csrrsi
+  case 7: mn = "csrrci"; we = 4; break;	// csrrci
   default: break;
+  }
+  switch(csr_adr){
+  case 0xc01: rd = mtime; break;	// time
+  case 0x305: rd = mtvec;  mtvec  = csr_wsc(we, mtvec, rrd1); break;	// mtvec
+  case 0x304: rd = mie;	   mie    = csr_wsc(we, mie, rrd1); break;	// mie
+  case 0x344: rd = mip;	   mip    = csr_wsc(we, mip, rrd1); break;	// mip
+  case 0x341: rd = mepc;   mepc   = csr_wsc(we, mepc, rrd1); break;	// mepc
+  case 0x342: rd = mcause; mcause = csr_wsc(we, mcause, rrd1); break;	// mcause
   }
   int i = csrtab_search(csr_adr);
   if(i >= 0) csr = csrtab[i].name;
-  printf("*** %s %s, %x, %03x(%s) \n", mn, rd, rrd1, csr_adr, csr);
-  return 0;
+//  printf("*** %s %s, %x, %03x(%s) : %x\n", mn, rn, rrd1, csr_adr, csr, rd);
+  return rd;
 }
 
 void decode()
@@ -550,16 +596,19 @@ void decode()
             else pc.d = pc.q + pcinc;
         }
 #endif
+
         // rrd1
         rrd1.d = (optab[i].rrd1 == PC) ? pc1.q :
                  (optab[i].rrd1 == X0) ? 0 :
                  (optab[i].rrd1 == SHAMT) ? iRs1(IR) :
-                        Reg_fwd(iRs1(IR));
+                 (optab[i].rrd1 == RS1) ? Reg_fwd(iRs1(IR)) : 0;
+              //          Reg_fwd(iRs1(IR));
         // rrd2
         rrd2.d = (optab[i].rrd2 == IMM) ? imm :
                  (optab[i].rrd2 == INC) ? pc1.q + pcinc :
                  (optab[i].rrd2 == SHAMT) ? iRs2(IR) :
-                        Reg_fwd(iRs2(IR));
+                 (optab[i].rrd2 == RS2) ? Reg_fwd(iRs2(IR)) : 0;
+              //          Reg_fwd(iRs2(IR));
 
         // forward logic here!
         // mar
@@ -576,11 +625,22 @@ void decode()
         rwd[0].d = d_stall.d ? NA : optab[i].rwd;
         alu.d	 = d_stall.d ? __ : optab[i].alu;
         //        if(optab[i].opc == 0x73 && optab[i].func3 == 0){
-        if(optab[i].ex == E){
-            u32 rv = syscall(Reg_fwd(sys_func),Reg_fwd(10),Reg_fwd(11),Reg_fwd(12));
+        if(optab[i].ex == ex_E){
+          u32 rv = 0;
+          switch(optab[i].rs2){
+          case 0:
+            rv = syscall(Reg_fwd(sys_func),Reg_fwd(10),Reg_fwd(11),Reg_fwd(12));
             Reg_wr(10, rv);
-        }else if(optab[i].ex == C){	// CSR access
-            csr_op(optab[i].func3, imm & 0xfff, rrd1.d, Reg_nam(iRd(IR), C));
+            break;
+          case 1:
+            printf("ebreak\n");
+            break;
+          case 2:
+            printf("return %x\n", mepc);
+            break;
+          }
+        }else if(optab[i].ex == ex_C){	// CSR access
+            csr_rd = csr_op(optab[i].func3, imm & 0xfff, rrd1.d, Reg_nam(iRd(IR), ex_C));
         }
     }
 
@@ -608,8 +668,6 @@ char mem_rd(int adr)
     return 0;
 }
 
-#define DBG_PUTC    0xffff0004
-
 void IO_write(u32 adr, u16 mmd, u32 wd)
 {
     u32 mask = 0;
@@ -620,11 +678,23 @@ void IO_write(u32 adr, u16 mmd, u32 wd)
     }
     switch(adr){
     case DBG_PUTC:  fputc(wd & mask, stderr);   break;
+    case MTIME:     mtime = (mtime & 0xffffffff00000000l) | wd; break;
+    case MTIME+4:   mtime = (mtime & 0xffffffffl) | ((u64)wd<<32); break;
+    case MTIMECMP:  mtimecmp = (mtimecmp & 0xffffffff00000000l) | wd; break;
+    case MTIMECMP+4:mtimecmp = (mtimecmp & 0xffffffffl) | ((u64)wd<<32); break;
     }
+//printf("IO_write(%x,%x, %x)\n", adr, mmd, wd);
 }
 u32 IO_read(u32 adr, u16 mmd)
 {
     u32 rd = 0;
+    switch(adr){
+    case MTIME:     rd = mtime & 0xffffffff; break;
+    case MTIME+4:   rd = mtime >> 32; break;
+    case MTIMECMP:  rd = mtimecmp & 0xffffffff; break;
+    case MTIMECMP+4:rd = mtimecmp >> 32; break;
+    }
+//printf("IO_read(%x,%x):%x\n", adr, mmd, rd);
     return rd;
 }
 void RAM_access(int wr)
@@ -783,7 +853,7 @@ void print_regs_label()
     fprintf(ofp, "   cnt     pc       ir opc      opr                  mar      mdr      mdw "
             "    rrd1     rrd2  alu rwa rwd    rwdat ");
     for(n = 0; n < nview; n++){
-        fprintf(ofp, "    %5s", Reg_nam(view_reg[n], I));
+        fprintf(ofp, "    %5s", Reg_nam(view_reg[n], ex_I));
     }
     fprintf(ofp, "\n");
 }
@@ -823,7 +893,7 @@ void print_regs()
             " %-8s %-15s %8x %8x %8s"
             " %8x %8x %4s %3s %3s %8x "
             , opc, opr, mar.q, mdr.q, wrstr()
-            , rrd1.q, rrd2.q, alu_nam(alu.q), Reg_nam(rwa[0].q, I), regs_nam(rwd[0].q)
+            , rrd1.q, rrd2.q, alu_nam(alu.q), Reg_nam(rwa[0].q, ex_I), regs_nam(rwd[0].q)
             , rwdat[1].q);
 
     for(n = 0; n < nview; n++) fprintf(ofp, " %8x", Reg(view_reg[n]));
@@ -834,7 +904,7 @@ void reg_dump()
 {
     int i;
     for(i = 1; i < Nregs; i++){
-        fprintf(ofp, "%3s(%8x) ", Reg_nam(i, I), Reg(i));
+        fprintf(ofp, "%3s(%8x) ", Reg_nam(i, ex_I), Reg(i));
         if((i-1) % 11 == 10) fprintf(ofp, "%s\n", ELEOL);
     }
     fprintf(ofp, "%s\n", ELEOL);
