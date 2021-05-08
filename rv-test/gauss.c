@@ -12,6 +12,7 @@ float gaussrand();
 #define FLG_CAPS        2
 #define FLG_PAD0        4
 
+#if 0
 #define MDGT    12
 char *print_float(char *str, float data, int digit, int dp, int flg)
 {
@@ -72,7 +73,7 @@ char *print_float(char *str, float data, int digit, int dp, int flg)
 	*s = '\0';
         return str;
 }
-
+#endif
 
 int main()
 {
@@ -81,6 +82,7 @@ int main()
 	float rms;
 //	int N = 10000;
 	int N = 800;
+//	int N = 10;
 	int hist[120], *hp = &hist[60];
 
 	for(i = 0; i < 120; i++) hist[i] = 0;

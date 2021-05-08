@@ -13,6 +13,7 @@ typedef signed short    s16;
 typedef unsigned short  u16;
 typedef signed int      s32;
 typedef unsigned int    u32;
+typedef unsigned long int    u64;
 
 typedef union {float f; unsigned u;} fu_t;
 #define fu(x)	((fu_t)(x)).u

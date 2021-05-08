@@ -18,6 +18,9 @@ _BEGIN_STD_C
 #define DRAMTOP	((volatile u8*)0x20000000)
 #define SUBTOP	((volatile u8*)0x10000000)
 
+#define mtime	 ((volatile u64*)0xffff8000)
+#define mtimecmp ((volatile u64*)0xffff8008)
+
 //	para port
 #define POUT    ((volatile u8*)0xffff0000)
 #define GPIO    ((volatile u8*)0xffff0004)

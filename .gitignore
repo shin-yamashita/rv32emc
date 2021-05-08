@@ -1,10 +1,15 @@
 *.o
 *~
+*#
 *.log
 *.a
 *.mem
 *.lst
 *.map
 *.bak
+*.sav
+*.ref
+*.out
 rvsim/rvsim
+.project
 

@@ -1,22 +1,9 @@
-/* Copyright (c) 2017  SiFive Inc. All rights reserved.
 
-   This copyrighted material is made available to anyone wishing to use,
-   modify, copy, or redistribute it subject to the terms and conditions
-   of the FreeBSD License.   This program is distributed in the hope that
-   it will be useful, but WITHOUT ANY WARRANTY expressed or implied,
-   including the implied warranties of MERCHANTABILITY or FITNESS FOR
-   A PARTICULAR PURPOSE.  A copy of this license is available at
-   http://www.opensource.org/licenses.
-*/
-
-//#include "newlib.h"
-
-#=========================================================================
-# crt0.S : Entry point for RISC-V user programs
-#=========================================================================
+#
+# crt0.S : RISC-V startup routine
+#
 
   .section .text.startup
-//  .text
   .global _start, __errno
   .type   _start, @function
 _start:
@@ -28,30 +15,15 @@ _start:
 .option pop
   la      sp, __stack_top
 
-  # Clear the bss segment
+  la      t0, _irq_handle
+  csrw    mtvec, t0
+
+  # Clear bss section
   la      a0, _edata
   la      a2, _end
   sub     a2, a2, a0
   li      a1, 0
   call    memset
-
-/*-----
-#ifdef _LITE_EXIT
-  # Make reference to atexit weak to avoid unconditionally pulling in
-  # support code.  Refer to comments in __atexit.c for more details.
-  .weak   atexit
-  la      a0, atexit
-  beqz    a0, .Lweak_atexit
-  .weak   __libc_fini_array
-#endif
-
-  la      a0, __libc_fini_array   # Register global termination functions
-  call    atexit                  #  to be called upon exit
-#ifdef _LITE_EXIT
-.Lweak_atexit:
-#endif
-  call    __libc_init_array       # Run global initialization functions
----*/
 
   lw      a0, 0(sp)                  # a0 = argc
   addi    a1, sp, __SIZEOF_POINTER__ # a1 = argv
@@ -63,10 +35,58 @@ _start:
 
 Loop:
   j    Loop
-//  tail    exit
+
 __errno:
   nop
 
-  .size  _start, .-_start
 
+  .equ REGBYTES, 4
+  .equ CONTEXT_SIZE, 12*REGBYTES
+  .macro lxsp a, b
+  lw \a, ((\b)*REGBYTES)(sp)
+  .endm
+  .macro sxsp a, b
+  sw \a, ((\b)*REGBYTES)(sp)
+  .endm
+
+  .align 4
+_irq_handle:
+    # Save registers.
+    addi    sp, sp, -CONTEXT_SIZE
+    sxsp    ra, 0
+    sxsp    a0, 1
+    sxsp    a1, 2
+    sxsp    a2, 3
+    sxsp    a3, 4
+    sxsp    a4, 5
+    sxsp    a5, 6
+    sxsp    s0, 7
+    sxsp    s1, 8
+    sxsp    t0, 9
+    sxsp    t1, 10
+    sxsp    t2, 11
+
+    # Invoke the handler.
+    mv      a0, sp
+    csrr    a1, mcause
+    csrr    a2, mepc
+    jal     irq_handler
+
+    # Restore registers.
+    lxsp    ra, 0
+    lxsp    a0, 1
+    lxsp    a1, 2
+    lxsp    a2, 3
+    lxsp    a3, 4
+    lxsp    a4, 5
+    lxsp    a5, 6
+    lxsp    s0, 7
+    lxsp    s1, 8
+    lxsp    t0, 9
+    lxsp    t1, 10
+    lxsp    t2, 11
+    addi sp, sp, CONTEXT_SIZE
+
+    # Return
+    mret
 

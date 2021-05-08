@@ -33,7 +33,7 @@ int get_port()
 	return *POUT;
 }
 
-//	sr_timer interface
+//	mtime interface
 
 static volatile int timer;
 static volatile int tick;
@@ -41,8 +41,7 @@ static volatile int tmexp, expose;
 
 void init_timer(int br)
 {
-	*TIMERBR = br;
-	*TIMERCTL = 4 | 2;	// tmoe|inte
+	*mtime = *mtimecmp = 0l;
 }
 void set_expose(int exp)
 {
