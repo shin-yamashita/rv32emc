@@ -38,23 +38,39 @@ int get_port()
 static volatile int timer;
 static volatile int tick;
 static volatile int tmexp, expose;
+static volatile int _br;
 
 void init_timer(int br)
 {
-	*mtime = *mtimecmp = 0l;
+	_br = (int)(f_clk / br + 0.5f);
+	*mtime = 0l;
+	*mtimecmp = (u64)_br;
+	timer = 0;
+	csrs(mie, MTIE);
+	csrc(mip, MTIE);
 }
+void at_exit()
+{
+	printf("** exit() timer: %d\n", timer);
+}
+
 void set_expose(int exp)
 {
 	expose = exp;
 }
 void timer_ctrl(void)
 {
+	if(csrr(mip) & MTIE){
+		*mtimecmp += _br;
+	}
+/*
 	if(tmexp >= expose){
 		*TIMERCTL = 4 | 2;
 		tmexp = 0;
 	}else{
 		*TIMERCTL = 0 | 2;
 	}
+*/
 	tmexp++;
 }
 void wait(void)
@@ -86,14 +102,18 @@ static void (*user_irqh2)(void) = 0;
 
 static void timer_handl(void)
 {
-	if(*TIMERCTL & 1){
-		*TIMERCTL = *TIMERCTL;	// clear irq when irq = 0
+	if(csrr(mip) & MTIE){
+		set_port(7);
+		*mtimecmp += _br;
 		if(timer_irqh_s)
 			(*timer_irqh_s)(); // 1ms system handler call
 		if(timer_irqh)
 			(*timer_irqh)(); // 1ms user handler call
 		timer++;
 		tick = 1;
+		csrs(mie, MTIE);
+		csrc(mip, MTIE);
+		reset_port(7);
 	}
 }
 

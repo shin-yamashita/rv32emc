@@ -7,9 +7,27 @@
 #define _ULIB_H
 
 #include <_ansi.h>
+#include <stdint.h>
+
 _BEGIN_STD_C
 
 #include "types.h"
+
+//---- CSR access ----
+
+#define csrw(csr, val) ({asm volatile ("csrw "#csr" , %0" :: "rK"(val));})
+#define csrr(csr)      ({uint32_t __tmp;asm volatile ("csrr %0, "#csr : "=r"(__tmp)); __tmp;})
+#define csrs(csr, val) ({asm volatile ("csrs "#csr" , %0" :: "rK"(val));})  // set
+#define csrc(csr, val) ({asm volatile ("csrc "#csr" , %0" :: "rK"(val));})  // clear
+
+#define csrwi(csr, imm) ({asm volatile ("csrw "#csr" , %0" :: "i"(imm));})
+#define csrsi(csr, imm) ({asm volatile ("csrs "#csr" , %0" :: "i"(imm));})
+#define csrci(csr, imm) ({asm volatile ("csrc "#csr" , %0" :: "i"(imm));})
+
+#define MSIE    0x8
+#define MTIE    0x80
+#define MEIE    0x800
+//----
 
 #define __START	__attribute__ ((__section__ (".start"))) 
 #define __SRAM	__attribute__ ((__section__ (".sram"))) 
@@ -226,6 +244,9 @@ void remove_user_irqh_2(void);
 void memcpy32(u32 *dst, u32 *src, size_t len);	// dst, src : u32 aligned
 void memcpydma(u8 *dst, u8 *src, size_t len);	// sr_dmac
 
+// memclr.c
+void *memclr(void *s, size_t n);
+
 // rcp.c
 float rcp(float x);	// reciprocal  return 1/x
 
@@ -260,7 +281,7 @@ void cache_flush();
 
 //------------------------------------------------------------------
 // CPU clock frequency (Hz)
-#define f_clk	60e6
+#define f_clk	100e6
 //#define f_clk	48e6
 //#define f_clk	42e6
 //#define f_clk	36e6

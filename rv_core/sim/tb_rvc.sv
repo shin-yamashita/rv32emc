@@ -28,8 +28,11 @@ module tb_rvc (
  end
 
  u32_t ir, rwdat;
+ logic rxd, txd;
 
- rvc #(.debug(debug)) u_rvc (.clk, .xreset, .pin, .pout);
+ assign rxd = txd;
+ 
+ rvc #(.debug(debug)) u_rvc (.clk, .xreset, .pin, .pout, .rxd, .txd);
 
 // bit i_dr_match, d_dr_match;
 // assign i_dr_match = u_rvc.i_dr == u_rvc.i_dr_b;

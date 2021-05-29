@@ -30,6 +30,10 @@ csrtab.h:	CSR.csv
 install:	rvsim
 	cp $^ $(DEST)/bin/
 
+hdl:	optab.h c-optab.h
+	cp rv_dec_insn.sv ../rv_core/hdl/
+	cp rv_exp_cinsn.sv ../rv_core/hdl/
+
 clean:
 	rm -f *.o \#*\# *~ rvsim
 

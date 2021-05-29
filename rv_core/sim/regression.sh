@@ -26,7 +26,7 @@ for prg in $prog ; do
  echo "==== run $prg.mem simulation"
  ./convmem.py $prg.mem
  xsim tb_$prj --log xsim-r.log <<EOF
-  run 80 ms
+  run 90 ms
   exit
 EOF
  chkerr

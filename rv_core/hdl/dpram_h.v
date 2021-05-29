@@ -61,6 +61,8 @@ module dpram_h
       if(enaB) begin
          if (~|weB)
            doutB <= ram_block[addrB];
+      end else begin
+         doutB <= 'd0;
       end
    end
    

@@ -11,11 +11,13 @@ AR	= $(PREFIX)ar
 OBJCP	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 
-CFLAGS	= -g -Wall $(MFLAG) -nostartfiles -O2 -I../include -DTXIRQ
+CFLAGS	= -g -Wall $(MFLAG) -nostartfiles -O2 -I../include
+# -DTXIRQ
+
 LDFLAGS = -g -Wall $(MFLAG) -nostdlib
 ARFLAGS	= crs
 
-SRCS1    = ulib.c uartdrv.c fprint.c rcp.c sincos.c fsqrt.c strtok.c strlen.c memset.c
+SRCS1    = ulib.c uartdrv.c fprint.c rcp.c sincos.c fsqrt.c strtok.c strlen.c memset.c memclr.c
 OBJS1    = $(SRCS1:.c=.o)
 DEPS    = $(SRCS1:.c=.dep)
 

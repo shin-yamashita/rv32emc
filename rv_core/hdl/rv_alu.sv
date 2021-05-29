@@ -17,6 +17,7 @@ module rv_alu (
   input  alu_t alu,
   input  u32_t rrd1,
   input  u32_t rrd2,
+  input  u32_t csr_rd,
   output u32_t rwdat,
   output u32_t rwdatx,
   output logic cmpl,
@@ -46,6 +47,8 @@ module rv_alu (
   SRA:    rwdat = s32_t'(rrd1) >>> (rrd2 & 6'h3f);	
   SUB:    rwdat = rrd1 - rrd2;	
 
+  CSR:    rwdat = csr_rd;
+  
   MUL:    rwdat = rwd;
   MULH:   rwdat = rwd;
   MULHSU: rwdat = rwd;

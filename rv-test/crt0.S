@@ -6,6 +6,7 @@
   .section .text.startup
   .global _start, __errno
   .type   _start, @function
+
 _start:
   # Initialize global pointer
 .option push
@@ -14,21 +15,29 @@ _start:
   addi  gp, gp, %pcrel_lo(1b)
 .option pop
   la      sp, __stack_top
-
   la      t0, _irq_handle
   csrw    mtvec, t0
 
   # Clear bss section
   la      a0, _edata
-  la      a2, _end
-  sub     a2, a2, a0
-  li      a1, 0
-  call    memset
+#  la      a2, _end
+#  sub     a2, a2, a0
+#  li      a1, 0
+#  call    memset
+  la      a1, _end
+  sub     a1, a1, a0
+  call    memclr  # rv-test/lib/memclr.c
+
+  lui     a0,0x18
+  addi    a0,a0,1696  # a0 = 100000
+  call    init_timer
 
   lw      a0, 0(sp)                  # a0 = argc
   addi    a1, sp, __SIZEOF_POINTER__ # a1 = argv
   li      a2, 0                      # a2 = envp = NULL
   call    main
+
+  call    at_exit
 
   li      t0, 93	# SYS_exit
   scall
@@ -41,13 +50,16 @@ __errno:
 
 
   .equ REGBYTES, 4
-  .equ CONTEXT_SIZE, 12*REGBYTES
+  .equ CONTEXT_SIZE, 14*REGBYTES
   .macro lxsp a, b
   lw \a, ((\b)*REGBYTES)(sp)
   .endm
   .macro sxsp a, b
   sw \a, ((\b)*REGBYTES)(sp)
   .endm
+
+#       // 0    1    2    3    4    5    6    7    8    9   10    11    12   13   14   15
+#        {"x0","ra","sp","gp","tp","t0","t1","t2","s0","s1","a0", "a1", "a2","a3","a4","a5",
 
   .align 4
 _irq_handle:
@@ -65,6 +77,8 @@ _irq_handle:
     sxsp    t0, 9
     sxsp    t1, 10
     sxsp    t2, 11
+    sxsp    gp, 12
+    sxsp    tp, 13
 
     # Invoke the handler.
     mv      a0, sp
@@ -85,6 +99,8 @@ _irq_handle:
     lxsp    t0, 9
     lxsp    t1, 10
     lxsp    t2, 11
+    lxsp    gp, 12
+    lxsp    tp, 13
     addi sp, sp, CONTEXT_SIZE
 
     # Return

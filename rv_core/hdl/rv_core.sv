@@ -23,14 +23,16 @@ module rv_core #(parameter Nregs = 16,
   output logic d_re,	// mem read enable
   output u32_t d_dw,	// mem write data
   output u4_t  d_we,	// mem write enable
-  input  logic d_rdy,	// mem data ready
+  input  logic d_rdy	// mem data ready
 
-  output u32_t imm
+//  output u32_t imm
   );
 
 
 //---- branch destination calc ----
-function logic [32:0] bra_dest(logic bra_stall, f_insn_t f_dec, u3_t func3, u32_t rs1, u32_t rs2, u32_t imm, u32_t bdst, u32_t pc, u4_t pcinc);
+function logic [32:0] bra_dest(logic bra_stall, f_insn_t f_dec, u3_t func3,
+                               u32_t rs1, u32_t rs2, u32_t imm, u32_t bdst, u32_t pc, u4_t pcinc,
+                               u32_t vec, u32_t epc);
   logic bra;
   u32_t pc_nxt;
 
@@ -54,7 +56,13 @@ function logic [32:0] bra_dest(logic bra_stall, f_insn_t f_dec, u3_t func3, u32_
       pc_nxt = pc + pcinc;
     end
   end else if(f_dec.pc == JMP) begin
-    pc_nxt = f_dec.rrd1 == RS1 ? (rs1 + imm) : bdst;
+    if(f_dec.ex == ex_E) begin  // ecall
+      pc_nxt = vec;
+    end else if(f_dec.ex == ex_R) begin // mret
+      pc_nxt = epc;
+    end else begin
+      pc_nxt = f_dec.rrd1 == RS1 ? (rs1 + imm) : bdst;
+    end
     bra = 1'b1;
   end else begin
     pc_nxt = pc + pcinc;
@@ -80,17 +88,18 @@ function logic [32:0] Reg_fwd(u5_t ix, u32_t rd, u32_t mdr, u5_t rwa[3], regs_t 
   return {d_stall,rd};
 endfunction
 
-logic rdy, cmpl, mulop;
-logic bstall, ds1, ds2; // stall signal
+logic   rdy, cmpl, mulop;
+logic   bstall, ds1, ds2; // stall signal
+logic   irq;
 
 assign rdy = i_rdy & d_rdy;
 assign i_re = 1'b1;
-assign d_re = 1'b1;
+//assign d_re = 1'b1;
 
 //---- register file ----
-  u5_t  ars1, ars2, awd;
-  u32_t wd, rs1, rs2;
-  logic we;
+  u5_t    ars1, ars2, awd;
+  u32_t   wd, rs1, rs2;
+  logic   we;
 
   rv_regf #(.Nregs(Nregs)) u_rv_regf (
     .clk   (clk),
@@ -116,13 +125,20 @@ assign d_re = 1'b1;
   logic   bra_stall;	// branch stall
   logic   d_stall;	// data stall
   logic   ex_stall;	// exec stall
+  logic   stall;
+
+  //---- csr regs
+  u32_t   mtvec, mepc;
+  u16_t   mip, mie;
+  u32_t   mcause;
+  assign stall = bra_stall | d_stall | ex_stall;
 
 //---- fetch ----
-  u4_t pcinc, pcinca;
-  u32_t ira;
-  u16_t i_dr1;
-  assign ira = i_dr;
-  assign i_adr = pca;
+  u4_t    pcinc, pcinca;
+  u32_t   ira;
+  u16_t   i_dr1;
+  assign  ira = i_dr;
+  assign  i_adr = pca;
 
   always_ff @ (posedge clk) begin
     if(!xreset) begin
@@ -141,16 +157,18 @@ assign d_re = 1'b1;
 //---- decode ----
   logic c_insn;
   f_insn_t f_dec;
-  u32_t c_imm, f_imm;
+  u32_t c_imm, f_imm, imm;
   u32_t exir, eir;
   u3_t func3;
   
+  parameter ECALL = 32'h00000073;
+
   assign c_insn = IR[1:0] != 2'b11;
   assign pcinc = c_insn ? 'd2 : 'd4;
   assign pcinca = ira[1:0] != 2'b11 ? 'd2 : 'd4;
   assign {eir, c_imm} = exp_cinsn(IR[15:0]);
   assign imm  = c_insn ? c_imm : f_imm;
-  assign exir = c_insn ? eir : IR;
+  assign exir = irq ? ECALL : (c_insn ? eir : IR);
   assign f_dec = dec_insn(exir);
   assign func3 = exir[14:12];
 // : f_dec = '{   type,     ex,    alu,   mode,    mar,    ofs,    mwe,   rrd1,   rrd2,    rwa,    rwd,     pc,  excyc }; // mnemonic
@@ -189,24 +207,153 @@ assign d_re = 1'b1;
   assign bdsta = d_stall ? bdst : pc1 + imm;
   
   assign {bstall,pca} = xreset ? 
-          (ds1|ds2|(ex_stall&!cmpl) ? {1'b0,pc} : bra_dest(bra_stall, f_dec, func3, rrd1a, rrd2a, imm, bdsta, pc, pcinca)) : 'd0;
+          (ds1|ds2|(ex_stall&!cmpl) ? {1'b0,pc} : 
+                  bra_dest(bra_stall, f_dec, func3, rrd1a, rrd2a, imm, bdsta, pc, pcinca, mtvec, mepc)) : 'd0;
 
 //---- exec ----
 
+  u32_t csr_rd;
+
   rv_alu u_rv_alu (
-    .clk (clk),
+    .clk    (clk),
     .xreset (xreset),
-    .rdy (rdy),
-    .alu (alu),
-    .rrd1(rrd1),
-    .rrd2(rrd2),
-    .rwdat(rwdat[0]),	// out
-    .rwdatx(rwdatx),	// out
-    .cmpl(cmpl),	// out
-    .mulop(mulop)	// out
+    .rdy    (rdy),
+    .alu    (alu),
+    .rrd1   (rrd1),
+    .rrd2   (rrd2),
+    .csr_rd (csr_rd),
+    .rwdat  (rwdat[0]),	// out
+    .rwdatx (rwdatx),	// out
+    .cmpl   (cmpl),	  // out
+    .mulop  (mulop)	  // out
   );
 
-//---- mem ----
+//---- CSR ----
+//#define mtime    ((volatile u64*)0xffff8000)
+//#define mtimecmp ((volatile u64*)0xffff8008)
+parameter MTIME    = 32'hffff8000;
+parameter MTIMECMP = 32'hffff8008;
+  u64_t   mtime, mtimecmp;
+  logic   mtirq;
+
+  typedef enum logic [1:0] { RW, SET, CLR, NOP } csrmd_t;
+  logic   csren;
+  u12_t   csr_adr;
+  csrmd_t csrmd;
+  logic   mret;
+
+  function csrmd_t csr_mode(logic csren, u3_t func3);
+    if(csren)
+      case(func3)
+      3'd1: return RW;
+      3'd2: return SET;
+      3'd3: return CLR;
+      3'd5: return RW;
+      3'd6: return SET;
+      3'd7: return CLR;
+      default: return NOP;
+      endcase
+    else 
+      return NOP;
+  endfunction
+  function u32_t csr_wsc(csrmd_t csrmd, u32_t csr, u32_t rrd1);
+    case(csrmd)
+    RW:  return rrd1;
+    SET: return csr | rrd1;
+    CLR: return csr & ~rrd1;
+    default: return csr;
+    endcase
+  endfunction
+
+  assign csren = f_dec.ex == ex_C;
+  assign mret  = f_dec.ex == ex_R;
+
+  always_ff @ (posedge clk) begin
+    csrmd <= csr_mode(csren, func3);
+    csr_adr <= IR[31:20];
+    mtirq <= mtime > mtimecmp;  // timer expire interrupt request
+
+    if(!xreset) begin
+      mtvec <= 'd0;
+      mepc  <= 'd0;
+      mie   <= 'd0;
+      mip   <= 'd0;
+      mcause<= 'd0;
+    end else begin
+      if(csr_adr == 12'h304 && csrmd != NOP) 
+        mie <= csr_wsc(csrmd, mie, rrd1) & 32'b100010001000;
+      else
+        mie[7] <= mie[7] & ~irq;
+      if(csr_adr == 12'h304 && csrmd != NOP) 
+        mip <= csr_wsc(csrmd, mip, rrd1) & 32'b100010001000;
+      else
+        mip[7] <= mip[7] | irq; 
+
+    if(csrmd != NOP) begin
+        case(csr_adr)
+        12'h305: mtvec <= csr_wsc(csrmd, mtvec, rrd1);
+        12'h342: mcause<= csr_wsc(csrmd, mcause, rrd1);
+        default: ;
+        endcase
+    end
+    //  if(mret) // mret
+
+      if(irq) mepc <= pc1;
+    end
+  end
+  assign irq = (mie[7] && mtirq) && !stall;
+  
+
+  always_comb begin
+    if(csrmd != NOP)
+      case(csr_adr)
+      12'h305: csr_rd = mtvec;
+      12'h304: csr_rd = mie;
+      12'h344: csr_rd = mip;
+      12'h341: csr_rd = mepc;
+      12'h342: csr_rd = mcause;
+      12'hc01: csr_rd = mtime[31:0];  // time
+      12'hc81: csr_rd = mtime[63:32]; // timeh
+      default: csr_rd = 'd0;
+      endcase
+  end
+
+//---- mtime register ----
+  u32_t d_dr1;
+  always_ff @ (posedge clk) begin
+    if(!xreset) begin
+      mtime     <= 'd0;
+      mtimecmp  <= 'd0;
+      d_dr1     <= 'd0;
+    end else begin
+      if(d_we != 'd0) begin
+        case(d_adr)
+        MTIME:        mtime[31:0]   <= d_dw;
+        MTIME+'d4:    mtime[63:32]  <= d_dw;
+        default:      mtime <= mtime + 'd1;
+        endcase
+        case(d_adr)
+        MTIMECMP:     mtimecmp[31:0]  <= d_dw;
+        MTIMECMP+'d4: mtimecmp[63:32] <= d_dw;
+        endcase
+      end else begin
+        mtime <= mtime + 'd1;
+      end
+      if(d_re) begin
+        case(d_adr)
+        MTIME:        d_dr1 <= mtime[31:0];
+        MTIME+'d4:    d_dr1 <= mtime[63:32];
+        MTIMECMP:     d_dr1 <= mtimecmp[31:0];
+        MTIMECMP+'d4: d_dr1 <= mtimecmp[63:32];
+        default:      d_dr1 <= 'd0;
+        endcase
+      end else begin
+        d_dr1 <= 'd0;
+      end
+    end
+  end
+
+//---- memory access ----
 // mwe  R_NA, RE, WE
 // mmd  SI, HI, QI, SHI, SQI
   function u32_t mem_rdata(u32_t mrd, regs_t mwe, wmode_t mmd, u2_t mar);
@@ -261,6 +408,8 @@ assign d_re = 1'b1;
   assign d_dw = mem_wdata(mdw, mwe, mmd, mar[1:0]);
   assign mdr  = mem_rdata(mdr1, mwe1[1], mmd1[1], mar1[1]);
   assign d_we = mem_we(mwe, mmd, mar[1:0]);
+  assign d_re = mwe == RE;
+//  assign d_re = 1'b1;
 
 //---- wback ----
   always_comb begin
@@ -311,7 +460,7 @@ assign d_re = 1'b1;
     mwe1[1] <= mwe1[0];
     mar1[0] <= mar[1:0];
     mar1[1] <= mar1[0];
-    mdr1 <= d_dr;
+    mdr1 <= d_dr | d_dr1;
 
     if(!(bra_stall)) begin
       if(!ex_stall) begin
@@ -327,19 +476,25 @@ assign d_re = 1'b1;
       mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
       rwd[0] <= ds1 | ds2 ? R_NA : f_dec.rwd;
       alu    <= ds1 | ds2 ? A_NA : f_dec.alu;
+  //  end else begin
+  //    alu    <= ds1 | ds2 ? A_NA : f_dec.alu; //
     end
   end
 
 // synthesis translate_off
-
   function void debug_print(u32_t pc, u32_t ir, u32_t mar, u32_t mdr, u32_t rrd1, u32_t rrd2, u32_t rwdat);
     if(ir[1:0] == 2'd3)
       $display("%8h %8h  %8h %8h %8h %8h %8h", pc, ir, mar, mdr, rrd1, rrd2, rwdat);
     else
       $display("%8h     %4h  %8h %8h %8h %8h %8h", pc, ir[15:0], mar, mdr, rrd1, rrd2, rwdat);
   endfunction
+  logic [1:0] bst;
+  u32_t rrd1h, rrd2h;
   always@(posedge clk) begin
-    if(debug) debug_print(pc1, IR, mar, mdr, rrd1, rrd2, rwdat[1]);
+    bst <= {bst[0]|ex_stall,bra_stall};
+    rrd1h <= ex_stall ? rrd1h : rrd1;
+    rrd2h <= ex_stall ? rrd2h : rrd2;
+    if(debug) debug_print(pc1, IR, mar, mdr, ex_stall?rrd1h:rrd1, ex_stall?rrd2h:rrd2, bst[1]?'d0:rwdat[1]);
   end
 
 // synthesis translate_on

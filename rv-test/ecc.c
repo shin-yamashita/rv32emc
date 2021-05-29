@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+//#include "ulib.h"
 
 //------------------------------------------------------
 extern char _end[];                /* _end is set in the linker command file */
@@ -401,6 +402,8 @@ int main()
 {
   int i, j;
   Poly_t *info, *code, *Synd;
+
+//  init_timer(100000);   // 10 us
 
   printf("*** GF(2^8) Reed Solomon Coding. %d parity, %d error correction.\n", Np, Np/2);
 

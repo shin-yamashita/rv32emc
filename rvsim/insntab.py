@@ -23,7 +23,7 @@ typedef enum _itype {
 } itype_t;
 
 typedef enum _ex {
-  ex_I, ex_M, ex_F, ex_E, ex_C
+  ex_I, ex_M, ex_F, ex_E, ex_C, ex_R
 } ex_t;
 
 typedef enum _mode {
@@ -160,7 +160,7 @@ typedef enum u3_t {
 } itype_t;
 
 typedef enum u3_t {
-  ex_I, ex_M, ex_F, ex_E, ex_C
+  ex_I, ex_M, ex_F, ex_E, ex_C, ex_R
 } ex_t;
 
 typedef enum u3_t {

@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include "ulib.h"
 
 //uint32_t lfsr;
 uint32_t seed = 0;
@@ -28,6 +29,7 @@ int main()
   int32_t  um, sm;
   int i;
 
+//  init_timer(50000);	// 20 us
   for(i = 0; i < 50; i++){
     sa = ua = prsg();
     sb = ub = prsg();

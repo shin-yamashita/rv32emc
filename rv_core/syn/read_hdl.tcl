@@ -9,7 +9,9 @@ read_verilog -library xil_defaultlib -sv {
   ../hdl/rv_core.sv
   ../hdl/dpram.sv
   ../sim/rvc.sv
+  ../../rv_io/rv_sio.sv
 }
+
 read_verilog -library xil_defaultlib {
   ../hdl/dpram_h.v
 }

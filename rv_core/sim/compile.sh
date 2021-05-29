@@ -10,7 +10,7 @@ function chkerr
 
 source /opt/Xilinx/Vivado/2019.2/settings64.sh
 
-prj=dec
+prj=rvc
 
 if [ $# = 1 ] ; then
  prj=$1
