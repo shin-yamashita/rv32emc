@@ -16,7 +16,7 @@ echo Simulation Tool: Viavdo Simulator $prj
 
 echo Compile tb_$prj with no waveform mode
 
-xelab tb_$prj -timescale 1ns/1ns -prj tb_$prj.prj -i ../hdl -L unisims_ver -s tb_$prj
+xelab tb_$prj -generic_top "debug=0" -timescale 1ns/1ns -prj tb_$prj.prj -i ../hdl -L unisims_ver -s tb_$prj
 
 prog="hello mul ecc fptest pi gauss"
 
@@ -26,7 +26,7 @@ for prg in $prog ; do
  echo "==== run $prg.mem simulation"
  ./convmem.py $prg.mem
  xsim tb_$prj --log xsim-r.log <<EOF
-  run 90 ms
+  run 80 ms
   exit
 EOF
  chkerr

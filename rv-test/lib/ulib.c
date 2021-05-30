@@ -112,7 +112,7 @@ static void timer_handl(void)
 		timer++;
 		tick = 1;
 		csrs(mie, MTIE);
-		csrc(mip, MTIE);
+	//	csrc(mip, MTIE);
 		reset_port(7);
 	}
 }

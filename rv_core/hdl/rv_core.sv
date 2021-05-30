@@ -266,12 +266,13 @@ parameter MTIMECMP = 32'hffff8008;
   endfunction
 
   assign csren = f_dec.ex == ex_C;
-  assign mret  = f_dec.ex == ex_R;
+//  assign mret  = f_dec.ex == ex_R;
 
   always_ff @ (posedge clk) begin
     csrmd <= csr_mode(csren, func3);
     csr_adr <= IR[31:20];
     mtirq <= mtime > mtimecmp;  // timer expire interrupt request
+    mret  <= f_dec.ex == ex_R;
 
     if(!xreset) begin
       mtvec <= 'd0;
@@ -280,14 +281,14 @@ parameter MTIMECMP = 32'hffff8008;
       mip   <= 'd0;
       mcause<= 'd0;
     end else begin
-      if(csr_adr == 12'h304 && csrmd != NOP) 
+      if(csr_adr == 12'h304 && csrmd != NOP)  // mie
         mie <= csr_wsc(csrmd, mie, rrd1) & 32'b100010001000;
       else
         mie[7] <= mie[7] & ~irq;
-      if(csr_adr == 12'h304 && csrmd != NOP) 
+      if(csr_adr == 12'h344 && csrmd != NOP)  // mip
         mip <= csr_wsc(csrmd, mip, rrd1) & 32'b100010001000;
       else
-        mip[7] <= mip[7] | irq; 
+        mip[7] <= (mip[7] | irq) & ~mret; 
 
     if(csrmd != NOP) begin
         case(csr_adr)
@@ -438,11 +439,11 @@ parameter MTIMECMP = 32'hffff8008;
       ex_stall <= 1'b0;     
     else if(cmpl)
       ex_stall <= 1'b0;
-    else if(f_dec.excyc > 0)
+    else if(!bra_stall && f_dec.excyc > 0)
       ex_stall <= 1'b1;
    
     d_stall <= (ds1 | ds2);
-    if(f_dec.excyc == 0 || cmpl)
+    if(f_dec.excyc == 0 || cmpl || bra_stall)
       pc  <= pca;
 
     pc1 <= pc;

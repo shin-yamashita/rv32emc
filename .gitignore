@@ -12,4 +12,4 @@
 *.out
 rvsim/rvsim
 .project
-
+.vscode/
