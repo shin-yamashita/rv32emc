@@ -28,14 +28,15 @@ _start:
   sub     a1, a1, a0
   call    memclr  # rv-test/lib/memclr.c
 
-  lui     a0,0x18
-  addi    a0,a0,1696  # a0 = 100000
-  call    init_timer
+#  lui     a0,0x18
+#  addi    a0,a0,1696  # a0 = 100000
+#  call    init_timer
 
   lw      a0, 0(sp)                  # a0 = argc
   addi    a1, sp, __SIZEOF_POINTER__ # a1 = argv
   li      a2, 0                      # a2 = envp = NULL
-  call    main
+#  call    main
+  call    init
 
   call    at_exit
 

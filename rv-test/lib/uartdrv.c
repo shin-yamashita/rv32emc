@@ -16,9 +16,11 @@ void uart_set_baudrate(int sel)
 	//      *SIOBR = 5;     // for simulation
 	if(sel == 0){
 		*SIOBR = brate(2000000);	// cp2104 max speed
-	}else{
+	}else if(sel == 1){
 		*SIOBR = brate(115200);		// ESP WiFi
-	}
+	}else{
+        *SIOBR = brate(sel);
+    }
 	//	*SIOBR = brate(230400);
 	//	*SIOBR = brate(115200);
 	//      *SIOBR = brate(57600);
@@ -102,6 +104,7 @@ void uart_putc(char c)
 	txbuf[++txwpt] = c;	// push txbuf
 	txinte = 8;
 	*SIOFLG = txinte;
+	enable_irq();   // set mie[11]
 
 #else
 	uart_tx(c);

@@ -22,8 +22,7 @@ int main(void)
 
  uint32_t val = 0x180;
 
-//  init_timer(100000);	// 10 us
-
+  init_timer(100000);	// 10 us
   uart_set_baudrate(0);
   set_port(0);
   uart_write(0, str, strlen(str));

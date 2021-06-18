@@ -47,32 +47,30 @@ void init_timer(int br)
 	*mtimecmp = (u64)_br;
 	timer = 0;
 	csrs(mie, MTIE);
-	csrc(mip, MTIE);
+//	csrc(mip, MTIE);
 }
 void at_exit()
 {
 	printf("** exit() timer: %d\n", timer);
 }
-
+void enable_irq()
+{
+	csrs(mie, MEIE);
+}
 void set_expose(int exp)
 {
 	expose = exp;
 }
+/*
 void timer_ctrl(void)
 {
 	if(csrr(mip) & MTIE){
 		*mtimecmp += _br;
 	}
-/*
-	if(tmexp >= expose){
-		*TIMERCTL = 4 | 2;
-		tmexp = 0;
-	}else{
-		*TIMERCTL = 0 | 2;
-	}
-*/
 	tmexp++;
 }
+*/
+
 void wait(void)
 {
         while(!tick) ;  // wait for 1 ms interrupt
@@ -120,10 +118,13 @@ static void timer_handl(void)
 void irq_handler(void)
 {
 	timer_handl();
-	txirq_handl();
-	if(user_irqh)  (*user_irqh)();
-	if(user_irqh1) (*user_irqh1)();
-	if(user_irqh2) (*user_irqh2)();
+	if(csrr(mip) & MEIE){
+		txirq_handl();
+		if(user_irqh)  (*user_irqh)();
+		if(user_irqh1) (*user_irqh1)();
+		if(user_irqh2) (*user_irqh2)();
+		csrs(mie, MEIE);
+	}
 }
 
 void add_timer_irqh_sys(void (*irqh)(void))

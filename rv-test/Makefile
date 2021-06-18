@@ -4,8 +4,6 @@
 # 2017/03/20  risc-v test
 #
 
-vpath	%.s	./startup
-
 #ARCH = RV32I
 #ARCH = RV32IM
 #ARCH = RV32IMC
@@ -41,7 +39,7 @@ OBJCP	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 
 #CFLAGS	= -g -Wall -nostartfiles -O2
-CFLAGS	= -g -Wall -O2 $(MFLAG) -nostartfiles -I./include
+CFLAGS	= -g -Wall -O2 $(MFLAG) -nostartfiles -I./include 
 
 #LDFLAGS =  -nostdlib -Wl,-Map,$(TARGET).map
 LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x -nostdlib -L./lib
@@ -50,7 +48,7 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x -nostdlib -L./lib
 # -L$(LDSCRIPT)
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c
+SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c rvmon.c
 # endian.c
 #fplib.c sr_test.c
 
@@ -84,7 +82,10 @@ list:	$(SRCS:.c=.lst)
 %.mem:	%.bin
 	od -An -tx4 -v $< > $@
 
-%:	crt0.o %.o
+init.o:	init.c
+	$(CC) $(CFLAGS) -c $<
+
+%:	crt0.o init.o %.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.ref:	%
@@ -126,9 +127,13 @@ depend:	$(DEPS)
 
 crt0.o: crt0.S
 ecc.o: ecc.c include/stdio.h include/types.h include/stdint.h
-fptest.o: fptest.c include/stdio.h include/types.h include/ulib.h \
- include/uartdrv.h
-gauss.o: gauss.c include/stdio.h include/types.h
-hello.o: hello.c include/stdio.h include/types.h include/stdint.h
-mul.o: mul.c include/stdio.h include/types.h include/stdint.h
+fptest.o: fptest.c include/stdio.h include/types.h include/stdint.h \
+ include/ulib.h include/uartdrv.h
+gauss.o: gauss.c include/stdio.h include/types.h include/stdint.h
+hello.o: hello.c include/stdio.h include/types.h include/stdint.h \
+ include/ulib.h include/uartdrv.h
+mul.o: mul.c include/stdio.h include/types.h include/stdint.h \
+ include/ulib.h include/uartdrv.h
 pi.o: pi.c include/stdio.h include/types.h include/stdint.h
+rvmon.o: rvmon.c include/stdio.h include/types.h include/stdint.h \
+ include/ulib.h include/uartdrv.h

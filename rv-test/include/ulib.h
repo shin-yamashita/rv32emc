@@ -227,6 +227,7 @@ void wait(void);	// wait 1 ms
 void n_wait(int n);	// wait n ms
 void set_timer(int t);	// set 1ms counter val
 int get_timer();	// 
+void enable_irq();   //
 
 void irq_handler(void);
 void add_timer_irqh_sys(void (*irqh)(void));
@@ -281,7 +282,8 @@ void cache_flush();
 
 //------------------------------------------------------------------
 // CPU clock frequency (Hz)
-#define f_clk	100e6
+//#define f_clk	100e6
+#define f_clk	60e6
 //#define f_clk	48e6
 //#define f_clk	42e6
 //#define f_clk	36e6

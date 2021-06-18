@@ -11,8 +11,7 @@ AR	= $(PREFIX)ar
 OBJCP	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 
-CFLAGS	= -g -Wall $(MFLAG) -nostartfiles -O2 -I../include
-# -DTXIRQ
+CFLAGS	= -g -Wall $(MFLAG) -nostartfiles -O2 -I../include -DTXIRQ
 
 LDFLAGS = -g -Wall $(MFLAG) -nostdlib
 ARFLAGS	= crs

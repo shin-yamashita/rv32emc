@@ -31,8 +31,8 @@ ssize_t _write (int fd, const char *ptr, size_t len)
 }
 
 
-//FILE _stdio = {{1}, uart_read, uart_write};
-FILE _stdio = {{1}, uart_read, _write};
+FILE _stdio = {{1}, uart_read, uart_write};
+//FILE _stdio = {{1}, uart_read, _write};
 #define stdout	(&_stdio)
 #define stdin	(&_stdio)
 
