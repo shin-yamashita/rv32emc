@@ -27,7 +27,8 @@ module rvc #( parameter debug = 0 ) (
  logic d_re;    // mem read enable
  logic d_rdy;   // mem data ready
 
- u32_t imm;
+ logic irq;
+
  u32_t d_dr1, d_dr2;
  logic pin_en;
  logic enaB, re1;
@@ -82,7 +83,7 @@ module rvc #( parameter debug = 0 ) (
 
 // peripheral
 
-  logic cs, rdy, re, irq, dsr, txen;
+  logic cs, rdy, re, dsr, txen;
   u4_t  we;
   u32_t dw, dr;
 

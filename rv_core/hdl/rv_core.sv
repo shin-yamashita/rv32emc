@@ -23,9 +23,9 @@ module rv_core #(parameter Nregs = 16,
   output logic d_re,	// mem read enable
   output u32_t d_dw,	// mem write data
   output u4_t  d_we,	// mem write enable
-  input  logic d_rdy	// mem data ready
+  input  logic d_rdy,	// mem data ready
 
-//  output u32_t imm
+  input  logic irq  // interrupt request
   );
 
 
@@ -90,7 +90,7 @@ endfunction
 
 logic   rdy, cmpl, mulop;
 logic   bstall, ds1, ds2; // stall signal
-logic   irq;
+u3_t    issue_int;
 
 assign rdy = i_rdy & d_rdy;
 assign i_re = 1'b1;
@@ -145,7 +145,7 @@ assign i_re = 1'b1;
       ir <= 'd0;
       irh <= 'd0;
       i_dr1 <= 'd0;
-    end else begin
+    end else if(rdy) begin
       ir <= ira;
       i_dr1 <= i_dr[31:16];
       if(!(ex_stall || d_stall))
@@ -168,7 +168,7 @@ assign i_re = 1'b1;
   assign pcinca = ira[1:0] != 2'b11 ? 'd2 : 'd4;
   assign {eir, c_imm} = exp_cinsn(IR[15:0]);
   assign imm  = c_insn ? c_imm : f_imm;
-  assign exir = irq ? ECALL : (c_insn ? eir : IR);
+  assign exir = issue_int ? ECALL : (c_insn ? eir : IR);
   assign f_dec = dec_insn(exir);
   assign func3 = exir[14:12];
 // : f_dec = '{   type,     ex,    alu,   mode,    mar,    ofs,    mwe,   rrd1,   rrd2,    rwa,    rwd,     pc,  excyc }; // mnemonic
@@ -235,6 +235,7 @@ parameter MTIME    = 32'hffff8000;
 parameter MTIMECMP = 32'hffff8008;
   u64_t   mtime, mtimecmp;
   logic   mtirq;
+  logic [1:0] irq_s;
 
   typedef enum logic [1:0] { RW, SET, CLR, NOP } csrmd_t;
   logic   csren;
@@ -269,41 +270,51 @@ parameter MTIMECMP = 32'hffff8008;
 //  assign mret  = f_dec.ex == ex_R;
 
   always_ff @ (posedge clk) begin
-    csrmd <= csr_mode(csren, func3);
+/*    csrmd <= csr_mode(csren, func3);
     csr_adr <= IR[31:20];
-    mtirq <= mtime > mtimecmp;  // timer expire interrupt request
+    mtirq <= s32_t'(mtimecmp - mtime) < 0;  // timer expire interrupt request
+    irq_s <= {irq_s[0], irq};
     mret  <= f_dec.ex == ex_R;
-
+*/
     if(!xreset) begin
       mtvec <= 'd0;
       mepc  <= 'd0;
       mie   <= 'd0;
       mip   <= 'd0;
       mcause<= 'd0;
-    end else begin
+    end else if(rdy) begin
+      csrmd <= csr_mode(csren, func3);
+      csr_adr <= IR[31:20];
+      mtirq <= s32_t'(mtimecmp - mtime) < 0;  // timer expire interrupt request
+      irq_s <= {irq_s[0], irq};
+      mret  <= f_dec.ex == ex_R;
+       
       if(csr_adr == 12'h304 && csrmd != NOP)  // mie
         mie <= csr_wsc(csrmd, mie, rrd1) & 32'b100010001000;
-      else
-        mie[7] <= mie[7] & ~irq;
+      else begin
+        mie[7] <= mie[7] & ~issue_int[1];
+        mie[11] <= mie[11] & ~issue_int[2];
+      end
       if(csr_adr == 12'h344 && csrmd != NOP)  // mip
         mip <= csr_wsc(csrmd, mip, rrd1) & 32'b100010001000;
-      else
-        mip[7] <= (mip[7] | irq) & ~mret; 
-
-    if(csrmd != NOP) begin
+      else begin
+        mip[7] <= (mip[7] | issue_int[1]) & ~mret; 
+        mip[11] <= (mip[11] | issue_int[2]) & ~mret; 
+      end
+      if(csrmd != NOP) begin
         case(csr_adr)
         12'h305: mtvec <= csr_wsc(csrmd, mtvec, rrd1);
         12'h342: mcause<= csr_wsc(csrmd, mcause, rrd1);
         default: ;
         endcase
-    end
-    //  if(mret) // mret
-
-      if(irq) mepc <= pc1;
+      end
+      if(issue_int) mepc <= pc1;
     end
   end
-  assign irq = (mie[7] && mtirq) && !stall;
-  
+  assign issue_int[0] = 1'b0;
+  assign issue_int[1] = !mip && (mie[7]  && mtirq) && !stall;
+  assign issue_int[2] = !mip && (mie[11] && irq_s[1]) && !stall;
+
 
   always_comb begin
     if(csrmd != NOP)
@@ -326,7 +337,7 @@ parameter MTIMECMP = 32'hffff8008;
       mtime     <= 'd0;
       mtimecmp  <= 'd0;
       d_dr1     <= 'd0;
-    end else begin
+    end else if(rdy) begin
       if(d_we != 'd0) begin
         case(d_adr)
         MTIME:        mtime[31:0]   <= d_dw;
@@ -434,51 +445,53 @@ parameter MTIMECMP = 32'hffff8008;
   assign rwdx[0] = mulop;
 
   always_ff @ (posedge clk) begin
-    bra_stall <= bra_stall ? 1'b0 : bstall;
-    if(!xreset)
-      ex_stall <= 1'b0;     
-    else if(cmpl)
-      ex_stall <= 1'b0;
-    else if(!bra_stall && f_dec.excyc > 0)
-      ex_stall <= 1'b1;
-   
-    d_stall <= (ds1 | ds2);
-    if(f_dec.excyc == 0 || cmpl || bra_stall)
-      pc  <= pca;
+    if(rdy) begin
+        bra_stall <= bra_stall ? 1'b0 : bstall;
+        if(!xreset)
+        ex_stall <= 1'b0;     
+        else if(cmpl)
+        ex_stall <= 1'b0;
+        else if(!bra_stall && f_dec.excyc > 0)
+        ex_stall <= 1'b1;
+    
+        d_stall <= (ds1 | ds2);
+        if(f_dec.excyc == 0 || cmpl || bra_stall)
+        pc  <= pca;
 
-    pc1 <= pc;
-    rwdat1   <= rwdat[0];
-    rwdat[2] <= rwdat[1];
-    rwd[1]   <= rwd[0];
-    rwd[2]   <= rwd[1];
-    rwdx[1]  <= rwdx[0];
-    rwdx[2]  <= rwdx[1];
-    rwa[1]   <= rwa[0];
-    rwa[2]   <= rwa[1];
-    mmd1[0] <= mmd;
-    mmd1[1] <= mmd1[0];
-    mwe1[0] <= mwe;
-    mwe1[1] <= mwe1[0];
-    mar1[0] <= mar[1:0];
-    mar1[1] <= mar1[0];
-    mdr1 <= d_dr | d_dr1;
+        pc1 <= pc;
+        rwdat1   <= rwdat[0];
+        rwdat[2] <= rwdat[1];
+        rwd[1]   <= rwd[0];
+        rwd[2]   <= rwd[1];
+        rwdx[1]  <= rwdx[0];
+        rwdx[2]  <= rwdx[1];
+        rwa[1]   <= rwa[0];
+        rwa[2]   <= rwa[1];
+        mmd1[0] <= mmd;
+        mmd1[1] <= mmd1[0];
+        mwe1[0] <= mwe;
+        mwe1[1] <= mwe1[0];
+        mar1[0] <= mar[1:0];
+        mar1[1] <= mar1[0];
+        mdr1 <= d_dr | d_dr1;
 
-    if(!(bra_stall)) begin
-      if(!ex_stall) begin
-        rrd1 <= rrd1a;
-        rrd2 <= rrd2a;
-      end
-      bdst <= bdsta;
-      
-      mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);
-      mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);
-      rwa[0] <= ds1 | ds2 ? R_NA : (f_dec.rwa == RD ? awd : 'd0);
-      mmd    <= ds1 | ds2 ? SI   : f_dec.mode;
-      mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
-      rwd[0] <= ds1 | ds2 ? R_NA : f_dec.rwd;
-      alu    <= ds1 | ds2 ? A_NA : f_dec.alu;
-  //  end else begin
-  //    alu    <= ds1 | ds2 ? A_NA : f_dec.alu; //
+        if(!(bra_stall)) begin
+        if(!ex_stall) begin
+            rrd1 <= rrd1a;
+            rrd2 <= rrd2a;
+        end
+        bdst <= bdsta;
+        
+        mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);
+        mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);
+        rwa[0] <= ds1 | ds2 ? R_NA : (f_dec.rwa == RD ? awd : 'd0);
+        mmd    <= ds1 | ds2 ? SI   : f_dec.mode;
+        mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
+        rwd[0] <= ds1 | ds2 ? R_NA : f_dec.rwd;
+        alu    <= ds1 | ds2 ? A_NA : f_dec.alu;
+    //  end else begin
+    //    alu    <= ds1 | ds2 ? A_NA : f_dec.alu; //
+        end
     end
   end
 
@@ -492,10 +505,12 @@ parameter MTIMECMP = 32'hffff8008;
   logic [1:0] bst;
   u32_t rrd1h, rrd2h;
   always@(posedge clk) begin
-    bst <= {bst[0]|ex_stall,bra_stall};
-    rrd1h <= ex_stall ? rrd1h : rrd1;
-    rrd2h <= ex_stall ? rrd2h : rrd2;
-    if(debug) debug_print(pc1, IR, mar, mdr, ex_stall?rrd1h:rrd1, ex_stall?rrd2h:rrd2, bst[1]?'d0:rwdat[1]);
+    if(rdy) begin
+        bst <= {bst[0]|ex_stall,bra_stall};
+        rrd1h <= ex_stall ? rrd1h : rrd1;
+        rrd2h <= ex_stall ? rrd2h : rrd2;
+        if(debug) debug_print(pc1, IR, mar, mdr, ex_stall?rrd1h:rrd1, ex_stall?rrd2h:rrd2, bst[1]?'d0:rwdat[1]);
+    end
   end
 
 // synthesis translate_on

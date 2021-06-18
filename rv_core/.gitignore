@@ -7,3 +7,4 @@
 sim/*.wdb
 sim/xsim.dir/
 syn/rev/
+sim/.Xil/

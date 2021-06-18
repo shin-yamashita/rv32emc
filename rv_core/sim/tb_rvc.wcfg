@@ -19,15 +19,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="6499945fs"></ZoomStartTime>
-      <ZoomEndTime time="6823880fs"></ZoomEndTime>
-      <Cursor1Time time="6535289fs"></Cursor1Time>
+      <ZoomStartTime time="37610000fs"></ZoomStartTime>
+      <ZoomEndTime time="41550001fs"></ZoomEndTime>
+      <Cursor1Time time="37190000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="159"></NameColumnWidth>
-      <ValueColumnWidth column_width="62"></ValueColumnWidth>
+      <NameColumnWidth column_width="149"></NameColumnWidth>
+      <ValueColumnWidth column_width="60"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="116" />
+   <WVObjectSize size="159" />
    <wave_markers>
       <marker label="" time="28195701" />
    </wave_markers>
@@ -237,14 +237,6 @@
       <obj_property name="ElementShortName">ex_stall</obj_property>
       <obj_property name="ObjectShortName">ex_stall</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/irq">
-      <obj_property name="ElementShortName">irq</obj_property>
-      <obj_property name="ObjectShortName">irq</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/mret">
-      <obj_property name="ElementShortName">mret</obj_property>
-      <obj_property name="ObjectShortName">mret</obj_property>
-   </wvobject>
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/ars1">
       <obj_property name="ElementShortName">ars1[4:0]</obj_property>
       <obj_property name="ObjectShortName">ars1[4:0]</obj_property>
@@ -381,6 +373,23 @@
       <obj_property name="ElementShortName">mtvec[31:0]</obj_property>
       <obj_property name="ObjectShortName">mtvec[31:0]</obj_property>
    </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/irq">
+      <obj_property name="ElementShortName">irq</obj_property>
+      <obj_property name="ObjectShortName">irq</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/irq_s">
+      <obj_property name="ElementShortName">irq_s[1:0]</obj_property>
+      <obj_property name="ObjectShortName">irq_s[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/issue_int">
+      <obj_property name="ElementShortName">issue_int[2:0]</obj_property>
+      <obj_property name="ObjectShortName">issue_int[2:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/mret">
+      <obj_property name="ElementShortName">mret</obj_property>
+      <obj_property name="ObjectShortName">mret</obj_property>
+   </wvobject>
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/mepc">
       <obj_property name="ElementShortName">mepc[31:0]</obj_property>
       <obj_property name="ObjectShortName">mepc[31:0]</obj_property>
@@ -388,12 +397,10 @@
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/mip">
       <obj_property name="ElementShortName">mip[15:0]</obj_property>
       <obj_property name="ObjectShortName">mip[15:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/mie">
       <obj_property name="ElementShortName">mie[15:0]</obj_property>
       <obj_property name="ObjectShortName">mie[15:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/mcause">
       <obj_property name="ElementShortName">mcause[31:0]</obj_property>
@@ -500,5 +507,170 @@
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/d_dr1">
       <obj_property name="ElementShortName">d_dr1[31:0]</obj_property>
       <obj_property name="ObjectShortName">d_dr1[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider161" type="divider">
+      <obj_property name="label">sio</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/xreset">
+      <obj_property name="ElementShortName">xreset</obj_property>
+      <obj_property name="ObjectShortName">xreset</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/adr">
+      <obj_property name="ElementShortName">adr[4:0]</obj_property>
+      <obj_property name="ObjectShortName">adr[4:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/cs">
+      <obj_property name="ElementShortName">cs</obj_property>
+      <obj_property name="ObjectShortName">cs</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/rdy">
+      <obj_property name="ElementShortName">rdy</obj_property>
+      <obj_property name="ObjectShortName">rdy</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/we">
+      <obj_property name="ElementShortName">we[3:0]</obj_property>
+      <obj_property name="ObjectShortName">we[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/re">
+      <obj_property name="ElementShortName">re</obj_property>
+      <obj_property name="ObjectShortName">re</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/irq">
+      <obj_property name="ElementShortName">irq</obj_property>
+      <obj_property name="ObjectShortName">irq</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/dw">
+      <obj_property name="ElementShortName">dw[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dw[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/dr">
+      <obj_property name="ElementShortName">dr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dr[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/txd">
+      <obj_property name="ElementShortName">txd</obj_property>
+      <obj_property name="ObjectShortName">txd</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/rxd">
+      <obj_property name="ElementShortName">rxd</obj_property>
+      <obj_property name="ObjectShortName">rxd</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/dsr">
+      <obj_property name="ElementShortName">dsr</obj_property>
+      <obj_property name="ObjectShortName">dsr</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/dtr">
+      <obj_property name="ElementShortName">dtr</obj_property>
+      <obj_property name="ObjectShortName">dtr</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/txen">
+      <obj_property name="ElementShortName">txen</obj_property>
+      <obj_property name="ObjectShortName">txen</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/rfifo">
+      <obj_property name="ElementShortName">rfifo[0:3][7:0]</obj_property>
+      <obj_property name="ObjectShortName">rfifo[0:3][7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/tfifo">
+      <obj_property name="ElementShortName">tfifo[0:3][7:0]</obj_property>
+      <obj_property name="ObjectShortName">tfifo[0:3][7:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/rrp">
+      <obj_property name="ElementShortName">rrp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">rrp[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/rwp">
+      <obj_property name="ElementShortName">rwp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">rwp[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/trp">
+      <obj_property name="ElementShortName">trp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">trp[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/twp">
+      <obj_property name="ElementShortName">twp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">twp[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/tx">
+      <obj_property name="ElementShortName">tx[7:0]</obj_property>
+      <obj_property name="ObjectShortName">tx[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/rx">
+      <obj_property name="ElementShortName">rx[7:0]</obj_property>
+      <obj_property name="ObjectShortName">rx[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/tbc">
+      <obj_property name="ElementShortName">tbc[2:0]</obj_property>
+      <obj_property name="ObjectShortName">tbc[2:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/rbc">
+      <obj_property name="ElementShortName">rbc[2:0]</obj_property>
+      <obj_property name="ObjectShortName">rbc[2:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/rxlp">
+      <obj_property name="ElementShortName">rxlp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">rxlp[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/inte">
+      <obj_property name="ElementShortName">inte[1:0]</obj_property>
+      <obj_property name="ObjectShortName">inte[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/irq0">
+      <obj_property name="ElementShortName">irq0[1:0]</obj_property>
+      <obj_property name="ObjectShortName">irq0[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/idsr">
+      <obj_property name="ElementShortName">idsr</obj_property>
+      <obj_property name="ObjectShortName">idsr</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/sndbrk">
+      <obj_property name="ElementShortName">sndbrk</obj_property>
+      <obj_property name="ObjectShortName">sndbrk</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/br">
+      <obj_property name="ElementShortName">br[13:0]</obj_property>
+      <obj_property name="ObjectShortName">br[13:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/tbrc">
+      <obj_property name="ElementShortName">tbrc[13:0]</obj_property>
+      <obj_property name="ObjectShortName">tbrc[13:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/rbrc">
+      <obj_property name="ElementShortName">rbrc[13:0]</obj_property>
+      <obj_property name="ObjectShortName">rbrc[13:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/txf">
+      <obj_property name="ElementShortName">txf</obj_property>
+      <obj_property name="ObjectShortName">txf</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/rxe">
+      <obj_property name="ElementShortName">rxe</obj_property>
+      <obj_property name="ObjectShortName">rxe</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/rxf">
+      <obj_property name="ElementShortName">rxf</obj_property>
+      <obj_property name="ObjectShortName">rxf</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/cs0">
+      <obj_property name="ElementShortName">cs0</obj_property>
+      <obj_property name="ObjectShortName">cs0</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_sio/re1">
+      <obj_property name="ElementShortName">re1</obj_property>
+      <obj_property name="ObjectShortName">re1</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/rst">
+      <obj_property name="ElementShortName">rst[1:0]</obj_property>
+      <obj_property name="ObjectShortName">rst[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_sio/tst">
+      <obj_property name="ElementShortName">tst[1:0]</obj_property>
+      <obj_property name="ObjectShortName">tst[1:0]</obj_property>
    </wvobject>
 </wave_config>
