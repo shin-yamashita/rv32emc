@@ -26,6 +26,7 @@ module rvc #( parameter debug = 0 ) (
  u32_t d_dw;    // mem write data
  logic d_re;    // mem read enable
  logic d_rdy;   // mem data ready
+ logic d_be;	// mem bus big endian
 
  logic irq;
 
@@ -35,6 +36,7 @@ module rvc #( parameter debug = 0 ) (
 
  assign i_rdy = 1'b1;
  assign d_rdy = 1'b1;
+ assign d_be = 1'b0;
 
  assign d_dr = pin_en ? u32_t'(pin) : 
                re1    ? d_dr2 : d_dr1;

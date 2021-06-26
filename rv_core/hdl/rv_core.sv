@@ -24,6 +24,7 @@ module rv_core #(parameter Nregs = 16,
   output u32_t d_dw,	// mem write data
   output u4_t  d_we,	// mem write enable
   input  logic d_rdy,	// mem data ready
+  input  logic d_be,	// mem bus big endian
 
   input  logic irq  // interrupt request
   );
@@ -208,7 +209,8 @@ assign i_re = 1'b1;
   
   assign {bstall,pca} = xreset ? 
           (ds1|ds2|(ex_stall&!cmpl) ? {1'b0,pc} : 
-                  bra_dest(bra_stall, f_dec, func3, rrd1a, rrd2a, imm, bdsta, pc, pcinca, mtvec, mepc)) : 'd0;
+                  bra_dest(bra_stall, f_dec, func3, rs1f, rs2f, imm, bdsta, pc, pcinca, mtvec, mepc)) : 'd0;
+            //      bra_dest(bra_stall, f_dec, func3, rrd1a, rrd2a, imm, bdsta, pc, pcinca, mtvec, mepc)) : 'd0;
 
 //---- exec ----
 
@@ -368,8 +370,12 @@ parameter MTIMECMP = 32'hffff8008;
 //---- memory access ----
 // mwe  R_NA, RE, WE
 // mmd  SI, HI, QI, SHI, SQI
-  function u32_t mem_rdata(u32_t mrd, regs_t mwe, wmode_t mmd, u2_t mar);
+  logic d_be1[2];
+
+  function u32_t mem_rdata(u32_t mrd, regs_t mwe, wmode_t mmd, u2_t ma, logic be);
     u32_t rd;
+    u2_t mar;
+    mar = be ? ~ma : ma;
     case(mmd)
     HI:  rd = u32_t'(mar[1] ? mrd[31:16] : mrd[15:0]);
     SHI: rd = u32_t'(signed'((mar[1] ? mrd[31:16] : mrd[15:0])));
@@ -392,8 +398,10 @@ parameter MTIMECMP = 32'hffff8008;
     return rd;
   endfunction
   
-  function u32_t mem_wdata(u32_t mdw, regs_t mwe, wmode_t mmd, u2_t mar);
+  function u32_t mem_wdata(u32_t mdw, regs_t mwe, wmode_t mmd, u2_t ma, logic be);
     u32_t wd;
+    u2_t mar;
+    mar = be ? ~ma : ma;
     case(mmd)
     HI:   wd = mar[1] ? {mdw[15:0], 16'd0} : {16'd0, mdw[15:0]};
     SHI:  wd = mar[1] ? {mdw[15:0], 16'd0} : {16'd0, mdw[15:0]};
@@ -404,8 +412,10 @@ parameter MTIMECMP = 32'hffff8008;
     return wd;
   endfunction
   
-  function u4_t mem_we(regs_t mwe, wmode_t mmd, u2_t mar);
+  function u4_t mem_we(regs_t mwe, wmode_t mmd, u2_t ma, logic be);
     u4_t we;
+    u2_t mar;
+    mar = be ? ~ma : ma;
     case(mmd)
     SI:   we = 4'b1111;
     HI:   we = mar[1] ? 4'b1100 : 4'b0011;
@@ -417,9 +427,9 @@ parameter MTIMECMP = 32'hffff8008;
   endfunction
   
   assign d_adr = mar;
-  assign d_dw = mem_wdata(mdw, mwe, mmd, mar[1:0]);
-  assign mdr  = mem_rdata(mdr1, mwe1[1], mmd1[1], mar1[1]);
-  assign d_we = mem_we(mwe, mmd, mar[1:0]);
+  assign d_dw = mem_wdata(mdw, mwe, mmd, mar[1:0], d_be);
+  assign mdr  = mem_rdata(mdr1, mwe1[1], mmd1[1], mar1[1], d_be1[1]);
+  assign d_we = mem_we(mwe, mmd, mar[1:0], d_be);
   assign d_re = mwe == RE;
 //  assign d_re = 1'b1;
 
@@ -473,22 +483,24 @@ parameter MTIMECMP = 32'hffff8008;
         mwe1[1] <= mwe1[0];
         mar1[0] <= mar[1:0];
         mar1[1] <= mar1[0];
+        d_be1[0] <= d_be;
+        d_be1[1] <= d_be1[0];
         mdr1 <= d_dr | d_dr1;
 
         if(!(bra_stall)) begin
-        if(!ex_stall) begin
-            rrd1 <= rrd1a;
-            rrd2 <= rrd2a;
-        end
-        bdst <= bdsta;
-        
-        mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);
-        mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);
-        rwa[0] <= ds1 | ds2 ? R_NA : (f_dec.rwa == RD ? awd : 'd0);
-        mmd    <= ds1 | ds2 ? SI   : f_dec.mode;
-        mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
-        rwd[0] <= ds1 | ds2 ? R_NA : f_dec.rwd;
-        alu    <= ds1 | ds2 ? A_NA : f_dec.alu;
+            if(!ex_stall) begin
+                rrd1 <= rrd1a;
+                rrd2 <= rrd2a;
+            end
+            bdst <= bdsta;
+            
+            mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);
+            mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);
+            rwa[0] <= ds1 | ds2 ? R_NA : (f_dec.rwa == RD ? awd : 'd0);
+            mmd    <= ds1 | ds2 ? SI   : f_dec.mode;
+            mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
+            rwd[0] <= ds1 | ds2 ? R_NA : f_dec.rwd;
+            alu    <= ds1 | ds2 ? A_NA : f_dec.alu;
     //  end else begin
     //    alu    <= ds1 | ds2 ? A_NA : f_dec.alu; //
         end
