@@ -181,3 +181,61 @@ void remove_user_irqh_2(void)
     user_irqh2 = 0;
 }
 
+//===== 2012/08/11 memif/sr_cache control
+
+void d_cache_flush()
+{
+        *CACHECTRL = 2; // flush d-cache
+        while(*CACHECTRL);
+}
+
+void d_cache_clean()
+{
+        *CACHECTRL = 1; // clean d-cache
+        while(*CACHECTRL);
+}
+
+void i_cache_clean()
+{
+        *CACHECTRL = 4; // clean i-cache
+        while(*CACHECTRL);
+}
+
+void cache_flush()
+{
+        *CACHECTRL = 7; // flush and clean all
+        while(*CACHECTRL);
+}
+
+static time_t rtc2time(u16 rtc[])
+{
+        time_t ltime;
+        ltime.year = (2000+((rtc[3]>>4)&0x3)*10+(rtc[3]&0xf)) - 1980;
+        ltime.month = ((rtc[3]>>12)&0x1)*10+((rtc[3]>>8)&0xf);
+        ltime.day = ((rtc[2]>>4)&0x3)*10+(rtc[2]&0xf);
+        ltime.hour = ((rtc[1]>>4)&0x3)*10+(rtc[1]&0xf);
+        ltime.min = ((rtc[1]>>12)&0x7)*10+((rtc[1]>>8)&0xf);
+        ltime.sec = (((rtc[0]>>4)&0x7)*10+(rtc[0]&0xf));
+        return ltime;
+}
+
+//#define HAS_RTC
+
+time_t get_time()
+{
+        time_t ltime;
+#ifdef HAS_RTC
+        u16 rtc[4];
+//        i2c_read(RTC, 0, rtc, 4);
+        i2c_read(RTC, 0, rtc, 4);
+        ltime = rtc2time(rtc);
+#else
+        ltime.year = 2018-1980;
+        ltime.month = 9;
+        ltime.day = 12;
+        ltime.hour = 0;
+        ltime.min = 0;
+        ltime.sec = 0;
+#endif
+        return ltime;
+}

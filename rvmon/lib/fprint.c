@@ -11,7 +11,7 @@
 #include "time.h"
 #include "ulib.h"
 //#include "fat.h"
-//#include "ff.h"
+#include "ff.h"
 
 #if 0   // for logic simulation
 #define DBG_PUTC	((volatile u8*)0xffff0004)
@@ -37,10 +37,10 @@ FILE _stdio = {{1}, uart_read, uart_write};
 #define stdin	(&_stdio)
 
 
-//#define FAT_NR_FILE     2	// Number of files which can be opened simultaneously
-//static FATFS Fatfs;		/* File system object	*/
-//static FIL fil[FAT_NR_FILE];	/* File object		*/
-//static FILE fptr[FAT_NR_FILE];	/* stdio File pointer	*/
+#define FAT_NR_FILE     2	// Number of files which can be opened simultaneously
+static FATFS Fatfs;		/* File system object	*/
+static FIL fil[FAT_NR_FILE];	/* File object		*/
+static FILE fptr[FAT_NR_FILE];	/* stdio File pointer	*/
 
 //---------- memory read / write driver -------------------------------
 static ssize_t mem_read(int fd, char *buf, size_t n)
@@ -61,7 +61,7 @@ static ssize_t mem_write(int fd, const char *buf, size_t n)
     }
     return i;
 }
-#if 0
+#if 1
 //---------- file read / write driver -------------------------------
 static ssize_t fat_read(int fd, char *buf, size_t n)
 {
