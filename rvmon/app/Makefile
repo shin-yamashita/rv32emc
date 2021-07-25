@@ -50,13 +50,14 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$(@:.elf=.map),-T,lnkscr.x  -fpie -nostdlib -L../lib
 # -L$(LDSCRIPT)
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c
-
+SRCS	= gauss.c pi.c ecc.c ll.c rm.c d.c echo.c cat.c cp.c mkdir.c
+# hello.c mmc.c date.c fptest.c 
 
 PRGS    = $(SRCS:.c=.elf)
 OBJS    = $(SRCS:.c=.o)
 DEPS	= $(SRCS:.c=.dep)
 MOT		= $(SRCS:.c=.mot)
+CMDS	= $(SRCS:.c=)
 
 all:	$(PRGS) $(MOT)
 
@@ -66,6 +67,7 @@ list:	$(SRCS:.c=.lst)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.mot:	%.elf
+#	$(OBJCP) -O srec -S -R .stack $< $@
 	$(OBJCP) -O srec --srec-forceS3 -S -R .stack $< $@
 
 %.lst:	%.elf
@@ -83,12 +85,14 @@ list:	$(SRCS:.c=.lst)
 
 install:	$(MOT)
 	cp -p $^ ../term/
+	@echo "mld " $(CMDS)
 
 clean:
-	@rm -f $(PRGS) *.o core.* a.out *~ \#*\# *.map *.lst *.ref *.gcc *.out *.bin *.mot *.mem
+	@rm -f $(PRGS) *.o core.* a.out *~ \#*\# *.map *.lst *.ref *.gcc *.out *.bin *.mot *.mem *.dep *.bak
 
 %.dep:	%.c
-	$(CC) $(CFLAGS) -MM $< > $@
+	$(CC) $(CFLAGS) -MM $< | head -c -1 - > $@
+	echo " ../rvmon ../lib/libmc.a " >> $@
 
 depend:	$(DEPS)
 	cp Makefile Makefile.bak
@@ -99,13 +103,19 @@ depend:	$(DEPS)
 
 #----- dependences -----
 
-ecc.o: ecc.c ../include/stdio.h ../include/types.h ../include/stdint.h
+ecc.o: ecc.c ../include/stdio.h ../include/types.h ../include/stdint.h ../rvmon ../lib/libmc.a 
 fptest.o: fptest.c ../include/stdio.h ../include/types.h \
- ../include/stdint.h ../include/ulib.h ../include/uartdrv.h
+ ../include/stdint.h ../include/ulib.h ../include/uartdrv.h ../rvmon ../lib/libmc.a 
 gauss.o: gauss.c ../include/stdio.h ../include/types.h \
- ../include/stdint.h
+ ../include/stdint.h ../rvmon ../lib/libmc.a 
 hello.o: hello.c ../include/stdio.h ../include/types.h \
- ../include/stdint.h ../include/ulib.h ../include/uartdrv.h
+ ../include/stdint.h ../include/ulib.h ../include/uartdrv.h ../rvmon ../lib/libmc.a 
+ll.o: ll.c ../include/stdio.h ../include/types.h ../include/stdint.h \
+ ../include/ulib.h ../include/uartdrv.h ../include/time.h ../include/ff.h \
+ ../include/integer.h ../include/ffconf.h ../rvmon ../lib/libmc.a 
+mmc.o: mmc.c ../include/stdio.h ../include/types.h ../include/stdint.h \
+ ../lib/diskio.h ../include/integer.h ../include/ulib.h \
+ ../include/uartdrv.h ../rvmon ../lib/libmc.a 
 mul.o: mul.c ../include/stdio.h ../include/types.h ../include/stdint.h \
- ../include/ulib.h ../include/uartdrv.h
-pi.o: pi.c ../include/stdio.h ../include/types.h ../include/stdint.h
+ ../include/ulib.h ../include/uartdrv.h ../rvmon ../lib/libmc.a 
+pi.o: pi.c ../include/stdio.h ../include/types.h ../include/stdint.h ../rvmon ../lib/libmc.a 

@@ -3,6 +3,9 @@
 //
 
 #include "stdio.h"
+#include <stdlib.h>
+#include <string.h>
+
 #include "ulib.h"
 #include "time.h"
 
@@ -62,6 +65,21 @@ void init_timer(int br)
     csrs(mie, MTIE);
     //	csrc(mip, MTIE);
 }
+void disable_timer()
+{
+    csrc(mie, MTIE);
+}
+void enable_timer()
+{
+    *mtime = 0l;
+    *mtimecmp = (u64)_br;
+    csrs(mie, MTIE);
+}
+clock_t clock()
+{
+    return *mtime;
+}
+
 void at_exit()
 {
     printf("** exit() timer: %d\n", timer);
@@ -207,6 +225,64 @@ void cache_flush()
         while(*CACHECTRL);
 }
 
+static time_t ltime;
+static int DoM(int month, int year){
+    year += 1980;
+    int leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+    return (month == 2) ? (leap ? 28 : 29) : ((month+month/8) % 2 ? 31 : 30);
+}
+
+void update_rtc_1s()
+{
+    if(ltime.sec >= 59){
+        ltime.sec = 0;
+        if(ltime.min >= 59){
+            ltime.min = 0;
+            if(ltime.hour >= 23){
+                ltime.hour = 0;
+                if(ltime.day >= DoM(ltime.month, ltime.year)){
+                    ltime.day = 1;
+                    if(ltime.month >= 12){
+                        ltime.month = 1;
+                        ltime.year++;
+                    }else{
+                        ltime.month++;
+                    }
+                }else{
+                    ltime.day++;
+                }
+
+            }else{
+                ltime.hour++;
+            }
+        }else{
+            ltime.min++;
+        }
+    }else{
+        ltime.sec++;
+    }
+}
+
+time_t str2time(char *str)
+{
+    char *tok;
+    time_t ltime;
+    tok = strtok(str, " /:\n");
+    if(tok) ltime.year = atoi(tok) - 1980;
+    tok = strtok(NULL, " /:\n");
+    if(tok) ltime.month = atoi(tok);
+    tok = strtok(NULL, " /:\n");
+    if(tok) ltime.day = atoi(tok);
+    tok = strtok(NULL, " /:\n");
+    if(tok) ltime.hour = atoi(tok);
+    tok = strtok(NULL, " /:\n");
+    if(tok) ltime.min = atoi(tok);
+    tok = strtok(NULL, " /:\n");
+    if(tok) ltime.sec = atoi(tok);
+    return ltime;
+}
+
+/*---
 static time_t rtc2time(u16 rtc[])
 {
         time_t ltime;
@@ -218,24 +294,25 @@ static time_t rtc2time(u16 rtc[])
         ltime.sec = (((rtc[0]>>4)&0x7)*10+(rtc[0]&0xf));
         return ltime;
 }
+---*/
 
 //#define HAS_RTC
-
-time_t get_time()
+time_t set_strtime(char *str)
 {
-        time_t ltime;
-#ifdef HAS_RTC
-        u16 rtc[4];
-//        i2c_read(RTC, 0, rtc, 4);
-        i2c_read(RTC, 0, rtc, 4);
-        ltime = rtc2time(rtc);
-#else
-        ltime.year = 2018-1980;
-        ltime.month = 9;
-        ltime.day = 12;
-        ltime.hour = 0;
-        ltime.min = 0;
-        ltime.sec = 0;
-#endif
+    return ltime = str2time(str);
+}
+
+time_t set_ltime(int Y, int M, int d, int h, int m, int s)
+{
+    ltime.year = Y - 1980; // A.D.
+    ltime.month = M;    // 1:12
+    ltime.day = d;  // 1:31
+    ltime.hour = h; // 0:23
+    ltime.min = m;  // 0:59
+    ltime.sec = s;  // 0:59
+    return ltime;
+}
+time_t get_ltime()
+{
         return ltime;
 }

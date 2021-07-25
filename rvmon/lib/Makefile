@@ -16,7 +16,7 @@ CFLAGS	= -g -Wall $(MFLAG) -nostartfiles -O2 -I../include -DTXIRQ
 LDFLAGS = -g -Wall $(MFLAG) -nostdlib
 ARFLAGS	= crs
 
-SRCS1    = ulib.c uartdrv.c fprint.c strtok.c strlen.c memset.c memclr.c ff.c mmcbb.c
+SRCS1    = ulib.c uartdrv.c fprint.c strtok.c strlen.c memset.c memclr.c ff.c mmcbb.c memcpy32.c readline.c
 OBJS1    = $(SRCS1:.c=.o)
 DEPS    = $(SRCS1:.c=.dep)
 
@@ -49,11 +49,13 @@ depend:	$(DEPS)
 
 #----- dependences -----
 
-ff.o: ff.c ../include/stdio.h ../include/types.h ../include/stdint.h ff.h \
- ../include/integer.h ffconf.h diskio.h
+ff.o: ff.c ../include/stdio.h ../include/types.h ../include/stdint.h \
+ ../include/ff.h ../include/integer.h ../include/ffconf.h diskio.h \
+ ../include/integer.h
 fprint.o: fprint.c ../include/stdio.h ../include/types.h \
  ../include/stdint.h ../include/time.h ../include/ulib.h \
- ../include/uartdrv.h
+ ../include/uartdrv.h ../include/ff.h ../include/integer.h \
+ ../include/ffconf.h
 memclr.o: memclr.c
 memset.o: memset.c
 mmcbb.o: mmcbb.c ../include/stdio.h ../include/types.h \

@@ -43,6 +43,8 @@ CFLAGS	= -g -Wall -O2 $(MFLAG)  -nostartfiles -I./include
 
 #LDFLAGS =  -nostdlib -Wl,-Map,$(TARGET).map
 LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x  -nostdlib -L./lib
+#LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,lnkscr.x  -nostdlib -L./lib
+
 LDLIBS  = -lmc -lm -lc -lgcc
 
 SRCS	= rvmon.c
@@ -53,13 +55,17 @@ DEPS	= $(SRCS:.c=.dep) crt0.dep
 MEM	= $(SRCS:.c=.mem)
 REF	= $(SRCS:.c=.ref)
 
-all:	$(PRGS)
+all:	$(PRGS) lib
+
+lib:
+	make -C lib
 
 mem:	$(MEM)
 
 list:	$(SRCS:.c=.lst)
 
 rvmon:	crt0.o $(OBJS) 
+	make -C lib
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.mot:	%
@@ -87,12 +93,14 @@ rvmon:	crt0.o $(OBJS)
 install:	rvmon.mem rvmon
 	cp -p rvmon.mem ../rv_core/syn-mm
 	cp -p rvmon ../rv_core/syn-mm/rvmon.elf
+	make -C app install
 
 clean:
 	@rm -f $(PRGS) *.o core* a.out *~ \#*\# *.map *.lst *.ref *.gcc *.out *.bin *.mot *.mem
 
 %.dep:	%.c
-	$(CC) $(CFLAGS) -MM $< > $@
+	$(CC) $(CFLAGS) -MM $< | head -c -1 - > $@
+	echo " lib/libmc.a " >> $@
 
 %.dep:	%.S
 	$(CC) $(CFLAGS) -MM $< > $@
@@ -108,4 +116,4 @@ depend:	$(DEPS)
 
 crt0.o: crt0.S
 rvmon.o: rvmon.c include/stdio.h include/types.h include/stdint.h \
- include/ulib.h include/uartdrv.h
+ include/ulib.h include/uartdrv.h lib/libmc.a 

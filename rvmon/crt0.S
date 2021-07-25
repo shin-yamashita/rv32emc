@@ -51,7 +51,7 @@ __errno:
 
 
   .equ REGBYTES, 4
-  .equ CONTEXT_SIZE, 14*REGBYTES
+  .equ CONTEXT_SIZE, 12*REGBYTES
   .macro lxsp a, b
   lw \a, ((\b)*REGBYTES)(sp)
   .endm
@@ -78,8 +78,8 @@ _irq_handle:
     sxsp    t0, 9
     sxsp    t1, 10
     sxsp    t2, 11
-    sxsp    gp, 12
-    sxsp    tp, 13
+#    sxsp    gp, 12
+#    sxsp    tp, 13
 
     # Invoke the handler.
     mv      a0, sp
@@ -100,8 +100,8 @@ _irq_handle:
     lxsp    t0, 9
     lxsp    t1, 10
     lxsp    t2, 11
-    lxsp    gp, 12
-    lxsp    tp, 13
+#    lxsp    gp, 12
+#    lxsp    tp, 13
     addi sp, sp, CONTEXT_SIZE
 
     # Return

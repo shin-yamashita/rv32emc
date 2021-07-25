@@ -13,24 +13,6 @@
 //#include "fat.h"
 #include "ff.h"
 
-#if 0   // for logic simulation
-#define DBG_PUTC	((volatile u8*)0xffff0004)
-ssize_t _write (int fd, const char *ptr, size_t len)
-{
-#if 0
-    asm("li t0,64");
-    asm("ecall");
-#else
-    ssize_t c = 0;
-    while(len-- && *ptr){
-        *DBG_PUTC = *ptr++;
-        c++;
-    }
-#endif
-    return c;
-}
-#endif
-
 FILE _stdio = {{1}, uart_read, uart_write};
 //FILE _stdio = {{1}, uart_read, _write};
 #define stdout	(&_stdio)
@@ -38,9 +20,41 @@ FILE _stdio = {{1}, uart_read, uart_write};
 
 
 #define FAT_NR_FILE     2	// Number of files which can be opened simultaneously
+
 static FATFS Fatfs;		/* File system object	*/
 static FIL fil[FAT_NR_FILE];	/* File object		*/
 static FILE fptr[FAT_NR_FILE];	/* stdio File pointer	*/
+
+#if 0
+void dbg_dump(int fd)
+{
+    printf("dbg_dump FIL fil[%d] @%x:", fd, &fil[fd]);
+#if 0
+    FATFS*  fs;     /* Pointer to the owner file system object */
+    WORD    id;     /* Owner file system mount ID */
+    BYTE    flag;       /* File status flags */
+    BYTE    pad1;
+    DWORD   fptr;       /* File read/write pointer (0 on file open) */
+    DWORD   fsize;      /* File size */
+    DWORD   sclust;     /* File start cluster (0 when fsize==0) */
+    DWORD   clust;      /* Current cluster */
+    DWORD   dsect;      /* Current data sector */
+    DWORD   dir_sect;   /* Sector containing the directory entry */
+    BYTE*   dir_ptr;    /* Ponter to the directory entry in the window */
+#endif
+    printf(" FATFS* fs : %x\n", fil[fd].fs);
+    printf(" WORD   id : %d\n", fil[fd].id);
+    printf(" BYTE flag : %x\n", fil[fd].flag);
+    printf(" BYTE pad1 : %d\n", fil[fd].pad1);
+    printf(" DWORD fptr : %x\n", fil[fd].fptr);
+    printf(" DWORD fsize : %d\n", fil[fd].fsize);
+    printf(" DWORD sclust : %d\n", fil[fd].sclust);
+    printf(" DWORD clust : %d\n", fil[fd].clust);
+    printf(" DWORD dsect : %d\n", fil[fd].dsect);
+    printf(" DWORD dir_sect : %d\n", fil[fd].dir_sect);
+    printf(" BYTE* dir_ptr : %x\n", fil[fd].dir_ptr);
+}
+#endif
 
 //---------- memory read / write driver -------------------------------
 static ssize_t mem_read(int fd, char *buf, size_t n)
@@ -82,19 +96,19 @@ static ssize_t fat_write(int fd, const char *buf, size_t n)
 /*---------------------------------------------------------*/
 DWORD get_fattime (void)
 {
-    time_t ltime = get_time();
+    time_t ltime = get_ltime();
     DWORD fat_tm;
-    fat_tm =  ltime.year & 0x7f;
+    fat_tm =  ltime.year;
     fat_tm <<= 4;
-    fat_tm |= ltime.month & 0x0f;
+    fat_tm |= ltime.month;
     fat_tm <<= 5;
-    fat_tm |= ltime.day & 0x1f;
+    fat_tm |= ltime.day;
     fat_tm <<= 5;
-    fat_tm |= ltime.hour & 0x1f;
+    fat_tm |= ltime.hour;
     fat_tm <<= 6;
-    fat_tm |= ltime.min & 0x3f;
+    fat_tm |= ltime.min;
     fat_tm <<= 5;
-    fat_tm |= (ltime.sec>>1) & 0x1f;
+    fat_tm |= (ltime.sec>>1);
     return fat_tm;
 }
 
@@ -400,6 +414,7 @@ int vfprintf(FILE *fp, const char *fmt, va_list ap)
 {
     int d, rv = 0, cnt = 0;
     fu_t f;
+    float ff;
     char c, *s;
 
     while ((c = *fmt++)){
@@ -453,8 +468,10 @@ int vfprintf(FILE *fp, const char *fmt, va_list ap)
                 rv = print_dec(fp, d, digit, flg|FLG_UNSGN);
                 break;
             case 'f':
-                f.u = va_arg(ap, int);
-                rv = print_float(fp, f.f, digit, dp, flg);
+                // f.u = va_arg(ap, int);
+                // rv = print_float(fp, f.f, digit, dp, flg);
+                ff = va_arg(ap, double);
+                rv = print_float(fp, ff, digit, dp, flg);
                 break;
             case 'x':
                 d = va_arg(ap, int);

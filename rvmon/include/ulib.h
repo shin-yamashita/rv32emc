@@ -221,8 +221,11 @@ float get_temp();	// get FPGA temperature (deg)
 float get_vbatt();	// get battery voltage (V)
 
 void init_timer(int br);
+void disable_timer();
+void enable_timer();
+
 void set_expose(int exp);
-void timer_ctrl(void);
+//void timer_ctrl(void);
 void wait(void);	// wait 1 ms
 void n_wait(int n);	// wait n ms
 void set_timer(int t);	// set 1ms counter val
@@ -272,7 +275,7 @@ unsigned int str2u32(char *s);
 extern u32 _bss_start, _end;
 #define	zero_bss()	{u32 *p;for(p=&_bss_start;p<&_end;*p++=0);}
 // get stack pointer
-static inline u32 get_sp(){u32 sp;__asm__("mov sp,%0" : "=r" (sp));return sp;}
+static inline u32 get_sp(){u32 sp;__asm__("mv %0,sp" : "=r" (sp));return sp;}
 
 //====== 2012/08/11 memif/sr_cache
 void d_cache_flush();
@@ -282,9 +285,9 @@ void cache_flush();
 
 //------------------------------------------------------------------
 // CPU clock frequency (Hz)
-//#define f_clk	100e6
-#define f_clk	60e6
-//#define f_clk	48e6
+//#define f_clk	((float)100e6)
+#define f_clk	((float)60e6)
+//#define f_clk	((float)48e6)
 //#define f_clk	42e6
 //#define f_clk	36e6
 //#define f_clk	30e6
