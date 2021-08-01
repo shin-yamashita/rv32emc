@@ -20,19 +20,20 @@ ssize_t _write (int fd, const char *ptr, size_t len)
 #if 0
   asm("li t0,64");
   asm("ecall");
+  return len;
 #else
   ssize_t c = 0;
   while(len-- && *ptr){
     *DBG_PUTC = *ptr++;
     c++;
   }
-#endif
   return c;
+#endif
 }
 
 
-FILE _stdio = {{1}, uart_read, uart_write};
-//FILE _stdio = {{1}, uart_read, _write};
+//FILE _stdio = {{1}, uart_read, uart_write};
+FILE _stdio = {{1}, uart_read, _write};
 #define stdout	(&_stdio)
 #define stdin	(&_stdio)
 

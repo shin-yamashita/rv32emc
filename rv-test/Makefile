@@ -28,6 +28,7 @@ ifeq ($(ARCH), RV32EMC)
  PREFIX  = /opt/rv32e/bin/riscv32-unknown-elf-
  PREFIX32  = $(PREFIX)
  MFLAG   = -march=rv32emc -mabi=ilp32e
+# MFLAG   = -march=rv32emc_zfinx -mabi=ilp32e
 endif
 
 
@@ -48,7 +49,8 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x -nostdlib -L./lib
 # -L$(LDSCRIPT)
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c rvmon.c
+SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c
+# rvmon.c
 # endian.c
 #fplib.c sr_test.c
 

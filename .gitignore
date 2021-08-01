@@ -10,6 +10,16 @@
 *.sav
 *.ref
 *.out
+*.mot
+*.elf
+.cproject
+.settings/
+.pydevproject
 rvsim/rvsim
 .project
 .vscode/
+.Xil/
+rev*/
+rvmon/term/term
+rvsim/rv_dec_insn.sv
+rvsim/rv_exp_cinsn.sv
