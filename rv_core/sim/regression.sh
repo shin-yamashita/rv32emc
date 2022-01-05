@@ -10,13 +10,13 @@ function chkerr
 
 prj=rvc
 
-source /opt/Xilinx/Vivado/2019.2/settings64.sh
+source xilinx_env.sh
 
 echo Simulation Tool: Viavdo Simulator $prj
 
 echo Compile tb_$prj with no waveform mode
 
-xelab tb_$prj -generic_top "debug=0" -timescale 1ns/1ns -prj tb_$prj.prj -i ../hdl -L unisims_ver -s tb_$prj
+xelab work.tb_$prj -generic_top "debug=0" -timescale 1ns/1ns -prj tb_$prj.prj -i ../hdl -L unisims_ver -s tb_$prj
 
 prog="hello mul ecc fptest pi gauss"
 

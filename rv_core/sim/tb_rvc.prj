@@ -11,7 +11,7 @@ sv work ./rvc.sv
 
 sv work ../../rv_io/rv_sio.sv
 
-verilog work  /opt/Xilinx/Vivado/2019.2/data/verilog/src/glbl.v
+verilog work  $XILINX_VIVADO/data/verilog/src/glbl.v
 
 sv work tb_rvc.sv
 

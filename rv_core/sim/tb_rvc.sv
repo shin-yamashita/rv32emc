@@ -6,15 +6,15 @@
 `include "rv_types.svh"
 
 parameter SYS_exit = 93;
-parameter debug = 0;
 
-module tb_rvc (
+module tb_rvc #(parameter debug = 0) (
   input  u8_t  pin,
   output u8_t  pout
   );
 
  logic clk = 1;
  logic xreset;
+ logic rxd, txd;
 
  always #5       // 100MHz
         clk <= !clk;
@@ -28,10 +28,7 @@ module tb_rvc (
  end
 
  u32_t ir, rwdat;
- logic rxd, txd;
 
- assign rxd = txd;
- 
  rvc #(.debug(debug)) u_rvc (.clk, .xreset, .pin, .pout, .rxd, .txd);
 
 // bit i_dr_match, d_dr_match;

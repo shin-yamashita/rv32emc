@@ -7,7 +7,7 @@
 `timescale 1ns/1ns
 `include "rv_types.svh"
 
-import  pkg_rv_decode::*;
+//import  pkg_rv_decode::*;
 
 module rv_sio (
     input  logic clk,

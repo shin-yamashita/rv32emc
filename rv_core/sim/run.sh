@@ -14,7 +14,7 @@ if [ $# = 1 ] ; then
  prj=$1
 fi
 
-source /opt/Xilinx/Vivado/2019.2/settings64.sh
+source xilinx_env.sh
 
 echo Simulation Tool: Viavdo Simulator $prj
 

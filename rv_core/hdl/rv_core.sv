@@ -339,8 +339,8 @@ parameter MTIMECMP = 32'hffff8008;
       mtime     <= 'd0;
       mtimecmp  <= 'd0;
       d_dr1     <= 'd0;
-    end else if(rdy) begin
-      if(d_we != 'd0) begin
+    end else begin
+      if(rdy && (d_we != 'd0)) begin
         case(d_adr)
         MTIME:        mtime[31:0]   <= d_dw;
         MTIME+'d4:    mtime[63:32]  <= d_dw;
@@ -353,16 +353,18 @@ parameter MTIMECMP = 32'hffff8008;
       end else begin
         mtime <= mtime + 'd1;
       end
-      if(d_re) begin
-        case(d_adr)
-        MTIME:        d_dr1 <= mtime[31:0];
-        MTIME+'d4:    d_dr1 <= mtime[63:32];
-        MTIMECMP:     d_dr1 <= mtimecmp[31:0];
-        MTIMECMP+'d4: d_dr1 <= mtimecmp[63:32];
-        default:      d_dr1 <= 'd0;
-        endcase
-      end else begin
-        d_dr1 <= 'd0;
+      if(rdy) begin
+        if(d_re) begin
+          case(d_adr)
+          MTIME:        d_dr1 <= mtime[31:0];
+          MTIME+'d4:    d_dr1 <= mtime[63:32];
+          MTIMECMP:     d_dr1 <= mtimecmp[31:0];
+          MTIMECMP+'d4: d_dr1 <= mtimecmp[63:32];
+          default:      d_dr1 <= 'd0;
+          endcase
+        end else begin
+          d_dr1 <= 'd0;
+        end
       end
     end
   end
@@ -466,7 +468,7 @@ parameter MTIMECMP = 32'hffff8008;
     
         d_stall <= (ds1 | ds2);
         if(f_dec.excyc == 0 || cmpl || bra_stall)
-        pc  <= pca;
+                pc  <= pca;
 
         pc1 <= pc;
         rwdat1   <= rwdat[0];
