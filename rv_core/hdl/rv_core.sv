@@ -139,7 +139,7 @@ assign i_re = 1'b1;
   u32_t   ira;
   u16_t   i_dr1;
   assign  ira = i_dr;
-  assign  i_adr = pca;
+  assign  i_adr = rdy ? pca : pc;
 
   always_ff @ (posedge clk) begin
     if(!xreset) begin
