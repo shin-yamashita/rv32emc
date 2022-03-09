@@ -35,7 +35,7 @@ libmc.a:	$(OBJS1)
 	$(CC) $(CFLAGS) -c $<
 
 %.dep:	%.c
-	$(CPP) $(CFLAGS) -M $< > $@
+	$(CPP) $(CFLAGS) -MM $< > $@
 
 clean:
 	@rm -f *.abs *.o core* a.out *~ \#*\#  *.map *.lst *.dep libmc.a
@@ -44,93 +44,24 @@ depend:	$(DEPS)
 	cp Makefile Makefile.bak
 	sed '/^#----- dependences -----/q' Makefile.bak >Makefile
 	echo >>Makefile
-	cat *.dep | \
-	  sed 's/\/usr\/[^ ]* *//g;/^  \\$$/d' |\
-	  grep -v '^ \\$$' >>Makefile
+	cat *.dep >>Makefile
 	rm -f *.dep
 #       $(CPP) $(CFLAGS) -M $(SRCS) | \
 
 #----- dependences -----
 
-fprint.o: fprint.c ../include/stdio.h \
- /opt/rv32e/riscv32-unknown-elf/include/_ansi.h \
- /opt/rv32e/riscv32-unknown-elf/include/newlib.h \
- /opt/rv32e/riscv32-unknown-elf/include/_newlib_version.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/config.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/ieeefp.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/features.h ../include/types.h \
- /opt/rv32e/lib/gcc/riscv32-unknown-elf/9.2.0/include/stdarg.h \
- /opt/rv32e/riscv32-unknown-elf/include/string.h \
- /opt/rv32e/riscv32-unknown-elf/include/_ansi.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/reent.h \
- /opt/rv32e/lib/gcc/riscv32-unknown-elf/9.2.0/include/stddef.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/_types.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/_types.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/_default_types.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/lock.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/cdefs.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/_locale.h \
- /opt/rv32e/riscv32-unknown-elf/include/strings.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/string.h ../include/time.h \
- ../include/ulib.h ../include/uartdrv.h
-fsqrt.o: fsqrt.c ../include/stdio.h \
- /opt/rv32e/riscv32-unknown-elf/include/_ansi.h \
- /opt/rv32e/riscv32-unknown-elf/include/newlib.h \
- /opt/rv32e/riscv32-unknown-elf/include/_newlib_version.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/config.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/ieeefp.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/features.h ../include/types.h \
- /opt/rv32e/lib/gcc/riscv32-unknown-elf/9.2.0/include/stdarg.h \
- ../include/types.h
+fprint.o: fprint.c ../include/stdio.h ../include/types.h \
+ ../include/stdint.h ../include/time.h ../include/ulib.h \
+ ../include/uartdrv.h
+fsqrt.o: fsqrt.c ../include/stdio.h ../include/types.h \
+ ../include/stdint.h ../include/types.h
+memclr.o: memclr.c
+memset.o: memset.c
 rcp.o: rcp.c
-sincos.o: sincos.c /opt/rv32e/riscv32-unknown-elf/include/math.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/reent.h \
- /opt/rv32e/riscv32-unknown-elf/include/_ansi.h \
- /opt/rv32e/riscv32-unknown-elf/include/newlib.h \
- /opt/rv32e/riscv32-unknown-elf/include/_newlib_version.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/config.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/ieeefp.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/features.h \
- /opt/rv32e/lib/gcc/riscv32-unknown-elf/9.2.0/include/stddef.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/_types.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/_types.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/_default_types.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/lock.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/cdefs.h \
- /opt/rv32e/riscv32-unknown-elf/include/_ansi.h
-strtok.o: strtok.c /opt/rv32e/riscv32-unknown-elf/include/string.h \
- /opt/rv32e/riscv32-unknown-elf/include/_ansi.h \
- /opt/rv32e/riscv32-unknown-elf/include/newlib.h \
- /opt/rv32e/riscv32-unknown-elf/include/_newlib_version.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/config.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/ieeefp.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/features.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/reent.h \
- /opt/rv32e/riscv32-unknown-elf/include/_ansi.h \
- /opt/rv32e/lib/gcc/riscv32-unknown-elf/9.2.0/include/stddef.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/_types.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/_types.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/_default_types.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/lock.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/cdefs.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/_locale.h \
- /opt/rv32e/riscv32-unknown-elf/include/strings.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/string.h
-uartdrv.o: uartdrv.c ../include/stdio.h \
- /opt/rv32e/riscv32-unknown-elf/include/_ansi.h \
- /opt/rv32e/riscv32-unknown-elf/include/newlib.h \
- /opt/rv32e/riscv32-unknown-elf/include/_newlib_version.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/config.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/ieeefp.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/features.h ../include/types.h \
- /opt/rv32e/lib/gcc/riscv32-unknown-elf/9.2.0/include/stdarg.h \
- ../include/ulib.h ../include/uartdrv.h
-ulib.o: ulib.c ../include/stdio.h \
- /opt/rv32e/riscv32-unknown-elf/include/_ansi.h \
- /opt/rv32e/riscv32-unknown-elf/include/newlib.h \
- /opt/rv32e/riscv32-unknown-elf/include/_newlib_version.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/config.h \
- /opt/rv32e/riscv32-unknown-elf/include/machine/ieeefp.h \
- /opt/rv32e/riscv32-unknown-elf/include/sys/features.h ../include/types.h \
- /opt/rv32e/lib/gcc/riscv32-unknown-elf/9.2.0/include/stdarg.h \
+sincos.o: sincos.c
+strlen.o: strlen.c
+strtok.o: strtok.c
+uartdrv.o: uartdrv.c ../include/stdio.h ../include/types.h \
+ ../include/stdint.h ../include/ulib.h ../include/uartdrv.h
+ulib.o: ulib.c ../include/stdio.h ../include/types.h ../include/stdint.h \
  ../include/ulib.h ../include/uartdrv.h ../include/time.h
