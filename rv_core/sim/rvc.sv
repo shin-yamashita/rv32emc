@@ -51,15 +51,15 @@ module rvc #( parameter debug = 0 ) (
 // synthesis translate_on
 
   always @(posedge clk) begin
-    if(d_we[0] && d_adr == 32'hffff0000)
+    if(d_we[0] && d_adr == 32'hffff0000)  // 8bit pararell output port
       pout <= d_dw[7:0];
 // synthesis translate_off
-    else if(d_we[0] && d_adr == 32'hffff0004)
+    else if(d_we[0] && d_adr == 32'hffff0004) // debug _write()
       $fwrite(STDERR, "%c", d_dw[7:0]);
 //      $write("%c", d_dw[7:0]);
 // synthesis translate_on
 
-    if(d_re && d_adr == 32'hffff0000)
+    if(d_re && d_adr == 32'hffff0000) // 8bit pararell input port
       pin_en <= 1'b1;
     else
       pin_en <= 1'b0;
@@ -73,12 +73,12 @@ module rvc #( parameter debug = 0 ) (
        .clk  (clk),
 
        .enaA (1'b1),      // read port
-       .addrA(i_adr[14:1]),	// half word address
+       .addrA(i_adr[14:1]),	// half (16bit) word address
        .doutA(i_dr),
        
        .enaB (enaB),     // read write port
        .weB  (d_we),
-       .addrB(d_adr[14:2]),
+       .addrB(d_adr[14:2]), // 32bit word address
        .dinB (d_dw),
        .doutB(d_dr1)
        );
@@ -89,7 +89,7 @@ module rvc #( parameter debug = 0 ) (
   u4_t  we;
   u32_t dw, dr;
 
-// ffff0020
+// ffff0020  async serial terminal
   assign cs = {d_adr[31:5],5'h0} == 32'hffff0020;
   assign rdy = d_rdy;
   assign dsr = 1'b0;
