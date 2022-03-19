@@ -21,5 +21,8 @@ rvsim/rvsim
 .Xil/
 rev*/
 rvmon/term/term
+rvmon/rvmon
 rvsim/rv_dec_insn.sv
 rvsim/rv_exp_cinsn.sv
+rvsim/c-optab.h
+rvsim/optab.h

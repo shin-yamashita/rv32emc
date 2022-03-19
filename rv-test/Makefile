@@ -68,6 +68,9 @@ ref:	$(REF)
 
 list:	$(SRCS:.c=.lst)
 
+lib:
+	make -C lib
+
 #gauss:	gauss.o crt0.o
 #	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 #	$(RUN) $@ > $@.out
@@ -84,10 +87,11 @@ list:	$(SRCS:.c=.lst)
 %.mem:	%.bin
 	od -An -tx4 -v $< > $@
 
-init.o:	init.c
-	$(CC) $(CFLAGS) -c $<
+#init.o:	init.c
+#	$(CC) $(CFLAGS) -c $<
 
-%:	crt0.o init.o %.o
+%:	crt0.o %.o
+	make -C lib
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.ref:	%
@@ -110,7 +114,8 @@ install:	$(MEM) $(REF)
 	cp -p $^ ../rv_core/sim/
 
 clean:
-	@rm -f $(PRGS) *.o core* a.out *~ \#*\# *.map *.lst *.ref *.gcc *.out *.bin *.mot *.mem
+	make clean -C lib
+	@rm -f $(PRGS) *.o core* a.out *~ \#*\# *.map *.lst *.ref *.gcc *.out *.bin *.mot *.mem *.bak
 
 %.dep:	%.c
 	$(CC) $(CFLAGS) -MM $< > $@
@@ -137,5 +142,3 @@ hello.o: hello.c include/stdio.h include/types.h include/stdint.h \
 mul.o: mul.c include/stdio.h include/types.h include/stdint.h \
  include/ulib.h include/uartdrv.h
 pi.o: pi.c include/stdio.h include/types.h include/stdint.h
-rvmon.o: rvmon.c include/stdio.h include/types.h include/stdint.h \
- include/ulib.h include/uartdrv.h

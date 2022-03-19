@@ -200,7 +200,7 @@ size_t fwrite(const void *pt, size_t size, size_t n, FILE *fp)
 int fgetc(FILE *fp)
 {
 	unsigned char chr;
-	if((fp->read)(fp->p.fd, &chr, 1) <= 0) return EOF;
+	if((fp->read)(fp->p.fd, (char*)&chr, 1) <= 0) return EOF;
 	return chr;
 }
 

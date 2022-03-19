@@ -20,7 +20,7 @@ SRCS1    = ulib.c uartdrv.c fprint.c rcp.c sincos.c fsqrt.c strtok.c strlen.c me
 OBJS1    = $(SRCS1:.c=.o)
 DEPS    = $(SRCS1:.c=.dep)
 
-all:	libmc.a fprintf
+all:	libmc.a
 
 fprintf:	fprintf.c
 	gcc -O2 -Wall fprintf.c -o fprintf
@@ -38,7 +38,7 @@ libmc.a:	$(OBJS1)
 	$(CPP) $(CFLAGS) -MM $< > $@
 
 clean:
-	@rm -f *.abs *.o core* a.out *~ \#*\#  *.map *.lst *.dep libmc.a
+	@rm -f *.abs *.o core* a.out *.bak *~ \#*\#  *.map *.lst *.dep libmc.a fprintf
 
 depend:	$(DEPS)
 	cp Makefile Makefile.bak
