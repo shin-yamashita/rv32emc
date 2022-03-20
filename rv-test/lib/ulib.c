@@ -49,6 +49,20 @@ void init_timer(int br)
 	csrs(mie, MTIE);
 //	csrc(mip, MTIE);
 }
+void disable_timer()
+{
+    csrc(mie, MTIE);
+}
+void enable_timer()
+{
+    *mtime = 0l;
+    *mtimecmp = (u64)_br;
+    csrs(mie, MTIE);
+}
+clock_t clock()
+{
+    return *mtime;
+}
 void at_exit()
 {
 	printf("** exit() timer: %d\n", timer);

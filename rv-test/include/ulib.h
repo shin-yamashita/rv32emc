@@ -221,6 +221,9 @@ float get_temp();	// get FPGA temperature (deg)
 float get_vbatt();	// get battery voltage (V)
 
 void init_timer(int br);
+void disable_timer();
+void enable_timer();
+
 void set_expose(int exp);
 void timer_ctrl(void);
 void wait(void);	// wait 1 ms
