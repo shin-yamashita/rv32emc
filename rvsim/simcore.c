@@ -853,7 +853,9 @@ void print_regs_label()
     fprintf(ofp, "   cnt     pc       ir opc      opr                  mar      mdr      mdw "
             "    rrd1     rrd2  alu rwa rwd    rwdat ");
     for(n = 0; n < nview; n++){
-        fprintf(ofp, "    %5s", Reg_nam(view_reg[n], ex_I));
+        char rn[10];
+        sprintf(rn, "%s(%d)", Reg_nam(view_reg[n], ex_I), view_reg[n]);
+        fprintf(ofp, " %8s", rn);
     }
     fprintf(ofp, "\n");
 }
