@@ -17,7 +17,7 @@
 
 ssize_t _write (int fd, const char *ptr, size_t len)
 {
-#if 0
+#if 1
   asm("li t0,64");
   asm("ecall");
   return len;

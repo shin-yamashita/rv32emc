@@ -412,7 +412,7 @@ int disasm(int adr, char *dat, char *opc, char *opr, int *dsp)
 u32 bra_dest(optab_t *op, u32 rs1, u32 rs2, u32 imm, u32 bdst, int pcinc)
 {
     int bra = 0;
-    u32 pc_nxt = -1;
+    u32 pc_nxt = -1;    // -1 => PC increment at fetch()
     if(op->pc == BRA){
         switch(op->func3){
         case 0: if(rs1 == rs2) bra = 1; break;  // beq
@@ -432,7 +432,9 @@ u32 bra_dest(optab_t *op, u32 rs1, u32 rs2, u32 imm, u32 bdst, int pcinc)
     }else if(op->pc == JMP){
         if(op->rrd1 == RS1)
             pc_nxt = (rs1 + imm) & ~0x1;
-        else
+        else if(op->ex == ex_E){
+            return pc_nxt;  // ecall() => PC increment
+        }else
             //            pc_nxt = pc1.q + imm;
             pc_nxt = bdst;
         bra_stall.d = 1;
