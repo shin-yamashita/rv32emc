@@ -1,0 +1,27 @@
+site_name: rv32emc 
+
+theme: 
+    name: material
+    features:
+        - toc.integrate
+
+use_directory_urls: false
+
+markdown_extensions:
+    - mdx_math  
+    - pymdownx.highlight
+    - pymdownx.inlinehilite
+    - pymdownx.superfences
+    - pymdownx.snippets    
+    - admonition
+    - pymdownx.details
+    - attr_list
+    - md_in_html
+    - tables
+    - def_list
+    - pymdownx.tasklist:
+        custom_checkbox: true
+
+extra_javascript:     
+    - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
+
