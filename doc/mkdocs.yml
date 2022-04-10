@@ -4,6 +4,9 @@ theme:
     name: material
     features:
         - toc.integrate
+        - navigation.top
+    icon:
+        repo: fontawesome/brands/github
 
 use_directory_urls: false
 
@@ -21,7 +24,15 @@ markdown_extensions:
     - def_list
     - pymdownx.tasklist:
         custom_checkbox: true
+    - toc:
+        permalink: true
 
 extra_javascript:     
     - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
+
+repo_url: https://github.com/shin-yamashita/rv32emc
+
+repo_name: shin-yamashita/rv32emc
+
+edit_uri: ""
 
