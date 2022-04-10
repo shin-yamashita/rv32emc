@@ -37,7 +37,6 @@ int get_port()
 
 static volatile int timer;
 static volatile int tick;
-static volatile int tmexp, expose;
 static volatile int _br;
 
 void init_timer(int br)
@@ -71,19 +70,6 @@ void enable_irq()
 {
 	csrs(mie, MEIE);
 }
-void set_expose(int exp)
-{
-	expose = exp;
-}
-/*
-void timer_ctrl(void)
-{
-	if(csrr(mip) & MTIE){
-		*mtimecmp += _br;
-	}
-	tmexp++;
-}
-*/
 
 void wait(void)
 {
@@ -115,7 +101,7 @@ static void (*user_irqh2)(void) = 0;
 static void timer_handl(void)
 {
 	if(csrr(mip) & MTIE){
-		set_port(7);
+	//	set_port(7);
 		*mtimecmp += _br;
 		if(timer_irqh_s)
 			(*timer_irqh_s)(); // 1ms system handler call
@@ -125,7 +111,7 @@ static void timer_handl(void)
 		tick = 1;
 		csrs(mie, MTIE);
 	//	csrc(mip, MTIE);
-		reset_port(7);
+	//	reset_port(7);
 	}
 }
 

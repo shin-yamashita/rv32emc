@@ -1,12 +1,12 @@
 //
 // uartdrv.c
-//  mm6 uart control
+//  rv_sio uart control
 //
 
 #include "stdio.h"
 #include "ulib.h"
 
-//	sr_sio interface
+//	rv_sio interface
 
 #define brate(br)       ((int)(f_clk / (br) + 0.5))
 
@@ -21,29 +21,6 @@ void uart_set_baudrate(int sel)
 	}else{
         *SIOBR = brate(sel);
     }
-	//	*SIOBR = brate(230400);
-	//	*SIOBR = brate(115200);
-	//      *SIOBR = brate(57600);
-	//      *SIOBR = brate(38400);
-	//      *SIOBR = brate(19200);
-	//      *SIOBR = brate(9600);
-
-	//	*SIO2BR = brate(921600);	// RN-171 fastest
-	//	*SIO2BR = brate(460800);
-	//	*SIO2BR = brate(230400);
-	//	*SIO2BR = brate(115200);	// TWE-001 default
-	//#endif
-}
-
-void select_uart(int sel)
-{
-	if(sel){	// wireless
-		uart_set_baudrate(1);
-		*GPIO |= 0x1;
-	}else{		// wired
-		uart_set_baudrate(0);
-		*GPIO &= ~0x1;
-	}
 }
 
 #ifdef TXIRQ

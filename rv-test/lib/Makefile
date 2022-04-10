@@ -16,14 +16,11 @@ CFLAGS	= -g -Wall $(MFLAG) -nostartfiles -O2 -I../include -DTXIRQ
 LDFLAGS = -g -Wall $(MFLAG) -nostdlib
 ARFLAGS	= crs
 
-SRCS1    = ulib.c uartdrv.c fprint.c rcp.c sincos.c fsqrt.c strtok.c strlen.c memset.c memclr.c
+SRCS1    = ulib.c uartdrv.c fprint.c strtok.c strlen.c memset.c memclr.c
 OBJS1    = $(SRCS1:.c=.o)
 DEPS    = $(SRCS1:.c=.dep)
 
 all:	libmc.a
-
-fprintf:	fprintf.c
-	gcc -O2 -Wall fprintf.c -o fprintf
 
 libmc.a:	$(OBJS1)
 	$(AR) $(ARFLAGS) libmc.a $(OBJS1)
@@ -51,17 +48,13 @@ depend:	$(DEPS)
 #----- dependences -----
 
 fprint.o: fprint.c ../include/stdio.h ../include/types.h \
- ../include/stdint.h ../include/time.h ../include/ulib.h \
- ../include/uartdrv.h
-fsqrt.o: fsqrt.c ../include/stdio.h ../include/types.h \
- ../include/stdint.h ../include/types.h
+ ../include/time.h ../include/ulib.h ../include/uartdrv.h \
+ ../include/ulib.h
 memclr.o: memclr.c
 memset.o: memset.c
-rcp.o: rcp.c
-sincos.o: sincos.c
 strlen.o: strlen.c
 strtok.o: strtok.c
 uartdrv.o: uartdrv.c ../include/stdio.h ../include/types.h \
- ../include/stdint.h ../include/ulib.h ../include/uartdrv.h
-ulib.o: ulib.c ../include/stdio.h ../include/types.h ../include/stdint.h \
- ../include/ulib.h ../include/uartdrv.h ../include/time.h
+ ../include/ulib.h ../include/uartdrv.h
+ulib.o: ulib.c ../include/stdio.h ../include/types.h ../include/ulib.h \
+ ../include/uartdrv.h ../include/time.h ../include/ulib.h
