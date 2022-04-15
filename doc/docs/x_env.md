@@ -27,9 +27,24 @@ $ sudo mkdir /opt/rv32e # cross tool のインストール先
 $ git clone --branch rvv-0.9.x --recursive https://github.com/riscv/riscv-gnu-toolchain  
 $ cd riscv-gnu-toolchain  
 
+$ patch -p1 < riscv-gdb-sim.patch   # run の修正 patch
+
 $ ./configure --prefix=/opt/rv32e --disable-linux --with-arch=rv32emac --with-abi=ilp32e  
-$ make newlib  
+$ make newlib   # ツール群を /opt/rv32e/ にインストール、書き込み権限が必要
 ```
+
+Download: [riscv-gdb-sim.patch](refdoc/riscv-gdb-sim.patch)  
+
+??? "gdb のシミュレータ run の修正 patch"
+    cross gdb のインストール時、シミュレータ `run` がインストールされる。  
+    `run` の syscall は RV32E に対応しておらず、write(), exit() などが実行されない。  
+    newlib では syscall は以下のファイルで定義されており、RV32E のみ syscall_id を渡すレジスタが異なる。  
+    `riscv-newlib/libgloss/riscv/internal_syscall.h`  
+        RV32E の syscall_id = "t0"   
+        その他の syscall_id = "a7"  
+    このため、run を RV32E の syscall に対応させる patch を用意した。  
+    `run` 実行時、 `--model RV32E` option をつけることで RV32E のシミュレーションができる。  
+
 
 インストールされるツール、ライブラリ  
 ```
@@ -39,6 +54,13 @@ $ make newlib
 /opt/rv32e/riscv32-unknown-elf/lib/ldscripts/elf32lriscv.x*   # リンカスクリプト
 /opt/rv32e/lib/gcc/riscv32-unknown-elf/9.2.0/libgcc.a         # gcc 下位関数(soft-float etc)
 ```
+
+クロスコンパイラで RV32EMC に対応したバイナリを生成するには、コンパイル flag `-march=rv32emc -mabi=ilp32e` を与える  
+
+```bash
+$ /opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march=rv32emc -mabi=ilp32e -c c_source.c  
+```
+
 
 !!! Note
     **rv_core は gcc ver 9.2.0 で動作確認を行った**  

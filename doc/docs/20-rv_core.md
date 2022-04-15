@@ -48,7 +48,7 @@ rv_core のメモリマップである
 |---|------|---|
 |0x00000000|reset start address||
 |　　：|命令/データ領域|命令：16bit align / データ:32bit align|
-|0xFFFF0000 ~ 0xFFFF7FFF|I/O 領域||
+|0xFFFF0000 ~ 0xFFFFFFF|I/O 領域||
 |0xFFFF8000|mtime|64bit タイマーカウンター|
 |0xFFFF8008|mtimecmp|64bit タイマー比較レジスタ|
 
@@ -118,7 +118,7 @@ ISAマニュアル vol II に定義されている CSR のうち、以下の CSR
 
 ハードウェアリセット時、プログラムカウンタ pc は 0x0 にリセットされ、リセット解除時 0 番地から実行を開始する  
 割り込みは、rv_core 内臓の 64bit タイマー割り込みと、外部端子 irq による割り込みを実装した  
-リセット解除後の初期化ルーチンでは、スタックポインタの設定と割り込み処理ルーチンのベクター(mtvec)を行う  
+リセット解除後の初期化ルーチンでは、スタックポインタの設定と割り込み処理ルーチンのベクター(mtvec)設定を行う  
 
 ```asm title="example: crt0.S" 
   la      sp, __stack_top   # stack pointer 設定
