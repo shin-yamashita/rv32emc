@@ -426,7 +426,7 @@ FPGAに実装してコントローラとして用いる目的で、最小限の�
 <td>命令：16bit align / データ:32bit align</td>
 </tr>
 <tr>
-<td>0xFFFF0000 ~ 0xFFFF7FFF</td>
+<td>0xFFFF0000 ~ 0xFFFFFFF</td>
 <td>I/O 領域</td>
 <td></td>
 </tr>
@@ -586,7 +586,7 @@ FPGAに実装してコントローラとして用いる目的で、最小限の�
 <h2 id="reset-interrupt">Reset, Interrupt<a class="headerlink" href="#reset-interrupt" title="Permanent link">&para;</a></h2>
 <p>ハードウェアリセット時、プログラムカウンタ pc は 0x0 にリセットされ、リセット解除時 0 番地から実行を開始する<br />
 割り込みは、rv_core 内臓の 64bit タイマー割り込みと、外部端子 irq による割り込みを実装した<br />
-リセット解除後の初期化ルーチンでは、スタックポインタの設定と割り込み処理ルーチンのベクター(mtvec)を行う  </p>
+リセット解除後の初期化ルーチンでは、スタックポインタの設定と割り込み処理ルーチンのベクター(mtvec)設定を行う  </p>
 <div class="highlight"><span class="filename">example: crt0.S</span><pre><span></span><code><span class="w">  </span><span class="nf">la</span><span class="w">      </span><span class="no">sp</span><span class="p">,</span><span class="w"> </span><span class="no">__stack_top</span><span class="w">   </span><span class="c1"># stack pointer 設定</span>
 <span class="w">  </span><span class="nf">la</span><span class="w">      </span><span class="no">t0</span><span class="p">,</span><span class="w"> </span><span class="no">_irq_handle</span><span class="w">   </span><span class="c1"># 割り込みハンドラアドレス</span>
 <span class="w">  </span><span class="nf">csrw</span><span class="w">    </span><span class="no">mtvec</span><span class="p">,</span><span class="w"> </span><span class="no">t0</span><span class="w">         </span><span class="c1">#  mtvec に設定</span>

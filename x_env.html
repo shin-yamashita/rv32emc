@@ -407,9 +407,21 @@ $ sudo mkdir /opt/rv32e <span class="c1"># cross tool のインストール先  
 $ git clone --branch rvv-0.9.x --recursive https://github.com/riscv/riscv-gnu-toolchain  
 $ <span class="nb">cd</span> riscv-gnu-toolchain  
 
+$ patch -p1 &lt; riscv-gdb-sim.patch   <span class="c1"># run の修正 patch</span>
+
 $ ./configure --prefix<span class="o">=</span>/opt/rv32e --disable-linux --with-arch<span class="o">=</span>rv32emac --with-abi<span class="o">=</span>ilp32e  
-$ make newlib  
+$ make newlib   <span class="c1"># ツール群を /opt/rv32e/ にインストール、書き込み権限が必要</span>
 </code></pre></div>
+<p>Download: <a href="refdoc/riscv-gdb-sim.patch">riscv-gdb-sim.patch</a>  </p>
+<details><summary>gdb のシミュレータ run の修正 patch</summary><p>cross gdb のインストール時、シミュレータ <code>run</code> がインストールされる。<br />
+<code>run</code> の syscall は RV32E に対応しておらず、write(), exit() などが実行されない。<br />
+newlib では syscall は以下のファイルで定義されており、RV32E のみ syscall_id を渡すレジスタが異なる。<br />
+<code>riscv-newlib/libgloss/riscv/internal_syscall.h</code><br />
+    RV32E の syscall_id = "t0" <br />
+    その他の syscall_id = "a7"<br />
+このため、run を RV32E の syscall に対応させる patch を用意した。<br />
+<code>run</code> 実行時、 <code>--model RV32E</code> option をつけることで RV32E のシミュレーションができる。  </p>
+</details>
 <p>インストールされるツール、ライブラリ<br />
 <div class="highlight"><pre><span></span><code>/opt/rv32e/bin/riscv32-unknown-elf-*                          # コンパイラ、リンカ、gdb etc
 /opt/rv32e/riscv32-unknown-elf/include/*.h                    # newlib 標準ヘッダ
@@ -417,6 +429,9 @@ $ make newlib
 /opt/rv32e/riscv32-unknown-elf/lib/ldscripts/elf32lriscv.x*   # リンカスクリプト
 /opt/rv32e/lib/gcc/riscv32-unknown-elf/9.2.0/libgcc.a         # gcc 下位関数(soft-float etc)
 </code></pre></div></p>
+<p>クロスコンパイラで RV32EMC に対応したバイナリを生成するには、コンパイル flag <code>-march=rv32emc -mabi=ilp32e</code> を与える  </p>
+<div class="highlight"><pre><span></span><code>$ /opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -c c_source.c  
+</code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><strong>rv_core は gcc ver 9.2.0 で動作確認を行った</strong><br />
