@@ -5,30 +5,30 @@
 
 static inline int matchdlm(char c, char *delim)
 {
-    int sc;
-    while ((sc = *delim++)){
-        if(c == sc) return 1;	// match
-    }
-    return 0;
+	int sc;
+	while ((sc = *delim++)){
+		if(c == sc) return 1;	// match
+	}
+	return 0;
 }
 
 char *strtok(char *str, const char *delim)
 {
-    char *tok;
-    static char *saveptr;
+	char *tok;
+	static char *saveptr;
 
-    if(str == NULL && (str = saveptr) == NULL) return NULL;
+	if(str == NULL && (str = saveptr) == NULL) return NULL;
 
-    while(matchdlm(*str, (char*)delim)) str++;
-    tok = str;
-    while(*str && !matchdlm(*str, (char*)delim)) str++;
-    if(*str){
-        saveptr = str + 1;
-        *str = '\0';
-    }else{
-        saveptr = NULL;
-    }
-    return tok;
+	while(matchdlm(*str, (char*)delim)) str++;
+	tok = str;
+	while(*str && !matchdlm(*str, (char*)delim)) str++;
+	if(*str){
+		saveptr = str + 1;
+		*str = '\0';
+	}else{
+		saveptr = NULL;
+	}
+	return tok;
 }
 
 #if 0
@@ -36,16 +36,16 @@ char *strtok(char *str, const char *delim)
 #include <readline/readline.h>
 int main()
 {
-    char *str, *tok;
-    while(1){
-        str = readline("strtok>");
-        tok = strtok(str, " \t,\n");
-        while(tok){
-            printf("'%s' ", tok);
-            tok = strtok(NULL, " \t,\n");
-        }
-        printf("\n");
-    }
+	char *str, *tok;
+	while(1){
+		str = readline("strtok>");
+		tok = strtok(str, " \t,\n");
+		while(tok){
+			printf("'%s' ", tok);
+			tok = strtok(NULL, " \t,\n");
+		}
+		printf("\n");
+	}
 }
 #endif
 

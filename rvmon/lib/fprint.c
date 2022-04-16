@@ -1,7 +1,8 @@
 
 //--------- mini stdio -----------------------------------------------
 //
-//	2010/04/21
+//  2010/04/21
+//  2022/04/13 for rv_core test
 //
 
 #include "stdio.h"
@@ -10,51 +11,30 @@
 #include <stdarg.h>
 #include "time.h"
 #include "ulib.h"
-//#include "fat.h"
-#include "ff.h"
+
+ssize_t _write (int fd, const char *ptr, size_t len)	// syscall
+{
+  asm("li t0,64");	// SYS_write
+  asm("ecall");
+  return len;
+}
+
+#define DBG_PUTC	((volatile u8*)0xffff0004)
+ssize_t dbg_write (int fd, const char *ptr, size_t len)	// debug port
+{
+  ssize_t c = 0;
+  while(len-- && *ptr){
+    *DBG_PUTC = *ptr++;
+    c++;
+  }
+  return c;
+}
 
 FILE _stdio = {{1}, uart_read, uart_write};
+//FILE _stdio = {{1}, uart_read, dbg_write};
 //FILE _stdio = {{1}, uart_read, _write};
 #define stdout	(&_stdio)
 #define stdin	(&_stdio)
-
-
-#define FAT_NR_FILE     2	// Number of files which can be opened simultaneously
-
-static FATFS Fatfs;		/* File system object	*/
-static FIL fil[FAT_NR_FILE];	/* File object		*/
-static FILE fptr[FAT_NR_FILE];	/* stdio File pointer	*/
-
-#if 0
-void dbg_dump(int fd)
-{
-    printf("dbg_dump FIL fil[%d] @%x:", fd, &fil[fd]);
-#if 0
-    FATFS*  fs;     /* Pointer to the owner file system object */
-    WORD    id;     /* Owner file system mount ID */
-    BYTE    flag;       /* File status flags */
-    BYTE    pad1;
-    DWORD   fptr;       /* File read/write pointer (0 on file open) */
-    DWORD   fsize;      /* File size */
-    DWORD   sclust;     /* File start cluster (0 when fsize==0) */
-    DWORD   clust;      /* Current cluster */
-    DWORD   dsect;      /* Current data sector */
-    DWORD   dir_sect;   /* Sector containing the directory entry */
-    BYTE*   dir_ptr;    /* Ponter to the directory entry in the window */
-#endif
-    printf(" FATFS* fs : %x\n", fil[fd].fs);
-    printf(" WORD   id : %d\n", fil[fd].id);
-    printf(" BYTE flag : %x\n", fil[fd].flag);
-    printf(" BYTE pad1 : %d\n", fil[fd].pad1);
-    printf(" DWORD fptr : %x\n", fil[fd].fptr);
-    printf(" DWORD fsize : %d\n", fil[fd].fsize);
-    printf(" DWORD sclust : %d\n", fil[fd].sclust);
-    printf(" DWORD clust : %d\n", fil[fd].clust);
-    printf(" DWORD dsect : %d\n", fil[fd].dsect);
-    printf(" DWORD dir_sect : %d\n", fil[fd].dir_sect);
-    printf(" BYTE* dir_ptr : %x\n", fil[fd].dir_ptr);
-}
-#endif
 
 //---------- memory read / write driver -------------------------------
 static ssize_t mem_read(int fd, char *buf, size_t n)
@@ -75,101 +55,6 @@ static ssize_t mem_write(int fd, const char *buf, size_t n)
     }
     return i;
 }
-#if 1
-//---------- file read / write driver -------------------------------
-static ssize_t fat_read(int fd, char *buf, size_t n)
-{
-    u32 br;
-    FRESULT rc;
-    rc = f_read(&fil[fd], buf, n, &br);
-    return br;
-}
-static ssize_t fat_write(int fd, const char *buf, size_t n)
-{
-    u32 br;
-    FRESULT rc;
-    rc = f_write(&fil[fd], buf, n, &br);
-    return br;
-}
-/*---------------------------------------------------------*/
-/* User Provided Timer Function for FatFs module           */
-/*---------------------------------------------------------*/
-DWORD get_fattime (void)
-{
-    time_t ltime = get_ltime();
-    DWORD fat_tm;
-    fat_tm =  ltime.year;
-    fat_tm <<= 4;
-    fat_tm |= ltime.month;
-    fat_tm <<= 5;
-    fat_tm |= ltime.day;
-    fat_tm <<= 5;
-    fat_tm |= ltime.hour;
-    fat_tm <<= 6;
-    fat_tm |= ltime.min;
-    fat_tm <<= 5;
-    fat_tm |= (ltime.sec>>1);
-    return fat_tm;
-}
-
-//--------- file I/O -----------------------------------------------
-void mount()
-{
-    ////	*GPIO = 0x85;
-    f_mount(0, &Fatfs);
-}
-
-FILE *fopen(const char *path, const char *mode)
-{
-    int fd, imode;
-    FRESULT rc;
-
-    switch(*mode){
-    case 'r':
-        imode = FA_READ;
-        break;
-    case 'w':
-        imode = FA_WRITE | FA_CREATE_ALWAYS;
-        break;
-    case 'a':
-        imode = FA_READ | FA_WRITE | FA_OPEN_ALWAYS;
-        break;
-    }
-    //	imode = *mode == 'r' ? FA_READ : (*mode == 'w' ? FA_WRITE | FA_CREATE_ALWAYS : FA_READ);
-
-    for(fd = 0; fd < FAT_NR_FILE; fd++){
-        if(!fil[fd].fs) break;
-    }
-    rc = f_open(&fil[fd], path, imode);
-    if(rc) return NULL;
-
-    if(*mode == 'a')
-        rc = f_lseek(&fil[fd], f_size(&fil[fd]));
-    if(rc) return NULL;
-
-    //	fd = fat_open(path, imode);
-    //	if(fd < 0) return NULL;
-
-    //	if(*mode == 'w'){	// reopen : prevent write fleeze. fat bug?? 100829
-    //		fat_write(fd, &chr, 1);
-    //		fat_close(fd);
-    //		fd = fat_open(path, imode);
-    //		if(fd < 0) return NULL;
-    //	}
-    fptr[fd].p.fd = fd;
-    fptr[fd].read = fat_read;
-    fptr[fd].write = fat_write;
-
-    return &fptr[fd];
-}
-
-int fclose(FILE *fp)
-{
-    FRESULT rc;
-    rc = f_close(&fil[fp->p.fd]);
-    return rc ? EOF : 0;
-}
-#endif
 
 int fputc(int c, FILE *fp)
 {
@@ -367,12 +252,12 @@ static int print_float(FILE *fp, float data, int digit, int dp, int flg)
     i = MDGT;
     if(dp){
         for(; i > 0 ; i--){
-            buf[i] = (idata % 10) + '0';
-            idata /= 10;
-            l++;
-            if(l >= dp){
-                break;
-            }
+        buf[i] = (idata % 10) + '0';
+        idata /= 10;
+        l++;
+        if(l >= dp){
+            break;
+        }
         }
         buf[--i] = '.';
         i--;
@@ -414,80 +299,77 @@ int vfprintf(FILE *fp, const char *fmt, va_list ap)
 {
     int d, rv = 0, cnt = 0;
     fu_t f;
-    float ff;
     char c, *s;
 
     while ((c = *fmt++)){
         int digit = 0, dp = 0;
         int flg = 0;
         if(c == '%'){
+                c = *fmt++;
+        if(c == 'l'){
             c = *fmt++;
-            if(c == 'l'){
-                c = *fmt++;
-            }else if(c == '-'){
-                flg |= FLG_LEFT;
-                c = *fmt++;
-            }else if(c == '0'){
-                flg |= FLG_PAD0;
-                c = *fmt++;
-            }
+        }else if(c == '-'){
+            flg |= FLG_LEFT;
+            c = *fmt++;
+        }else if(c == '0'){
+            flg |= FLG_PAD0;
+            c = *fmt++;
+        }
+        while(c && (c >= '0' && c <= '9')){
+            digit = digit * 10 + (c - '0');
+            c = *fmt++;
+        }
+        if(c == '.'){
+            c = *fmt++;
             while(c && (c >= '0' && c <= '9')){
-                digit = digit * 10 + (c - '0');
-                c = *fmt++;
+            dp = dp * 10 + (c - '0');
+            c = *fmt++;
             }
-            if(c == '.'){
-                c = *fmt++;
-                while(c && (c >= '0' && c <= '9')){
-                    dp = dp * 10 + (c - '0');
-                    c = *fmt++;
-                }
-            }
-            switch(c) {
-            case '\0':
-                fmt--;
-                break;
-            case '%':
-                rv = fputc(c, fp);
-                rv = rv > 0 ? 1 : rv;
-                break;
-            case 's':
-                s = va_arg(ap, char *);
-                rv = print_str(fp, s, digit, flg);
-                break;
-            case 'c':
-                c = (char) va_arg(ap, int);
-                rv = fputc(c, fp);
-                rv = rv > 0 ? 1 : rv;
-                break;
-            case 'd':
-                d = va_arg(ap, int);
-                rv = print_dec(fp, d, digit, flg);
-                break;
-            case 'u':
-                d = va_arg(ap, int);
-                rv = print_dec(fp, d, digit, flg|FLG_UNSGN);
-                break;
-            case 'f':
-                // f.u = va_arg(ap, int);
-                // rv = print_float(fp, f.f, digit, dp, flg);
-                ff = va_arg(ap, double);
-                rv = print_float(fp, ff, digit, dp, flg);
-                break;
-            case 'x':
-                d = va_arg(ap, int);
-                rv = print_hex(fp, d, digit, flg);
-                break;
-            case 'X':
-                d = va_arg(ap, int);
-                rv = print_hex(fp, d, digit, flg | FLG_CAPS);
-                break;
-            }
-        }else{
+        }
+        switch(c) {
+        case '\0':
+            fmt--;
+            break;
+        case '%':
             rv = fputc(c, fp);
             rv = rv > 0 ? 1 : rv;
+            break;
+        case 's':
+            s = va_arg(ap, char *);
+            rv = print_str(fp, s, digit, flg);
+            break;
+        case 'c':
+            c = (char) va_arg(ap, int);
+            rv = fputc(c, fp);
+            rv = rv > 0 ? 1 : rv;
+            break;
+        case 'd':
+            d = va_arg(ap, int);
+            rv = print_dec(fp, d, digit, flg);
+            break;
+        case 'u':
+            d = va_arg(ap, int);
+            rv = print_dec(fp, d, digit, flg|FLG_UNSGN);
+            break;
+        case 'f':
+            f.u = va_arg(ap, int);
+            rv = print_float(fp, f.f, digit, dp, flg);
+            break;
+        case 'x':
+            d = va_arg(ap, int);
+            rv = print_hex(fp, d, digit, flg);
+            break;
+        case 'X':
+            d = va_arg(ap, int);
+            rv = print_hex(fp, d, digit, flg | FLG_CAPS);
+            break;
         }
-        if(rv == EOF) return EOF;
-        cnt += rv;
+            }else{
+        rv = fputc(c, fp);
+        rv = rv > 0 ? 1 : rv;
+            }
+    if(rv == EOF) return EOF;
+    cnt += rv;
     }
     return cnt;
 }
@@ -529,32 +411,32 @@ int sprintf(char *str, const char *fmt, ...)
 #if 0
 int main()
 {
-    int i, j;
-    char *fmt, str[200];
-    char *_fmt[] ={
-            "%d|%13d|%%|%-13d|%s|%20s|%-20s|\n",
-            "%x|%13x|%%|%-13x|%s|%20s|%-20s|\n",
-            "%X|%13X|%%|%-13X|%s|%20s|%-20s|\n",
-            "%X|%013X|%%|%-013X|%s|%20s|%-20s|\n",
-            "%d|%013d|%%|%-013d|%s|%20s|%-20s|\n",
-            "%d|%02d|%%|%-02d|%s|%20s|%-20s|\n"
-    };
+	int i, j;
+	char *fmt, str[200];
+	char *_fmt[] ={
+	"%d|%13d|%%|%-13d|%s|%20s|%-20s|\n",
+	"%x|%13x|%%|%-13x|%s|%20s|%-20s|\n",
+	"%X|%13X|%%|%-13X|%s|%20s|%-20s|\n",
+	"%X|%013X|%%|%-013X|%s|%20s|%-20s|\n",
+	"%d|%013d|%%|%-013d|%s|%20s|%-20s|\n",
+	"%d|%02d|%%|%-02d|%s|%20s|%-20s|\n"
+	};
 
-    for(j = 0; j < sizeof(_fmt)/sizeof(char*); j++){
-        fmt = _fmt[j];
-        printf("****************%s", fmt);
-        for(i = -100; i < 100; i+=9){
-            fprintf(stdout, fmt, i, i, i, "string", "string", "string");
-            sprintf(str, fmt, i, i, i, "string", "string", "string");
-            fputs(str, stdout);
-        }
-    }
-    fmt = "|%.1f|%6.2f|%-6.3f|\n";
+	for(j = 0; j < sizeof(_fmt)/sizeof(char*); j++){
+	  fmt = _fmt[j];
+	  printf("****************%s", fmt);
+	  for(i = -100; i < 100; i+=9){
+		fprintf(stdout, fmt, i, i, i, "string", "string", "string");
+		sprintf(str, fmt, i, i, i, "string", "string", "string");
+		fputs(str, stdout);
+	  }
+	}
+	fmt = "|%.1f|%6.2f|%-6.3f|\n";
 
-    for(i = -100; i < 100; i+=9){
-        float fi = i * 0.01f;
-        fprintf(stdout, fmt, fu(fi), fu(fi), fu(fi));
-    }
-    return 0;
+	for(i = -100; i < 100; i+=9){
+		float fi = i * 0.01f;
+		fprintf(stdout, fmt, fu(fi), fu(fi), fu(fi));
+	}
+	return 0;
 }
 #endif

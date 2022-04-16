@@ -74,7 +74,8 @@ GFN mul(GFN a, GFN b)	// a * b
 
 int mod255(int x)
 {
-  return x >= 255 ? x - 255 : x;
+  while(x >= 255) x -= 255;
+  return x;
 }
 
 GFN vmul(GFN a, GFN b)	// a * b
@@ -175,7 +176,7 @@ Poly_t *p_mul(Poly_t *a, Poly_t *b, Poly_t *y)  // a * b => y
   return p_cpy(tmp, y);
 }
 
-Poly_t *p_mul_xn(Poly_t *a, GFN x, int n, Poly_t *y)  // a * s x^n => y
+Poly_t *p_mul_xn(Poly_t *a, GFN x, int n, Poly_t *y)  // a * x^n => y
 {
   int i;
   int m = a->n + n;
@@ -206,6 +207,7 @@ Poly_t *p_mod(Poly_t *a, Poly_t *b, Poly_t *q, Poly_t *r)	// a / b => q ... r
   r = p_cpy(a, r);
   Poly_t _xr;
   Poly_t *xr = p_clear(&_xr, r->n);
+  if(q) q->n = n-m;
   while(n >= m){
     qe = vdiv(r->x[n], b->x[m]);
     xr = p_mul_xn(b, qe, n-m, xr);
@@ -297,19 +299,26 @@ int decode(Poly_t *s, errdata_t *edat)
   A->x[A->n] = 1;	// x^(n+1)
   sgm->x[0] = 1;
 
-  while(B->n >= 4){	// Euclid's Algorithm
+  do{   // Euclid's Algorithm
     r = p_mod(A, B, q, r);
 
+    p_reduc(r);
+//p_print("  A: ", A, 1);
+//p_print("  B: ", B, 1);
+//p_print("  q: ", q, 1);
+//p_print("  r: ", r, 1);
     tmp = sgm;
     b = p_mul(sgm, q, b);
     sgm = p_add(sgm0, b, sgm0);
     sgm = p_reduc(sgm);
     sgm0 = tmp;
-
-    ea = findroot(sgm, &_ea);
+//p_print("sgm: ", sgm, 1);
     A = p_cpy(B, A);
-    B = p_cpy(p_reduc(r), B);
-  }
+    B = p_cpy(r, B); // omega
+
+  }while(sgm->n < B->n);
+
+  ea = findroot(sgm, &_ea);
 //  p_print(" omega: ", B, 1);
 //  p_print(" sigma: ", sgm, 1);
   // ei = w(a^-ji)/dsgm(a^-ji)
@@ -322,7 +331,7 @@ int decode(Poly_t *s, errdata_t *edat)
   for(i = 0; i < ea->n; i++){
     aj = ea->x[i];
     ep = vdiv(p_eval(B, aj), p_eval(sgm, aj));
-    edat->ea[i] = 255 - glog[aj];
+    edat->ea[i] = mod255(255 - glog[aj]);
     edat->ep[i] = ep;
   }
 
@@ -346,7 +355,7 @@ GFN prsg()
 }
 
 #define Ni	32
-#define Np	8
+#define Np	12
 
 int main()
 {
@@ -377,7 +386,7 @@ int main()
   GFN ep;
   errdata_t edat;
 
-  for(i = 0; i < 4; i++){
+  for(i = 0; i < Np/2; i++){
     ea = prsg() % (Ni+Np);
     ep = prsg();
 

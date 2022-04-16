@@ -115,5 +115,5 @@ depend:	$(DEPS)
 #----- dependences -----
 
 crt0.o: crt0.S
-rvmon.o: rvmon.c include/stdio.h include/types.h include/stdint.h \
- include/ulib.h include/uartdrv.h lib/libmc.a 
+rvmon.o: rvmon.c include/stdio.h include/types.h include/ulib.h \
+ include/uartdrv.h include/time.h include/ulib.h include/readline.h lib/libmc.a 

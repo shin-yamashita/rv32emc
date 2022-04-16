@@ -1,4 +1,7 @@
-#include <stdio.h>		/* Standard input/output definitions */
+//
+// UART terminal 
+//
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -10,6 +13,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <dirent.h>
 
 speed_t
 baudcode (int baud)
@@ -48,13 +52,14 @@ baudcode (int baud)
     }
 }
 
-char *dev[] = {
+//char *dev[] = {
         //	"/dev/serial/by-id/usb-Silicon_Labs_CP2104_USB_to_UART_Bridge_Controller_009D8CA8-if00-port0",
-        "/dev/serial/by-id/usb-Silicon_Labs_CP2104_USB_to_UART_Bridge_Controller_011D7F90-if00-port0",
-        "/dev/ttyUSB0",
-        "/dev/ttyUSB1",
-};
-#define Ndev	(sizeof(dev)/sizeof(char*))
+//        "/dev/serial/by-id/usb-Silicon_Labs_CP2104_USB_to_UART_Bridge_Controller_011D7F90-if00-port0",
+//        "/dev/ttyUSB0",
+//        "/dev/ttyUSB1",
+//};
+//#define Ndev	(sizeof(dev)/sizeof(char*))
+#define MAXDEV 5
 
 int
 open_serial (int brate)
@@ -62,16 +67,39 @@ open_serial (int brate)
     struct termios tios;
     int i, fd;
     speed_t baud = baudcode (brate);
-
-    for(i = 0; i < Ndev; i++){
-        fd = open (dev[i], O_RDWR);
-        if(fd != -1) break;
+    int Ndev = 0, ndev = 0;
+    char *dev[MAXDEV], *devpath = NULL;
+    struct dirent *ids;
+    DIR *dir = opendir("/dev/serial/by-id/");
+    if(!dir){
+        printf("no serial device found.\n");
+        exit(0);
     }
+    for(i = 0; i < MAXDEV; i++){
+        ids = readdir(dir);
+        if(!ids) break;
+        if(ids->d_name[0] != '.')
+            dev[Ndev++] = strdup(ids->d_name);
+    }
+    for(i = 0; i < Ndev; i++){
+        printf("%d : %s\n", i, dev[i]);
+    }
+    if(Ndev > 1){
+        while(1){
+            printf("select port (%d~%d) : ", 0, Ndev-1);
+            scanf("%d", &ndev);
+            if(ndev < Ndev) break;
+        }
+    }
+
+    devpath = realloc(devpath, strlen(dev[ndev]) + strlen("/dev/serial/by-id/") + 1);
+    sprintf(devpath, "/dev/serial/by-id/%s", dev[ndev]);
+    fd = open (devpath, O_RDWR);
 
     if (fd < 0) {
         //	fprintf (stderr, "Unable to open %s\n", dev);
     } else {
-        printf ("*** open '%s'\n", dev[i]);
+        printf ("*** open '%s'\n", devpath);
         tcgetattr (fd, &tios);
         cfmakeraw (&tios);
         cfsetospeed (&tios, baud);
@@ -182,34 +210,23 @@ dump (char c)
     printf ("%02x ", c);
 }
 
-//B9600
-//B19200
-//B38400
-
-//int s_brk = 0;
-
 int
 main (int argc, char *argv[])
 {
     struct pollfd ufds[3];
-    int i, dbg = 0, rpen = 1;
-    char c, fn[201], str[201];
+    int i, dbg = 0;
+    char c, fn[201];
     FILE *sfp = NULL;
     FILE *ifp = NULL;
-    int rplot = 0, cc = 0, csum;
+    int cc = 0, csum;
     int XOFF = 0, bytes = 0;
-    //    int baud = 115200;
-    int baud = 2000000;
+    int baud = 115200;
 
     ofp = stderr;
 
     for (i = 1; i < argc; i++) {
         if (!strcmp (argv[i], "-debug"))
             dbg = 1;
-        else if (!strcmp (argv[i], "-no"))
-            rpen = 0;
-        else if (!strcmp (argv[i], "115200"))
-            baud = 115200;
         else if (!strcmp (argv[i], "1M"))
             baud = 1000000;
         else if (!strcmp (argv[i], "2M"))
@@ -227,10 +244,6 @@ main (int argc, char *argv[])
         goto start;
     }
     init_term ();
-
-    //    ioctl(uartfd, TIOCSBRK);	// enter BREAK state, TXD -> low	tty_ioctl
-    //    fprintf (stderr, "\n==== break ...");
-    //    s_brk = 1;
 
     ufds[0].fd = STDIN;		// stdin
     ufds[0].events = POLLIN;
@@ -250,16 +263,8 @@ main (int argc, char *argv[])
                     sfp = NULL;
                 }
                 c = get_key();
-                if(c == 0x02){		// Ctrl,Alt,B
-                    //s_brk = !s_brk;
-                    //if (s_brk) {
-                    //	ioctl (ufds[1].fd, TIOCSBRK);
-                    //	fprintf (stderr, "\n==== break ...");
-                    //} else {
-                    //	ioctl (ufds[1].fd, TIOCCBRK);
-                    //	fprintf (stderr, " resume ====\n");
-                    //}
-                }else if(c == 0x03){	// Ctrl,Alt,C
+
+                if(c == 0x03){	// Ctrl,Alt,C
                     printf("\n");
                     deinit_term();
                     exit(0);
@@ -282,16 +287,6 @@ main (int argc, char *argv[])
         if (ufds[1].revents & POLLIN) {	// uart rx data
             int i = 0;
             c = rx_data ();
-            //if(c == '$' && s_brk){
-            //s_brk = 0;
-            //ioctl (ufds[1].fd, TIOCCBRK);
-            //fprintf (stderr, " resume ====\n");
-            //}
-            //if (c == '\0' && !s_brk) {
-            //s_brk = 1;
-            //ioctl (ufds[1].fd, TIOCSBRK);
-            //fprintf (stderr, "\n==== break received, enter break ...");
-            //}
             if (c == '\033') {
                 c = rx_data ();
                 if (c == '<') {	// download S-format file
@@ -308,11 +303,15 @@ main (int argc, char *argv[])
                     if (!sfp)
                         sfp = fopen (strcat (fn, ".mot"), "r");
                     if (sfp != NULL) {
-                        int bc = 0;
-                        char sbuf[1024];
+                        //int bc = 0;
+                        //char sbuf[1024];
                         csum = 0;
                         do {
                             c = fgetc (sfp);
+                            if(c == EOF) break;
+                            if(c == '\n') fputc ('.', stderr);
+                            tx_data(c);
+                            /*
                             if (bc >= 1024 || c == EOF) {
                                 tx_datan (sbuf, bc);
                                 bc = 0;
@@ -324,52 +323,19 @@ main (int argc, char *argv[])
                                     break;
                             }
                             sbuf[bc++] = c;
+                            */
                             bytes++;
                             csum += c;
                         } while (1);
                         fclose (sfp);
                         sfp = NULL;
                         tx_data (EOT);
-                        fprintf (stderr, "\n[%d bytes tfr    cs:%d]", bytes, csum);
+                        fprintf (stderr, "\n[%d bytes tfr    cs:%d]\n", bytes, csum);
                     } else {
                         fprintf (stdout, " file '%s' not found.\n", fn);
                         tx_str ("S70500002000DA\n");
                         tx_data (EOT);
                     }                    
-                } else if (c == 'D') {	// request date string
-                    struct tm *date;
-                    time_t now = time(NULL);
-                    date = localtime(&now);   // get localtime data now
-                    sprintf(str, "date %d/%d/%d:%d:%d:%d\n", date->tm_year+1900, date->tm_mon+1, date->tm_mday, date->tm_hour, date->tm_min, date->tm_sec);
-                    tx_str(str);
-                } else if (c == '>') {	// plot data
-                    if (!pfp) {
-                        pfp = popen ("./plt", "w");
-                        if (!pfp)
-                            fprintf (stdout, " './plt' can't open.\n");
-                    }
-                    ofp = pfp;
-                    //      if((ofp = popen("./plt", "w")) == NULL){
-                    //              ofp = stderr;
-                    //              fprintf(stdout, " './plt' can't open.\n");
-                    //      }
-                } else if (c == 's') {	// pipe input
-                    if ((ifp = popen ("sns/sns", "r")) == NULL) {
-                        fprintf (stdout, " 'sns/sns' can't open.\n");
-                    } else {
-                        if ((c = fgetc (ifp)) != EOF) {
-                            tx_data (c);
-                            ufds[1].events |= POLLOUT;
-                        } else {
-                            pclose (ifp);
-                            ifp = NULL;
-                        }
-                    }
-                } else if (c == 'q') {	// plot end
-                    if (ofp != stderr) {
-                        //      pclose(ofp);
-                        ofp = stderr;
-                    }
                 } else if (c == '+') {	// save file
                     while ((c = rx_data ()) != '\n') {
                         if (!isspace (c))
@@ -390,33 +356,6 @@ main (int argc, char *argv[])
                     } else {
                         fprintf (stdout, " file '%s' not found.\n", fn);
                     }
-                } else if (c == 'p') {	// save picture
-                    int h, v, fr, H, V, nf = 1;
-                    while ((c = rx_data ()) != '\n') {
-                        str[i++] = c;
-                    }
-                    str[i] = '\0';
-                    sscanf (str, "%d %d %d %s", &H, &V, &nf, fn);
-                    if (*fn == '\0')
-                        strcpy (fn, "save.pgm");
-                    //  printf("**|%s|%s\n", str, fn);
-                    printf (" save %d x %d x %d picture to %s\n", H, V, nf, fn);
-                    if ((sfp = fopen (fn, "w")) != NULL) {
-                        fprintf (sfp, "P5 %d %d %d\n", H, V, 255);
-                        for(fr = 0; fr < nf; fr++){
-                            for (v = 0; v < V; v++) {
-                                for (h = 0; h < H; h++) {
-                                    c = rx_data ();
-                                    fputc (c, sfp);
-                                }
-                            }
-                        }
-                        if (sfp)
-                            fclose (sfp);
-                        sfp = NULL;
-                    } else {
-                        fprintf (stdout, " file '%s' can't open.\n", fn);
-                    }
                 } else {
                     if (dbg) {
                         dump ('\033');
@@ -431,26 +370,10 @@ main (int argc, char *argv[])
                     //      if(ofp != stderr) pclose(ofp);
                     ofp = stderr;
                 }
-                //      if(cc == 0 && c == 'w'){
-                //              if(!pfp) pfp = popen("wplot/wplot", "w");
-                //      }
-                //      if(cc == 0 && (c == ':' || c == '$')){
-                //              if(rpen && !pfp) pfp = popen("rplot/rplot", "w");
-                //              if(pfp) rplot = 1;
-                //      }
-                //      if(rplot && pfp){
-                //              fputc(c, pfp);
-                //      }
                 cc++;
-                //      if(dbg)
-                //              dump(c);
-                //      else if(!rplot)
-
                 fputc (c, ofp);
 
                 if (c == '\n') {
-                    //              if(pfp) fflush(pfp);
-                    //              rplot = 0;
                     cc = 0;
                 }
             }

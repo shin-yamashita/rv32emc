@@ -2,7 +2,7 @@
 	mini-stdio
 
 	2010/04/21
- */
+*/
 
 #ifndef _STDIO_H_
 #define _STDIO_H_
@@ -13,12 +13,12 @@ _BEGIN_STD_C
 #include "types.h"
 
 typedef struct {
-    union{
-        int fd;
-        char *pt;
-    } p;
-    ssize_t (*read)(int fd, char *buf, size_t count);
-    ssize_t (*write)(int fd, const char *buf, size_t count);
+	union{
+		int fd;
+		char *pt;
+	} p;
+	ssize_t (*read)(int fd, char *buf, size_t count);
+	ssize_t (*write)(int fd, const char *buf, size_t count);
 } FILE;
 
 #ifndef NULL
