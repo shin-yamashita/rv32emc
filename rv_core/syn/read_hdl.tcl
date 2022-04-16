@@ -8,7 +8,7 @@ read_verilog -library xil_defaultlib -sv {
   ../hdl/rv_regf.sv
   ../hdl/rv_core.sv
   ../hdl/dpram.sv
-  ../sim/rvc.sv
+  ./rvc.sv
   ../../rv_io/rv_sio.sv
 }
 
@@ -18,3 +18,5 @@ read_verilog -library xil_defaultlib {
 
 set_property file_type "Verilog Header" [get_files ../hdl/rv_types.svh]
 
+read_ip ./clk_gen.xcix
+generate_target {Synthesis} [get_ips  clk_gen ]

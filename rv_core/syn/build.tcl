@@ -18,8 +18,9 @@ proc runPPO { {numIters 1} {enablePhysOpt 1} } {
   }
 }
 
-create_project -in_memory -part xczu3eg-sbva484-1-e
-set_property board_part em.avnet.com:ultra96v2:part0:1.0 [current_project]
+create_project -in_memory -part xc7a35ticsg324-1L
+set_property board_part digilentinc.com:arty-a7-35:part0:1.1 [current_project]
+
 set_property source_mgmt_mode All [current_project]
 
 set CWD [pwd]
@@ -32,8 +33,8 @@ file mkdir $outputDir
 source read_hdl.tcl
 #source read_ip.tcl
 
-read_xdc timing.xdc
-#read_xdc tfacc_pin.xdc
+#read_xdc timing.xdc
+read_xdc arty-a7-pinassign.xdc
 #read_xdc dont_touch.xdc
 
 ### error? set_property file_type "Verilog Header" [get_files ../hdl/acc/logic_types.svh]
@@ -41,7 +42,7 @@ read_xdc timing.xdc
 #
 # STEP#2: run synthesis, report utilization and timing estimates, write checkpoint design
 #
-synth_design -top $proj -part xczu3eg-sbva484-1-e -include_dirs {$CWD/../hdl/acc/}
+synth_design -top $proj -part xc7a35ticsg324-1L -include_dirs {$CWD/../hdl/}
 write_checkpoint -force $outputDir/post_synth
 #report_timing_summary -file $outputDir/post_synth_timing_summary.rpt
 #report_power -file $outputDir/post_synth_power.rpt
@@ -70,7 +71,7 @@ phys_opt_design
 #
 route_design
 
-#runPPO 2 1 ; # run 2 post-route iterations and enable phys_opt_design
+runPPO 2 1 ; # run 2 post-route iterations and enable phys_opt_design
 
 #place_design -post_place_opt
 #phys_opt_design
@@ -92,8 +93,18 @@ report_power -file $outputDir/post_route_power.rpt
 # STEP#5: generate a bitstream
 # 
 
-# write_bitstream -force $outputDir/$proj.bit
-# write_hwdef -force -file $outputDir/$proj.hwdef
+source write_mmi.tcl
+
+startgroup
+set_property CONFIG_VOLTAGE 3.3 [current_design]
+set_property CFGBVS VCCO [current_design]
+set_property BITSTREAM.CONFIG.CONFIGRATE 22 [current_design]
+set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]
+set_property config_mode SPIx4 [current_design]
+endgroup
+
+write_bitstream -force $outputDir/$proj.bit
+write_cfgmem -format mcs -interface SPIx4 -size 16 -loadbit "up 0 $outputDir/$proj.bit" -force -file $outputDir/$proj.mcs
 
 exit
 
