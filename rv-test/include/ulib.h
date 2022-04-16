@@ -82,19 +82,19 @@ void *memclr(void *s, size_t n);
 //#include "uartdrv.h"
 
 // clear bss section
-extern u32 _edata, _end;
-#define	zero_bss()	{u32 *p;for(p=&_edata;p<&_end;*p++=0);}
+extern u32 _bss_start, _end;
+#define	zero_bss()	{u32 *p;for(p=&_bss_start;p<&_end;*p++=0);}
 // get stack pointer
 //static inline u32 get_sp(){u32 sp;__asm__("mov sp,%0" : "=r" (sp));return sp;}
 
 //------------------------------------------------------------------
 // CPU clock frequency (Hz)
-//#define f_clk	100e6
-#define f_clk	60e6
-//#define f_clk	48e6
-//#define f_clk	42e6
-//#define f_clk	36e6
-//#define f_clk	30e6
+//#define f_clk	100e6f
+#define f_clk	60e6f
+//#define f_clk	48e6f
+//#define f_clk	42e6f
+//#define f_clk	36e6f
+//#define f_clk	30e6f
 
 _END_STD_C
 

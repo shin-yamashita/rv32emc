@@ -41,7 +41,7 @@ static volatile int _br;
 
 void init_timer(int br)
 {
-	_br = (int)(f_clk / br + 0.5f);
+	_br = (int)((float)f_clk / br + 0.5f);
 	*mtime = 0l;
 	*mtimecmp = (u64)_br;
 	timer = 0;

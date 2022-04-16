@@ -8,7 +8,7 @@
 
 //	rv_sio interface
 
-#define brate(br)       ((int)(f_clk / (br) + 0.5))
+#define brate(br)       ((int)((float)f_clk / (br) + 0.5f))
 
 void uart_set_baudrate(int sel)
 {

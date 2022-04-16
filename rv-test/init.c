@@ -23,13 +23,15 @@ void init()
 {
   add_timer_irqh(timer_1ms);
   init_timer(1000);   // 1kHz 1ms
-  uart_set_baudrate(0);
+  uart_set_baudrate(115200); // 115200
 
   while(1){
-    int c;
-    c = getchar();
-
-    if(c == 'g') main();
+    //int c;
+    //c = getchar();
+    //n_wait(500);
+    //if(c == 'g') main();
+    main();
+    n_wait(500);
   }
 }
 

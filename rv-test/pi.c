@@ -181,12 +181,17 @@ int calc_pi3(int n, uint32_t *at1, uint32_t *at2, uint32_t *at3, uint32_t *at4, 
   return i/2;
 }
 
-//#define N 113
-#define N 57
+#define N 113
+#define CS 1063823358
+
+//#define N 57
+//#define CS -1133672077
+
+#include "time.h"
 
 int main()
 {
-  int i, itr;
+  int i, itr, cs;
   uint32_t at1[N];
   uint32_t at2[N];
   uint32_t at3[N];
@@ -194,15 +199,17 @@ int main()
   uint32_t pi1[N];
   uint32_t pi[N];
 
+//  u64 tstart = clock();
 //  itr = calc_pi(N, at1, at2, pi1, pi);
 //  itr = calc_pi2(N, at1, at2, at3, pi1, pi);
   itr = calc_pi3(N, at1, at2, at3, at4, pi1, pi);
 
   printf("iter:%d\n3.", itr);
+  cs = 0;
   for(i = 1; i < N; i++){
     printf("%09d", (int)pi[i]);
+    cs += pi[i];
   }
-  printf("\n");
-
+  printf("\ncs : %d %s\n", cs, cs == CS ? "OK":"NG");
 }
 

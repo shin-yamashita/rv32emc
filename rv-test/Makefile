@@ -50,8 +50,8 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x -nostdlib -L./lib
 LDLIBS  = -lmc -lm -lc -lgcc
 
 SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c
-# rvmon.c
 # endian.c
+# rvmon.c
 #fplib.c sr_test.c
 
 PRGS    = $(SRCS:.c=)
@@ -87,10 +87,10 @@ lib:
 %.mem:	%.bin
 	od -An -tx4 -v $< > $@
 
-#init.o:	init.c
-#	$(CC) $(CFLAGS) -c $<
+init.o:	init.c
+	$(CC) $(CFLAGS) -c $<
 
-%:	crt0.o %.o
+%:	crt0.o  %.o
 	make -C lib
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
@@ -133,12 +133,14 @@ depend:	$(DEPS)
 #----- dependences -----
 
 crt0.o: crt0.S
-ecc.o: ecc.c include/stdio.h include/types.h include/stdint.h
-fptest.o: fptest.c include/stdio.h include/types.h include/stdint.h \
- include/ulib.h include/uartdrv.h
-gauss.o: gauss.c include/stdio.h include/types.h include/stdint.h
-hello.o: hello.c include/stdio.h include/types.h include/stdint.h \
- include/ulib.h include/uartdrv.h
-mul.o: mul.c include/stdio.h include/types.h include/stdint.h \
- include/ulib.h include/uartdrv.h
-pi.o: pi.c include/stdio.h include/types.h include/stdint.h
+ecc.o: ecc.c include/stdio.h include/types.h
+endian.o: endian.c include/stdio.h include/types.h
+fptest.o: fptest.c include/stdio.h include/types.h include/ulib.h \
+ include/uartdrv.h
+gauss.o: gauss.c include/stdio.h include/types.h
+hello.o: hello.c include/stdio.h include/types.h include/ulib.h \
+ include/uartdrv.h
+mul.o: mul.c include/stdio.h include/types.h include/ulib.h \
+ include/uartdrv.h
+pi.o: pi.c include/stdio.h include/types.h include/time.h include/ulib.h \
+ include/uartdrv.h
