@@ -40,10 +40,16 @@ Download: [riscv-gdb-sim.patch](refdoc/riscv-gdb-sim.patch)
     `run` の syscall は RV32E に対応しておらず、write(), exit() などが実行されない。  
     newlib では syscall は以下のファイルで定義されており、RV32E のみ syscall_id を渡すレジスタが異なる。  
     `riscv-newlib/libgloss/riscv/internal_syscall.h`  
-        RV32E の syscall_id = "t0"   
-        その他の syscall_id = "a7"  
+    ・RV32E の syscall_id = "t0"   
+    ・その他の syscall_id = "a7"  
     このため、run を RV32E の syscall に対応させる patch を用意した。  
     `run` 実行時、 `--model RV32E` option をつけることで RV32E のシミュレーションができる。  
+    cross gdb で simulation 実行するときは、以下のように指定する。  
+    ```
+    (gdb) target sim --model RV32E  
+    (gdb) load  
+    ```
+
 
 
 インストールされるツール、ライブラリ  
@@ -83,6 +89,7 @@ $ sudo make install   # -> /usr/local/bin/rvsim
 ### Ultra96-v2
 
 ボード情報: [AVNET Ultra96](https://www.96boards.org/product/ultra96/)  
+Vivado board files: [Avnet Board Definition Files (BDF)](https://github.com/Avnet/bdf)  
 
 - PYNQ V2.7  
   [Pre-built SD image v2.7 for Ultra96 version 2](https://github.com/Avnet/Ultra96-PYNQ/releases)  
@@ -96,8 +103,8 @@ $ sudo make install   # -> /usr/local/bin/rvsim
 
 ### Arty-A7-35T
 
-ボード情報: [Digilent Arty-A7 Reference](https://digilent.com/reference/programmable-logic/arty-a7/start)
-
+ボード情報: [Digilent Arty-A7 Reference](https://digilent.com/reference/programmable-logic/arty-a7/start)  
+Vivado board files: [Vivado Board Files for Digilent FPGA Boards](https://github.com/Digilent/vivado-boards)  
 
 
 
