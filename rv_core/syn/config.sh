@@ -2,12 +2,17 @@
 
 source xilinx_env.sh
 
+bitfn=rev/rvc.bit
+#bitfn=./rvcchg.bit
 
-bitfn=./rvcchg.bit
-#bitfn=rev/rvc.bit
-
-hw_server=e6520         # remote machine
+hw_server=e6520         # remote machine name
 #hw_server=localhost    # local
+
+if [ $# -ge 1 ]; then
+  bitfn=$1      # argv[1] : bit file 
+fi
+
+echo "**** configure " $bitfn
 
 vivado -mode tcl <<EOF
 

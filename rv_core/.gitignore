@@ -4,9 +4,12 @@
 *.out
 *.rvsim
 *.rpt
+*.bit
+*.mmi
+*_webtalk.*
 sim/*.wdb
 sim/xsim.dir/
 syn/rev/
 sim/.Xil/
-syn-mm/
+
 

@@ -38,11 +38,6 @@ module rvc #( parameter debug = 0 ) (
  assign d_rdy = 1'b1;
  assign d_be = 1'b0;
 
- assign d_dr = pin_en ? u32_t'(pin) : 
-               re1    ? d_dr2 : d_dr1;
-
- assign enaB = (d_re || (d_we != 'd0)) && d_adr < 32'h10000;
-
 int rst_cnt = 0;
 logic xreset, cclk;
 
@@ -59,7 +54,7 @@ clk_gen u_clk_gen
    // Clock in ports
     .clk_in1(clk));      // input clk_in1
 
-assign cclk = clk60;
+  assign cclk = clk60;
 
 // synthesis translate_off
   integer STDERR;
@@ -90,53 +85,68 @@ assign cclk = clk60;
       pin_en <= 1'b0;
   end
 
+  assign d_dr = pin_en ? u32_t'(pin) : 
+                re1    ? d_dr2 : d_dr1;
+
   rv_core #(.Nregs(16), .debug(debug)) u_rv_core (
-    .clk(cclk),
-    .*
+    .clk  (cclk),     // input  logic clk,
+    .xreset(xreset),  // input  logic xreset,
+
+    .i_adr(i_adr),    // output u32_t i_adr,   // insn addr
+    .i_dr (i_dr),     // input  u32_t i_dr,    // insn read data
+    .i_re (i_re),     // output logic i_re,    // insn read enable
+    .i_rdy(i_rdy),    // input  logic i_rdy,   // insn data ready
+
+    .d_adr(d_adr),    // output u32_t d_adr,   // mem addr
+    .d_dr (d_dr),     // input  u32_t d_dr,    // mem read data
+    .d_re (d_re),     // output logic d_re,    // mem read enable
+    .d_dw (d_dw),     // output u32_t d_dw,    // mem write data
+    .d_we (d_we),     // output u4_t  d_we,    // mem write enable
+    .d_rdy(d_rdy),    // input  logic d_rdy,   // mem data ready
+    .d_be (d_be),     // input  logic d_be,    // mem bus big endian
+
+    .irq  (irq)       // input  logic irq  // interrupt request
   );
 
-  dpram #(.ADDR_WIDTH(13), .init_file_u("prog_u.mem"), .init_file_l("prog_l.mem")) u_dpram (
-       .clk  (cclk),
+  // 2^13 32bit word dual port RAM (32kB)
+  assign enaB = (d_re || (d_we != 'd0)) && d_adr < 32'h8000;
 
-       .enaA (1'b1),      // read port
-       .addrA(i_adr[14:1]),	// half (16bit) word address
-       .doutA(i_dr),
-       
-       .enaB (enaB),     // read write port
-       .weB  (d_we),
-       .addrB(d_adr[14:2]), // 32bit word address
-       .dinB (d_dw),
-       .doutB(d_dr1)
-       );
+  dpram #(.ADDR_WIDTH(13),
+          .init_file_u("prog_u.mem"), // upper 16bit (31:16) x 2^13 word initial data
+          .init_file_l("prog_l.mem")  // lower 16bit  (15:0) x 2^13 word initial data
+          ) u_dpram (
+    .clk  (cclk),
+
+    .enaA (1'b1),     // read only port
+    .addrA(i_adr[14:1]),  // half (16bit) word address
+    .doutA(i_dr),         // 16bit aligned 32bit read data (instruction)
+
+    .enaB (enaB),     // read write port
+    .weB  (d_we),         // [3:0] byte write enable
+    .addrB(d_adr[14:2]),  // 32bit word address
+    .dinB (d_dw),         // 32bit write data
+    .doutB(d_dr1)         // 32bit read data
+  );
 
 // peripheral
 
-  logic cs, rdy, re, dsr, txen;
-  u4_t  we;
-  u32_t dw, dr;
-
+  logic cs_sio, dsr, txen;
 // ffff0020  async serial terminal
-  assign cs = {d_adr[31:5],5'h0} == 32'hffff0020;
-  assign rdy = d_rdy;
+  assign cs_sio = {d_adr[31:5],5'h0} == 32'hffff0020;
   assign dsr = 1'b0;
-  assign re = d_re;
 
   always_ff@(posedge cclk) begin
-    re1 <= cs & re;
+    re1 <= cs_sio & d_re;
   end
-
-  //logic xtxd, xrxd;
-  //assign txd = ~xtxd;
-  //assign xrxd = ~rxd;
 
   rv_sio u_rv_sio (
     .clk  (cclk),
     .xreset(xreset),
     .adr  (d_adr[4:0]),
-    .cs   (cs),   .rdy  (rdy),
-    .we   (d_we), .re   (re),   .irq  (irq),
-    .dw   (d_dw), .dr   (d_dr2),	
-    .txd  (txd),  .rxd  (rxd),  .dsr  (dsr),  .dtr  (dtr),  .txen (txen)
+    .cs   (cs_sio), .rdy  (d_rdy),
+    .we   (d_we),   .re   (d_re),   .irq  (irq),
+    .dw   (d_dw),   .dr   (d_dr2),
+    .txd  (txd),    .rxd  (rxd),    .dsr  (dsr),  .dtr  (dtr),  .txen (txen)
   );
 
 

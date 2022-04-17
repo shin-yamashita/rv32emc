@@ -57,7 +57,7 @@ REF	= $(SRCS:.c=.ref)
 
 all:	$(PRGS) lib
 
-lib:
+lib/libmc.a:
 	make -C lib
 
 mem:	$(MEM)
@@ -91,8 +91,8 @@ rvmon:	crt0.o $(OBJS)
 	$(CC) $(CFLAGS) -c $<
 
 install:	rvmon.mem rvmon
-	cp -p rvmon.mem ../rv_core/syn-mm
-	cp -p rvmon ../rv_core/syn-mm/rvmon.elf
+	cp -p rvmon.mem ../rv_core/syn/
+	cp -p rvmon ../rv_core/syn/rvmon.elf
 	make -C app install
 
 clean:
