@@ -1,6 +1,7 @@
 
 //
-// 2021/4
+// 2022/04  for Arty-A7 example
+//
 
 `timescale 1ns/1ns
 `include "rv_types.svh"
@@ -108,24 +109,28 @@ clk_gen u_clk_gen
     .irq  (irq)       // input  logic irq  // interrupt request
   );
 
-  // 2^13 32bit word dual port RAM (32kB)
-  assign enaB = (d_re || (d_we != 'd0)) && d_adr < 32'h8000;
+  // 32bit word dual port RAM 
+  localparam RAMSIZE = 65536; // 64kB
+//  localparam RAMSIZE = 32768; // 32kB
+  localparam Nb = $clog2(RAMSIZE);  //
 
-  dpram #(.ADDR_WIDTH(13),
-          .init_file_u("prog_u.mem"), // upper 16bit (31:16) x 2^13 word initial data
-          .init_file_l("prog_l.mem")  // lower 16bit  (15:0) x 2^13 word initial data
+  assign enaB = (d_re || (d_we != 'd0)) && d_adr < u32_t'(1 << Nb);
+
+  dpram #(.ADDR_WIDTH(Nb-2),
+          .init_file_u("prog_u.mem"), // upper 16bit (31:16) initial data
+          .init_file_l("prog_l.mem")  // lower 16bit  (15:0) initial data
           ) u_dpram (
     .clk  (cclk),
 
     .enaA (1'b1),     // read only port
-    .addrA(i_adr[14:1]),  // half (16bit) word address
-    .doutA(i_dr),         // 16bit aligned 32bit read data (instruction)
+    .addrA(i_adr[Nb-1:1]),  // half (16bit) word address
+    .doutA(i_dr),           // 16bit aligned 32bit read data (instruction)
 
     .enaB (enaB),     // read write port
-    .weB  (d_we),         // [3:0] byte write enable
-    .addrB(d_adr[14:2]),  // 32bit word address
-    .dinB (d_dw),         // 32bit write data
-    .doutB(d_dr1)         // 32bit read data
+    .weB  (d_we),           // [3:0] byte write enable
+    .addrB(d_adr[Nb-1:2]),  // 32bit word address
+    .dinB (d_dw),           // 32bit write data
+    .doutB(d_dr1)           // 32bit read data
   );
 
 // peripheral

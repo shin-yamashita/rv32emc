@@ -45,10 +45,11 @@ set fp [open prog.mmi w]
 #
 #
 
-set kB     32
+set kB     64
 set NBLK   1
-set NSLICE 8
-set NBit   4
+set NSLICE [expr $kB / 4] 
+set NBit   [expr 32 / $NSLICE] 
+set rvs    [expr 8 / $NBit - 1 ] 
 
 puts $fp             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 puts $fp             "<MemInfo Version=\"1\" Minor=\"0\">"
@@ -57,14 +58,14 @@ puts $fp [format     "    <AddressSpace Name=\"rv_core_0\" Begin=\"0\" End=\"%d\
 for {set i 0} {$i < $NBLK} {incr i} {
   puts $fp           "      <BusBlock>"
   for {set j 0} {$j < $NSLICE} {incr j} {
-    set mix [expr $i+($j^1)]
+    set mix [expr $j ^ $rvs ]
     set printList [lindex $bmmList $mix]
     set loc  [lindex [split $printList ] 1]
-    set bit [expr ($NSLICE-$j-1)*$NBit ]
+    set bit [expr $mix*$NBit ]
     #DEBUG:
     puts "Processing $printList"
     puts $fp [format "        <BitLane MemType=\"RAMB32\" Placement=\"%s\"><DataWidth MSB=\"%d\" LSB=\"%d\"/>" $loc [expr $bit+$NBit-1]  $bit ]
-    puts $fp [format "          <AddressRange Begin=\"%d\" End=\"%d\"/><Parity ON=\"false\" NumBits=\"0\"/></BitLane>" [expr 0] [expr 4096-1] ]
+    puts $fp [format "          <AddressRange Begin=\"%d\" End=\"%d\"/><Parity ON=\"false\" NumBits=\"0\"/></BitLane>" [expr 0] [expr 32/$NBit*1024-1] ]
   }
   puts $fp           "      </BusBlock>"
 }
