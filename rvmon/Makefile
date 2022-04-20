@@ -1,7 +1,6 @@
 #
-# 2007/04/09  sr_test compile for sr cpu
-# 2014/12/09  gcc-4.6.3 xgcc test
 # 2017/03/20  risc-v test
+# 2022/04     for Arty-A7 example
 #
 
 #ARCH = RV32I
@@ -42,8 +41,8 @@ OBJDUMP	= $(PREFIX)objdump
 CFLAGS	= -g -Wall -O2 $(MFLAG)  -nostartfiles -I./include 
 
 #LDFLAGS =  -nostdlib -Wl,-Map,$(TARGET).map
-LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x  -nostdlib -L./lib
-#LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,lnkscr.x  -nostdlib -L./lib
+#LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x  -nostdlib -L./lib
+LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,lnkscr.x  -nostdlib -L./lib
 
 LDLIBS  = -lmc -lm -lc -lgcc
 
@@ -55,7 +54,7 @@ DEPS	= $(SRCS:.c=.dep) crt0.dep
 MEM	= $(SRCS:.c=.mem)
 REF	= $(SRCS:.c=.ref)
 
-all:	$(PRGS) lib
+all:	$(PRGS)
 
 lib/libmc.a:
 	make -C lib
@@ -65,7 +64,6 @@ mem:	$(MEM)
 list:	$(SRCS:.c=.lst)
 
 rvmon:	crt0.o $(OBJS) 
-	make -C lib
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.mot:	%
@@ -76,10 +74,10 @@ rvmon:	crt0.o $(OBJS)
 
 %.mem:	%.bin
 	od -An -tx4 -v $< > $@
+	./convmem.py $@
 
 %.lst:	%
 	$(OBJDUMP) -D -S -h $< > $@
-#	$(OBJDUMP) -D -h $< > $@
 
 %.o:	%.c
 	$(CC) $(CFLAGS) -c $<
@@ -91,12 +89,15 @@ rvmon:	crt0.o $(OBJS)
 	$(CC) $(CFLAGS) -c $<
 
 install:	rvmon.mem rvmon
-	cp -p rvmon.mem ../rv_core/syn/
+	cp -p prog_u.mem prog_l.mem ../rv_core/syn/
 	cp -p rvmon ../rv_core/syn/rvmon.elf
+
+app: rvmon
 	make -C app install
 
 clean:
 	@rm -f $(PRGS) *.o core* a.out *~ \#*\# *.map *.lst *.ref *.gcc *.out *.bin *.mot *.mem
+	make -C app clean
 
 %.dep:	%.c
 	$(CC) $(CFLAGS) -MM $< | head -c -1 - > $@
