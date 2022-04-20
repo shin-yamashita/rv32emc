@@ -11,7 +11,7 @@ OUTPUT_ARCH(riscv)
 /* add */
 MEMORY
 {
-   RAM (rwx)  : ORIGIN = 0x0000000, LENGTH = 32k 
+   RAM (rwx)  : ORIGIN = 0x0000000, LENGTH = 64k 
 }
 /* add end */
 ENTRY(_start)
