@@ -110,8 +110,9 @@ clk_gen u_clk_gen
   );
 
   // 32bit word dual port RAM 
-  localparam RAMSIZE = 65536; // 64kB
-//  localparam RAMSIZE = 32768; // 32kB
+  localparam RAMSIZE = 128 * 1024; // 128kB 
+//  localparam RAMSIZE = 64 * 1024; // 64kB
+//  localparam RAMSIZE = 32 * 1024; // 32kB
   localparam Nb = $clog2(RAMSIZE);  //
 
   assign enaB = (d_re || (d_we != 'd0)) && d_adr < u32_t'(1 << Nb);
