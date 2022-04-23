@@ -417,10 +417,14 @@ $ make newlib   <span class="c1"># ツール群を /opt/rv32e/ にインスト�
 <code>run</code> の syscall は RV32E に対応しておらず、write(), exit() などが実行されない。<br />
 newlib では syscall は以下のファイルで定義されており、RV32E のみ syscall_id を渡すレジスタが異なる。<br />
 <code>riscv-newlib/libgloss/riscv/internal_syscall.h</code><br />
-    RV32E の syscall_id = "t0" <br />
-    その他の syscall_id = "a7"<br />
+・RV32E の syscall_id = "t0" <br />
+・その他の syscall_id = "a7"<br />
 このため、run を RV32E の syscall に対応させる patch を用意した。<br />
-<code>run</code> 実行時、 <code>--model RV32E</code> option をつけることで RV32E のシミュレーションができる。  </p>
+<code>run</code> 実行時、 <code>--model RV32E</code> option をつけることで RV32E のシミュレーションができる。<br />
+cross gdb で simulation 実行するときは、以下のように指定する。<br />
+<div class="highlight"><pre><span></span><code>(gdb) target sim --model RV32E  
+(gdb) load  
+</code></pre></div></p>
 </details>
 <p>インストールされるツール、ライブラリ<br />
 <div class="highlight"><pre><span></span><code>/opt/rv32e/bin/riscv32-unknown-elf-*                          # コンパイラ、リンカ、gdb etc
@@ -447,7 +451,8 @@ $ sudo make install   <span class="c1"># -&gt; /usr/local/bin/rvsim</span>
 </code></pre></div>
 <h2 id="target-board">Target board<a class="headerlink" href="#target-board" title="Permanent link">&para;</a></h2>
 <h3 id="ultra96-v2">Ultra96-v2<a class="headerlink" href="#ultra96-v2" title="Permanent link">&para;</a></h3>
-<p>ボード情報: <a href="https://www.96boards.org/product/ultra96/">AVNET Ultra96</a>  </p>
+<p>ボード情報: <a href="https://www.96boards.org/product/ultra96/">AVNET Ultra96</a><br />
+Vivado board files: <a href="https://github.com/Avnet/bdf">Avnet Board Definition Files (BDF)</a>  </p>
 <ul>
 <li>PYNQ V2.7<br />
 <a href="https://github.com/Avnet/Ultra96-PYNQ/releases">Pre-built SD image v2.7 for Ultra96 version 2</a><br />
@@ -459,7 +464,8 @@ Welcome to PYNQ Linux, based on Ubuntu 20.04 (GNU/Linux 5.4.0-xilinx-v2020.2 aar
 </code></pre></div></li>
 </ul>
 <h3 id="arty-a7-35t">Arty-A7-35T<a class="headerlink" href="#arty-a7-35t" title="Permanent link">&para;</a></h3>
-<p>ボード情報: <a href="https://digilent.com/reference/programmable-logic/arty-a7/start">Digilent Arty-A7 Reference</a></p>
+<p>ボード情報: <a href="https://digilent.com/reference/programmable-logic/arty-a7/start">Digilent Arty-A7 Reference</a><br />
+Vivado board files: <a href="https://github.com/Digilent/vivado-boards">Vivado Board Files for Digilent FPGA Boards</a>  </p>
 
               
             </article>
