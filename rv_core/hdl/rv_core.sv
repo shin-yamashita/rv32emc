@@ -194,8 +194,11 @@ assign i_re = 1'b1;
   u32_t rrd1a, rrd2a, bdsta;
   u32_t rs1f, rs2f;
 
-  assign {ds1,rs1f} = bra_stall ? 'd0 : Reg_fwd(ars1, rs1, mdr, rwa, rwd, rwdx, rwdat);
-  assign {ds2,rs2f} = bra_stall ? 'd0 : Reg_fwd(ars2, rs2, mdr, rwa, rwd, rwdx, rwdat);
+//  assign {ds1,rs1f} = bra_stall ? 'd0 : Reg_fwd(ars1, rs1, mdr, rwa, rwd, rwdx, rwdat);
+//  assign {ds2,rs2f} = bra_stall ? 'd0 : Reg_fwd(ars2, rs2, mdr, rwa, rwd, rwdx, rwdat);
+
+  assign {ds1,rs1f} = Reg_fwd(ars1, rs1, mdr, rwa, rwd, rwdx, rwdat) & ~{bra_stall, 32'd0};
+  assign {ds2,rs2f} = Reg_fwd(ars2, rs2, mdr, rwa, rwd, rwdx, rwdat) & ~{bra_stall, 32'd0};
 
   assign rrd1a = f_dec.rrd1 == PC ? pc1 :
                 (f_dec.rrd1 == X0 ? 'd0 :
@@ -210,7 +213,6 @@ assign i_re = 1'b1;
   assign {bstall,pca} = xreset ? 
           (ds1|ds2|(ex_stall&!cmpl) ? {1'b0,pc} : 
                   bra_dest(bra_stall, f_dec, func3, rs1f, rs2f, imm, bdsta, pc, pcinca, mtvec, mepc)) : 'd0;
-            //      bra_dest(bra_stall, f_dec, func3, rrd1a, rrd2a, imm, bdsta, pc, pcinca, mtvec, mepc)) : 'd0;
 
 //---- exec ----
 
@@ -456,6 +458,9 @@ parameter MTIMECMP = 32'hffff8008;
   assign rwdat[1] = rwdx[1] ? rwdatx : rwdat1;
   assign rwdx[0] = mulop;
 
+//  logic maren, mdwen;
+  u32_t marp, mdwp, immp;
+
   always_ff @ (posedge clk) begin
     if(rdy) begin
         bra_stall <= bra_stall ? 1'b0 : bstall;
@@ -496,8 +501,15 @@ parameter MTIMECMP = 32'hffff8008;
             end
             bdst <= bdsta;
             
-            mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);
-            mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);
+            ////mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);
+            ////mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);
+            mdw    <= (f_dec.mwe == WE ? rs2f : 'd0);
+            marp   <= rs1f;
+            immp   <= imm;
+          //  mdwp   <= rs2f;
+          //  maren  <= f_dec.mar == RS1;
+          //  mdwen  <= f_dec.mwe == WE;
+
             rwa[0] <= ds1 | ds2 ? R_NA : (f_dec.rwa == RD ? awd : 'd0);
             mmd    <= ds1 | ds2 ? SI   : f_dec.mode;
             mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
@@ -508,6 +520,9 @@ parameter MTIMECMP = 32'hffff8008;
         end
     end
   end
+
+  assign mar = marp + immp;
+//  assign mdw = mdwen ? mdwp : 'd0;
 
 // synthesis translate_off
   function void debug_print(u32_t pc, u32_t ir, u32_t mar, u32_t mdr, u32_t rrd1, u32_t rrd2, u32_t rwdat);
