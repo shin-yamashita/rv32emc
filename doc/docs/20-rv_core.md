@@ -1,8 +1,8 @@
 
 # rv_core module
 
-rv_core は以下の機能を有する CPU コアモジュールである  
-FPGAに実装してコントローラとして用いる目的で、最小限の仕様を実装した  
+rv_core は以下の機能を有する CPU コアモジュールである。  
+FPGAに実装してコントローラとして用いる目的で、最小限の仕様を実装した。  
 
 1. 命令バス、データバス 各 address 32bit / data 32bit  
 1. 外部割り込み 1系統  
@@ -39,10 +39,10 @@ module rv_core #(parameter debug = 0) (
 
 ## Memory map
 
-rv_core のメモリマップである  
-リセット解除後 0x0 番地から実行を開始する  
-0xFFFF0000 番地以降をメモリマップ I/O 領域とした  
-タイマーカウンター(mtime)、タイマー比較レジスタ(mtimecmp) は 0xFFFF8000, 0xFFFF8008 に配置した  
+rv_core のメモリマップである。  
+リセット解除後 0x0 番地から実行を開始する。  
+0xFFFF0000 番地以降をメモリマップ I/O 領域とした。  
+タイマーカウンター(mtime)、タイマー比較レジスタ(mtimecmp) は 0xFFFF8000, 0xFFFF8008 に配置した。  
 
 |Address|Description||
 |---|------|---|
@@ -54,9 +54,9 @@ rv_core のメモリマップである
 
 ## CSR Control and Status Register
 
-ISAマニュアル vol II に定義されている CSR のうち、以下の CSR を実装した  
-主にタイマー、及び外部割り込みの制御に用いる  
-ソフトウェア割り込みは実装していない  
+ISAマニュアル vol II に定義されている CSR のうち、以下の CSR を実装した。  
+主にタイマー、及び外部割り込みの制御に用いる。  
+ソフトウェア割り込みは実装していない。  
 
 |Number|Privilege|Name|Description||
 |---|---|---|---|---|
@@ -80,51 +80,129 @@ ISAマニュアル vol II に定義されている CSR のうち、以下の CSR
 ## 命令/データバス接続
 
 - 命令バスは compress 命令に対応し、16bit align でアクセスされる  
-  命令メモリは、16bit align で 32bit 読み出しができる必要がある  
+  命令メモリは、16bit align で 32bit 読み出しができる必要がある。  
 - データバスはデータメモリとペリフェラルを接続する  
-  32bit バスであるが、write enable d_we[3:0] により、byte/16bit/32bit アクセスを行う  
-  read 時も、アクセスモードに応じて 32bit データの必要な byte を取り込む  
-  32bit データ内のバイトアクセス順は little endian であるが、d_be 信号を assert することにより、 big endian に切り替えることができる  
+  32bit バスであるが、write enable d_we[3:0] により、byte/16bit/32bit アクセスを行う。  
+  read 時も、アクセスモードに応じて 32bit データの必要な byte を取り込む。  
+  32bit データ内のバイトアクセス順は little endian であるが、d_be 信号を assert することにより、 big endian に切り替えることができる。  
 - read / write 各 1 clock cycle でアクセスするが、rdy 信号を任意サイクル de-assert することで cycle を延長できる  
 
 ![rv_bus_wiring](img/rv_bus_wiring.svg)
 
 ## bus timing
 - 命令バス read timing  
-  i_re が assert されたとき、i_adr に対応する命令を読み出し、**次のサイクル**で i_dr に返す    
-  i_adr をデコードし、必要に応じて i_rdy を de-assert することで、アクセスサイクルを追加できる  
+  i_re が assert されたとき、i_adr に対応する命令を読み出し、**次のサイクル**で i_dr に返す。   
+  i_adr をデコードし、必要に応じて i_rdy を de-assert することで、アクセスサイクルを追加できる。  
   ![bus_timing-IR](img/bus_timing_IR.svg)  
 
 - データバス write timing  
-  d_we[3:0] が assert されたとき、d_adr に対応するアドレスの d_we のバイトイネーブルに対応するバイトに d_dw データを書き込む  
-  d_be を assert することで、d_we のバイトイネーブル順序を big endian 相当に変更できる  
-  d_adr をデコードし、必要に応じて d_rdy を de-assert することで、アクセスサイクルを追加できる  
+  d_we[3:0] が assert されたとき、d_adr に対応するアドレスの d_we のバイトイネーブルに対応するバイトに d_dw データを書き込む。  
+  d_be を assert することで、d_we のバイトイネーブル順序を big endian 相当に変更できる。  
+  d_adr をデコードし、必要に応じて d_rdy を de-assert することで、アクセスサイクルを追加できる。  
   ![bus_timing-DW](img/bus_timing_DW.svg)  
 
 - データバス read timing  
-  d_re が assert されたとき、d_adr に対応するアドレスのデータを読み出し、**次のサイクル**で d_dr に返す  
-  d_dr はメモリ、ペリフェラル群の各ブロックのデータを or するので、各ブロックのリードデータが有効でないときは 0x0 を返す必要がある  
-  d_be を assert することで、d_dr の読み込みバイト順序を big endian 相当に変更できる  
-  d_adr をデコードし、必要に応じて d_rdy を de-assert することで、アクセスサイクルを追加できる  
+  d_re が assert されたとき、d_adr に対応するアドレスのデータを読み出し、**次のサイクル**で d_dr に返す。  
+  d_dr はメモリ、ペリフェラル群の各ブロックのデータを or するので、各ブロックのリードデータが有効でないときは 0x0 を返す必要がある。  
+  d_be を assert することで、d_dr の読み込みバイト順序を big endian 相当に変更できる。  
+  d_adr をデコードし、必要に応じて d_rdy を de-assert することで、アクセスサイクルを追加できる。  
   ![bus_timing-DR](img/bus_timing_DR.svg)  
 
 - データバス byte addressing  
-  d_dr/d_dw 32bit データのバイト順序を示す  
-  d_be による endian 切り替えを図示する  
+  d_dr/d_dw 32bit データのバイト順序を示す。  
+  d_be による endian 切り替えを図示する。  
   ![bus_byte_access](img/bus_byte_access.svg)  
 
 
 ## Reset, Interrupt 
 
-ハードウェアリセット時、プログラムカウンタ pc は 0x0 にリセットされ、リセット解除時 0 番地から実行を開始する  
-割り込みは、rv_core 内臓の 64bit タイマー割り込みと、外部端子 irq による割り込みを実装した  
+ハードウェアリセット時、プログラムカウンタ pc は 0x0 にリセットされ、リセット解除時 0 番地から実行を開始する。  
+割り込みは、rv_core 内臓の 64bit タイマー割り込みと、外部端子 irq による割り込みを実装した。  
 リセット解除後の初期化ルーチンでは、スタックポインタの設定と割り込み処理ルーチンのベクター(mtvec)設定を行う  
 
-```asm title="example: crt0.S" 
-  la      sp, __stack_top   # stack pointer 設定
-  la      t0, _irq_handle   # 割り込みハンドラアドレス
-  csrw    mtvec, t0         #  mtvec に設定
-```
+??? 初期化ルーチンの例
+    ```asm title="example: crt0.S" 
+    #
+    # crt0.S : RISC-V startup routine
+    #
+      .section .text.startup
+      .global _start, __errno
+      .type   _start, @function
+
+    _start:
+      # Initialize global pointer
+    .option push
+    .option norelax
+    1:auipc gp, %pcrel_hi(__global_pointer$)
+      addi  gp, gp, %pcrel_lo(1b)
+    .option pop
+      la      sp, __stack_top   # stack pointer 設定
+      la      t0, _irq_handle   # 割り込みハンドラアドレス
+      csrw    mtvec, t0         #  mtvec に設定
+
+      # Clear bss section
+      la      a0, _edata
+      la      a1, _end
+      sub     a1, a1, a0
+      call    memclr  # rv-test/lib/memclr.c
+      # Call main()
+      lw      a0, 0(sp)                  # a0 = argc
+      addi    a1, sp, __SIZEOF_POINTER__ # a1 = argv
+      li      a2, 0                      # a2 = envp = NULL
+      call    main
+      call    at_exit
+      li      t0, 93        # SYS_exit
+      scall
+
+    Loop:
+      j    Loop
+    _errno:
+      nop
+
+    # Interrupt handler
+      .align 4
+    _irq_handle:
+        # Save registers.
+        addi  sp, sp, -(12*4)
+        sw    ra, (0*4)(sp)
+        sw    a0, (1*4)(sp)
+        sw    a1, (2*4)(sp)
+        sw    a2, (3*4)(sp)
+        sw    a3, (4*4)(sp)
+        sw    a4, (5*4)(sp)
+        sw    a5, (6*4)(sp)
+        sw    s0, (7*4)(sp)
+        sw    s1, (8*4)(sp)
+        sw    t0, (9*4)(sp)
+        sw    t1, (10*4)(sp)
+        sw    t2, (11*4)(sp)
+
+        # Invoke the handler.
+        mv      a0, sp
+        csrr    a1, mcause
+        csrr    a2, mepc
+        jal     irq_handler
+
+        # Restore registers.
+        lw    ra, (0*4)(sp)
+        lw    a0, (1*4)(sp)
+        lw    a1, (2*4)(sp)
+        lw    a2, (3*4)(sp)
+        lw    a3, (4*4)(sp)
+        lw    a4, (5*4)(sp)
+        lw    a5, (6*4)(sp)
+        lw    s0, (7*4)(sp)
+        lw    s1, (8*4)(sp)
+        lw    t0, (9*4)(sp)
+        lw    t1, (10*4)(sp)
+        lw    t2, (11*4)(sp)
+        addi  sp, sp, (12*4)
+        
+        # Return
+        mret
+
+    ```
+
 
 - タイマー割り込み  
   64bit タイマーカウンタ mtime は、リセット解除後 clock でインクリメントし続ける。  

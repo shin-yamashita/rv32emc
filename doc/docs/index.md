@@ -1,8 +1,8 @@
 
 # はじめに
 
-組み込みに向けた、コンパクトな RISC-V CPU コアの実装例である  
-FPGAへの実装を行い、[5th AI Edge Contest](https://signate.jp/competitions/537) の課題に適用した  
+組み込みに向けた、コンパクトな RISC-V CPU コアの実装例である。  
+FPGAへの実装を行い、[5th AI Edge Contest](https://signate.jp/competitions/537) の課題に適用した。  
 
 ## 概要
 
