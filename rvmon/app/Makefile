@@ -102,4 +102,5 @@ depend:	$(DEPS)
 
 ecc.o: ecc.c ../include/stdio.h ../include/types.h ../rvmon ../lib/libmc.a 
 gauss.o: gauss.c ../include/stdio.h ../include/types.h ../rvmon ../lib/libmc.a 
-pi.o: pi.c ../include/stdio.h ../include/types.h ../rvmon ../lib/libmc.a 
+pi.o: pi.c ../include/stdio.h ../include/types.h ../include/time.h \
+ ../include/ulib.h ../include/uartdrv.h ../rvmon ../lib/libmc.a 

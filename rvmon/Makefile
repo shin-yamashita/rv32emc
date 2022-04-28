@@ -92,12 +92,12 @@ install:	rvmon.mem rvmon
 	cp -p prog_u.mem prog_l.mem ../rv_core/syn/
 	cp -p rvmon ../rv_core/syn/rvmon.elf
 
-app: rvmon
-	make -C app install
+apps:
+	make install -C app
 
 clean:
 	@rm -f $(PRGS) *.o core* a.out *~ \#*\# *.map *.lst *.ref *.gcc *.out *.bin *.mot *.mem
-	make -C app clean
+	make clean -C app
 
 %.dep:	%.c
 	$(CC) $(CFLAGS) -MM $< | head -c -1 - > $@
