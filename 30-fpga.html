@@ -303,6 +303,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    サンプルプログラム
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -342,7 +349,7 @@
 
 <h1 id="fpga">FPGA 実装<a class="headerlink" href="#fpga" title="Permanent link">&para;</a></h1>
 <p>rv_core の動作を Xilinx Artix7 FPGA で確認するために example design を用意した。<br />
-<a href="../x_env.html#arty-a7-35t">Taget board : Arty-A7</a>  </p>
+<a href="x_env.html#arty-a7-35t">Taget board : Arty-A7</a>  </p>
 <p><a href="https://github.com/shin-yamashita/rv32emc/tree/main/rv_core">source(github)</a>  rv32emc/rv_core/  </p>
 <h2 id="example-design">example design<a class="headerlink" href="#example-design" title="Permanent link">&para;</a></h2>
 <p>rv_core とメモリ dpram、シリアル通信回路 rv_sio を接続した回路 rvc.sv を用意し、Arty-A7-35 ボードのターミナルで動作を確認する。
@@ -358,8 +365,7 @@
 ├── rvc.sv                # top module
 ├── clk_gen.xcix          # clock 生成 PLL
 </code></pre></div></p>
-<p><div class="highlight"><pre><span></span><code><span class="c1">// rvc.sv</span>
-<span class="k">module</span><span class="w"> </span><span class="n">rvc</span><span class="w"> </span><span class="p">#(</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="n">debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<p><div class="highlight"><span class="filename">rvc.sv</span><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">rvc</span><span class="w"> </span><span class="p">#(</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="n">debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
 <span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="kt">logic</span><span class="w"> </span><span class="n">clk</span><span class="p">,</span><span class="w">     </span><span class="c1">// Arty-A7 のシステムクロック(100MHz)を入力、rvc内部のPLLでCPUクロックを生成</span>
 <span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="n">u8_t</span><span class="w">  </span><span class="n">pin</span><span class="p">,</span><span class="w">     </span><span class="c1">// 8bit pararell 入力 SW に接続</span>
 <span class="w">  </span><span class="k">output</span><span class="w"> </span><span class="n">u8_t</span><span class="w">  </span><span class="n">pout</span><span class="p">,</span><span class="w">    </span><span class="c1">// 8bit pararell 出力 LED に接続</span>
@@ -385,8 +391,7 @@ $ make install <span class="c1"># ../rv_core/syn/ にメモリ初期パターン
 </code></pre></div>
    rvmon.mem は 論理シミュレーション時、論理合成時に verilog の $readmemh() で読み込む形式。<br />
    dpram では 32bit ワードの 上位、下位 16bit に分けた初期化ファイルを読み込むので、スクリプトで変換する。<br />
-   <div class="highlight"><pre><span></span><code><span class="c1">// dpram.sv</span>
-<span class="w">   </span><span class="n">dpram</span><span class="w"> </span><span class="p">#(.</span><span class="n">ADDR_WIDTH</span><span class="p">(</span><span class="mh">13</span><span class="p">),</span><span class="w"></span>
+   <div class="highlight"><span class="filename">dpram.sv</span><pre><span></span><code><span class="w">   </span><span class="n">dpram</span><span class="w"> </span><span class="p">#(.</span><span class="n">ADDR_WIDTH</span><span class="p">(</span><span class="mh">13</span><span class="p">),</span><span class="w"></span>
 <span class="w">           </span><span class="p">.</span><span class="n">init_file_u</span><span class="p">(</span><span class="s">&quot;prog_u.mem&quot;</span><span class="p">),</span><span class="w"> </span><span class="c1">// upper 16bit (31:16) initial data</span>
 <span class="w">           </span><span class="p">.</span><span class="n">init_file_l</span><span class="p">(</span><span class="s">&quot;prog_l.mem&quot;</span><span class="p">)</span><span class="w">  </span><span class="c1">// lower 16bit  (15:0) initial data</span>
 <span class="w">           </span><span class="p">)</span><span class="w"> </span><span class="n">u_dpram</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
@@ -414,7 +419,10 @@ $ updatemem -meminfo prog.mmi -data <span class="nv">$elf</span> -bit rev/rvc.bi
    write_mmi.tcl は dpram の構成に対応して記述される必要がある。  </li>
 </ol>
 <h2 id="_2">プログラム実行<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<p>Arty-A7 にモニタープログラム(rvmon) をロードし、USB-UART 経由でターミナル接続する。  </p>
+<p>Arty-A7 にモニタープログラム(rvmon) をロードし、USB-UART 経由でターミナル接続する。<br />
+rvmon 用のターミナルプログラム(term)を用意した。 Host から S-format 形式のプログラムをメモリにロードするのが容易になる。<br />
+rvmon で 'l cmd' コマンドを打つと、term に対して '\033&lt;cmd\n'  を送出する。term は '\033&lt;' を検出すると、'cmd.mot' ファイルを open し、cmd.mot の内容を rvmon にダウンロードする。<br />
+cmd.mot の終了時、EOT ('\004') を送出し、ダウンロードを終了する。  </p>
 <div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> ../../rvmon/term  
 $ make
 $ ./term
@@ -425,14 +433,53 @@ $ ./term
 
 rvmon$ <span class="nb">help</span>
     d  <span class="o">{</span>addr<span class="o">}</span>      : dump memory
-    l  <span class="o">{</span>cmd<span class="o">(</span>.mot<span class="o">)}</span> : load S-record file
+    l  <span class="o">{</span>cmd<span class="o">(</span>.mot<span class="o">)}</span> : load S-record file <span class="c1"># cmd.mot ファイルをメモリにダウンロード。0x4000 から実行する。</span>
     go             : <span class="nb">exec</span> cmd <span class="o">(</span>@0x4000<span class="o">)</span>
 
-rvmon$     <span class="c1"># Ctrl-Alt-&#39;C&#39; で終了</span>
+rvmon$     <span class="c1"># Ctrl-Alt-&#39;C&#39; で term 終了</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>lrwxrwxrwx 1 root root 13 Apr 23 08:45 /dev/serial/by-id/usb-Digilent_Digilent_USB_Device_210319B26865-if01-port0 -&gt; ../../ttyUSB2  
 crw-rw---- 1 root dialout 188, 2 Apr 23 22:45 /dev/ttyUSB2  
 ** &#39;dialout&#39; group をサブグループに加えておくと、ユーザー権限でターミナルにアクセスできる。  
+</code></pre></div>
+<h2 id="_3">サンプルプログラム<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<p>rv32emc/rvmon/app にいくつかのサンプルプログラムを用意した。<br />
+rvmon でロードし、FPGA 上で実行する。  </p>
+<div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> ../../rvmon
+$ make app
+make -C app install
+make<span class="o">[</span><span class="m">1</span><span class="o">]</span>: ディレクトリ <span class="s1">&#39;xxx/rv32emc/rvmon/app&#39;</span> に入ります
+/opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -nostartfiles -I../include  -c gauss.c
+/opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -nostartfiles -I../include  -c crt0.c
+/opt/rv32e/bin/riscv32-unknown-elf-gcc -o gauss.elf crt0.o gauss.o -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -Wl,-Map,gauss.map,-T,lnkscr.x -nostdlib -L../lib -Xlinker -R../rvmon -lmc -lm -lc -lgcc
+/opt/rv32e/bin/riscv32-unknown-elf-objcopy -O srec --srec-forceS3 -S -R .stack gauss.elf gauss.mot
+/opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -nostartfiles -I../include  -c pi.c
+/opt/rv32e/bin/riscv32-unknown-elf-gcc -o pi.elf crt0.o pi.o -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -Wl,-Map,pi.map,-T,lnkscr.x -nostdlib -L../lib -Xlinker -R../rvmon -lmc -lm -lc -lgcc
+/opt/rv32e/bin/riscv32-unknown-elf-objcopy -O srec --srec-forceS3 -S -R .stack pi.elf pi.mot
+/opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -nostartfiles -I../include  -c ecc.c
+/opt/rv32e/bin/riscv32-unknown-elf-gcc -o ecc.elf crt0.o ecc.o -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -Wl,-Map,ecc.map,-T,lnkscr.x -nostdlib -L../lib -Xlinker -R../rvmon -lmc -lm -lc -lgcc
+/opt/rv32e/bin/riscv32-unknown-elf-objcopy -O srec --srec-forceS3 -S -R .stack ecc.elf ecc.mot
+cp -p gauss.mot pi.mot ecc.mot ../term/     <span class="c1"># term のディレクトリにインストールする</span>
+rm crt0.o
+make<span class="o">[</span><span class="m">1</span><span class="o">]</span>: ディレクトリ <span class="s1">&#39;xxx/rv32emc/rvmon/app&#39;</span> から出ます
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>rvmon$ l pi
+................................................................................................
+................................................................................................
+..................................................................................
+[13062 bytes tfr    cs:691498]
+rvmon$ go
+run user func : 4000
+iter:679
+3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211
+  :
+2620522489407726719478268482601476990902640136394437455305068203496252451749399651431429809190659
+2509372216964615157098583874105978859597729754989301617539284681382686838689427741559918559252459
+53959431049972524680845987273644695848653836736222626099124608057
+cs : 2069485033 OK
+elapsed : 2288.07ms
+0
+rvmon$ 
 </code></pre></div>
 
               

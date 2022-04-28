@@ -369,8 +369,8 @@
 
 
 <h1 id="rv_core-module">rv_core module<a class="headerlink" href="#rv_core-module" title="Permanent link">&para;</a></h1>
-<p>rv_core は以下の機能を有する CPU コアモジュールである<br />
-FPGAに実装してコントローラとして用いる目的で、最小限の仕様を実装した  </p>
+<p>rv_core は以下の機能を有する CPU コアモジュールである。<br />
+FPGAに実装してコントローラとして用いる目的で、最小限の仕様を実装した。  </p>
 <ol>
 <li>命令バス、データバス 各 address 32bit / data 32bit  </li>
 <li>外部割り込み 1系統  </li>
@@ -402,10 +402,10 @@ FPGAに実装してコントローラとして用いる目的で、最小限の�
 <span class="w">  </span><span class="p">);</span><span class="w"></span>
 </code></pre></div>
 <h2 id="memory-map">Memory map<a class="headerlink" href="#memory-map" title="Permanent link">&para;</a></h2>
-<p>rv_core のメモリマップである<br />
-リセット解除後 0x0 番地から実行を開始する<br />
-0xFFFF0000 番地以降をメモリマップ I/O 領域とした<br />
-タイマーカウンター(mtime)、タイマー比較レジスタ(mtimecmp) は 0xFFFF8000, 0xFFFF8008 に配置した  </p>
+<p>rv_core のメモリマップである。<br />
+リセット解除後 0x0 番地から実行を開始する。<br />
+0xFFFF0000 番地以降をメモリマップ I/O 領域とした。<br />
+タイマーカウンター(mtime)、タイマー比較レジスタ(mtimecmp) は 0xFFFF8000, 0xFFFF8008 に配置した。  </p>
 <table>
 <thead>
 <tr>
@@ -443,9 +443,9 @@ FPGAに実装してコントローラとして用いる目的で、最小限の�
 </tbody>
 </table>
 <h2 id="csr-control-and-status-register">CSR Control and Status Register<a class="headerlink" href="#csr-control-and-status-register" title="Permanent link">&para;</a></h2>
-<p>ISAマニュアル vol II に定義されている CSR のうち、以下の CSR を実装した<br />
-主にタイマー、及び外部割り込みの制御に用いる<br />
-ソフトウェア割り込みは実装していない  </p>
+<p>ISAマニュアル vol II に定義されている CSR のうち、以下の CSR を実装した。<br />
+主にタイマー、及び外部割り込みの制御に用いる。<br />
+ソフトウェア割り込みは実装していない。  </p>
 <table>
 <thead>
 <tr>
@@ -545,11 +545,11 @@ FPGAに実装してコントローラとして用いる目的で、最小限の�
 <h2 id="_2">命令/データバス接続<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <ul>
 <li>命令バスは compress 命令に対応し、16bit align でアクセスされる<br />
-  命令メモリは、16bit align で 32bit 読み出しができる必要がある  </li>
+  命令メモリは、16bit align で 32bit 読み出しができる必要がある。  </li>
 <li>データバスはデータメモリとペリフェラルを接続する<br />
-  32bit バスであるが、write enable d_we[3:0] により、byte/16bit/32bit アクセスを行う<br />
-  read 時も、アクセスモードに応じて 32bit データの必要な byte を取り込む<br />
-  32bit データ内のバイトアクセス順は little endian であるが、d_be 信号を assert することにより、 big endian に切り替えることができる  </li>
+  32bit バスであるが、write enable d_we[3:0] により、byte/16bit/32bit アクセスを行う。<br />
+  read 時も、アクセスモードに応じて 32bit データの必要な byte を取り込む。<br />
+  32bit データ内のバイトアクセス順は little endian であるが、d_be 信号を assert することにより、 big endian に切り替えることができる。  </li>
 <li>read / write 各 1 clock cycle でアクセスするが、rdy 信号を任意サイクル de-assert することで cycle を延長できる  </li>
 </ul>
 <p><img alt="rv_bus_wiring" src="img/rv_bus_wiring.svg" /></p>
@@ -557,40 +557,116 @@ FPGAに実装してコントローラとして用いる目的で、最小限の�
 <ul>
 <li>
 <p>命令バス read timing<br />
-  i_re が assert されたとき、i_adr に対応する命令を読み出し、<strong>次のサイクル</strong>で i_dr に返す  <br />
-  i_adr をデコードし、必要に応じて i_rdy を de-assert することで、アクセスサイクルを追加できる<br />
+  i_re が assert されたとき、i_adr に対応する命令を読み出し、<strong>次のサイクル</strong>で i_dr に返す。 <br />
+  i_adr をデコードし、必要に応じて i_rdy を de-assert することで、アクセスサイクルを追加できる。<br />
 <img alt="bus_timing-IR" src="img/bus_timing_IR.svg" />  </p>
 </li>
 <li>
 <p>データバス write timing<br />
-  d_we[3:0] が assert されたとき、d_adr に対応するアドレスの d_we のバイトイネーブルに対応するバイトに d_dw データを書き込む<br />
-  d_be を assert することで、d_we のバイトイネーブル順序を big endian 相当に変更できる<br />
-  d_adr をデコードし、必要に応じて d_rdy を de-assert することで、アクセスサイクルを追加できる<br />
+  d_we[3:0] が assert されたとき、d_adr に対応するアドレスの d_we のバイトイネーブルに対応するバイトに d_dw データを書き込む。<br />
+  d_be を assert することで、d_we のバイトイネーブル順序を big endian 相当に変更できる。<br />
+  d_adr をデコードし、必要に応じて d_rdy を de-assert することで、アクセスサイクルを追加できる。<br />
 <img alt="bus_timing-DW" src="img/bus_timing_DW.svg" />  </p>
 </li>
 <li>
 <p>データバス read timing<br />
-  d_re が assert されたとき、d_adr に対応するアドレスのデータを読み出し、<strong>次のサイクル</strong>で d_dr に返す<br />
-  d_dr はメモリ、ペリフェラル群の各ブロックのデータを or するので、各ブロックのリードデータが有効でないときは 0x0 を返す必要がある<br />
-  d_be を assert することで、d_dr の読み込みバイト順序を big endian 相当に変更できる<br />
-  d_adr をデコードし、必要に応じて d_rdy を de-assert することで、アクセスサイクルを追加できる<br />
+  d_re が assert されたとき、d_adr に対応するアドレスのデータを読み出し、<strong>次のサイクル</strong>で d_dr に返す。<br />
+  d_dr はメモリ、ペリフェラル群の各ブロックのデータを or するので、各ブロックのリードデータが有効でないときは 0x0 を返す必要がある。<br />
+  d_be を assert することで、d_dr の読み込みバイト順序を big endian 相当に変更できる。<br />
+  d_adr をデコードし、必要に応じて d_rdy を de-assert することで、アクセスサイクルを追加できる。<br />
 <img alt="bus_timing-DR" src="img/bus_timing_DR.svg" />  </p>
 </li>
 <li>
 <p>データバス byte addressing<br />
-  d_dr/d_dw 32bit データのバイト順序を示す<br />
-  d_be による endian 切り替えを図示する<br />
+  d_dr/d_dw 32bit データのバイト順序を示す。<br />
+  d_be による endian 切り替えを図示する。<br />
 <img alt="bus_byte_access" src="img/bus_byte_access.svg" />  </p>
 </li>
 </ul>
 <h2 id="reset-interrupt">Reset, Interrupt<a class="headerlink" href="#reset-interrupt" title="Permanent link">&para;</a></h2>
-<p>ハードウェアリセット時、プログラムカウンタ pc は 0x0 にリセットされ、リセット解除時 0 番地から実行を開始する<br />
-割り込みは、rv_core 内臓の 64bit タイマー割り込みと、外部端子 irq による割り込みを実装した<br />
+<p>ハードウェアリセット時、プログラムカウンタ pc は 0x0 にリセットされ、リセット解除時 0 番地から実行を開始する。<br />
+割り込みは、rv_core 内臓の 64bit タイマー割り込みと、外部端子 irq による割り込みを実装した。<br />
 リセット解除後の初期化ルーチンでは、スタックポインタの設定と割り込み処理ルーチンのベクター(mtvec)設定を行う  </p>
-<div class="highlight"><span class="filename">example: crt0.S</span><pre><span></span><code><span class="w">  </span><span class="nf">la</span><span class="w">      </span><span class="no">sp</span><span class="p">,</span><span class="w"> </span><span class="no">__stack_top</span><span class="w">   </span><span class="c1"># stack pointer 設定</span>
+<details class="初期化ルーチンの例"><summary>初期化ルーチンの例</summary><div class="highlight"><span class="filename">example: crt0.S</span><pre><span></span><code><span class="c1">#</span>
+<span class="c1"># crt0.S : RISC-V startup routine</span>
+<span class="c1">#</span>
+<span class="w">  </span><span class="na">.section</span><span class="w"> </span><span class="no">.text.startup</span><span class="w"></span>
+<span class="w">  </span><span class="na">.global</span><span class="w"> </span><span class="no">_start</span><span class="p">,</span><span class="w"> </span><span class="no">__errno</span><span class="w"></span>
+<span class="w">  </span><span class="na">.type</span><span class="w">   </span><span class="no">_start</span><span class="p">,</span><span class="w"> </span><span class="na">@function</span><span class="w"></span>
+
+<span class="nl">_start:</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># Initialize global pointer</span>
+<span class="na">.option</span><span class="w"> </span><span class="no">push</span><span class="w"></span>
+<span class="na">.option</span><span class="w"> </span><span class="no">norelax</span><span class="w"></span>
+<span class="err">1:</span><span class="nf">auipc</span><span class="w"> </span><span class="no">gp</span><span class="p">,</span><span class="w"> </span><span class="nv">%pcrel_hi</span><span class="p">(</span><span class="no">__global_pointer$</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nf">addi</span><span class="w">  </span><span class="no">gp</span><span class="p">,</span><span class="w"> </span><span class="no">gp</span><span class="p">,</span><span class="w"> </span><span class="nv">%pcrel_lo</span><span class="p">(</span><span class="mi">1</span><span class="no">b</span><span class="p">)</span><span class="w"></span>
+<span class="na">.option</span><span class="w"> </span><span class="no">pop</span><span class="w"></span>
+<span class="w">  </span><span class="nf">la</span><span class="w">      </span><span class="no">sp</span><span class="p">,</span><span class="w"> </span><span class="no">__stack_top</span><span class="w">   </span><span class="c1"># stack pointer 設定</span>
 <span class="w">  </span><span class="nf">la</span><span class="w">      </span><span class="no">t0</span><span class="p">,</span><span class="w"> </span><span class="no">_irq_handle</span><span class="w">   </span><span class="c1"># 割り込みハンドラアドレス</span>
 <span class="w">  </span><span class="nf">csrw</span><span class="w">    </span><span class="no">mtvec</span><span class="p">,</span><span class="w"> </span><span class="no">t0</span><span class="w">         </span><span class="c1">#  mtvec に設定</span>
+
+<span class="w">  </span><span class="c1"># Clear bss section</span>
+<span class="w">  </span><span class="nf">la</span><span class="w">      </span><span class="no">a0</span><span class="p">,</span><span class="w"> </span><span class="no">_edata</span><span class="w"></span>
+<span class="w">  </span><span class="nf">la</span><span class="w">      </span><span class="no">a1</span><span class="p">,</span><span class="w"> </span><span class="no">_end</span><span class="w"></span>
+<span class="w">  </span><span class="nf">sub</span><span class="w">     </span><span class="no">a1</span><span class="p">,</span><span class="w"> </span><span class="no">a1</span><span class="p">,</span><span class="w"> </span><span class="no">a0</span><span class="w"></span>
+<span class="w">  </span><span class="nf">call</span><span class="w">    </span><span class="no">memclr</span><span class="w">  </span><span class="c1"># rv-test/lib/memclr.c</span>
+<span class="w">  </span><span class="c1"># Call main()</span>
+<span class="w">  </span><span class="nf">lw</span><span class="w">      </span><span class="no">a0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">(</span><span class="no">sp</span><span class="p">)</span><span class="w">                  </span><span class="c1"># a0 = argc</span>
+<span class="w">  </span><span class="nf">addi</span><span class="w">    </span><span class="no">a1</span><span class="p">,</span><span class="w"> </span><span class="no">sp</span><span class="p">,</span><span class="w"> </span><span class="no">__SIZEOF_POINTER__</span><span class="w"> </span><span class="c1"># a1 = argv</span>
+<span class="w">  </span><span class="nf">li</span><span class="w">      </span><span class="no">a2</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w">                      </span><span class="c1"># a2 = envp = NULL</span>
+<span class="w">  </span><span class="nf">call</span><span class="w">    </span><span class="no">main</span><span class="w"></span>
+<span class="w">  </span><span class="nf">call</span><span class="w">    </span><span class="no">at_exit</span><span class="w"></span>
+<span class="w">  </span><span class="nf">li</span><span class="w">      </span><span class="no">t0</span><span class="p">,</span><span class="w"> </span><span class="mi">93</span><span class="w">        </span><span class="c1"># SYS_exit</span>
+<span class="w">  </span><span class="nf">scall</span><span class="w"></span>
+
+<span class="nl">Loop:</span><span class="w"></span>
+<span class="w">  </span><span class="nf">j</span><span class="w">    </span><span class="no">Loop</span><span class="w"></span>
+<span class="nl">_errno:</span><span class="w"></span>
+<span class="w">  </span><span class="nf">nop</span><span class="w"></span>
+
+<span class="c1"># Interrupt handler</span>
+<span class="w">  </span><span class="na">.align</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
+<span class="nl">_irq_handle:</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># Save registers.</span>
+<span class="w">    </span><span class="nf">addi</span><span class="w">  </span><span class="no">sp</span><span class="p">,</span><span class="w"> </span><span class="no">sp</span><span class="p">,</span><span class="w"> </span><span class="p">-(</span><span class="mi">12</span><span class="p">*</span><span class="mi">4</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">ra</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">a0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">a1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">a2</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">a3</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">4</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">a4</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">5</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">a5</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">6</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">s0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">7</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">s1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">8</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">t0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">9</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">t1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">sw</span><span class="w">    </span><span class="no">t2</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">11</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1"># Invoke the handler.</span>
+<span class="w">    </span><span class="nf">mv</span><span class="w">      </span><span class="no">a0</span><span class="p">,</span><span class="w"> </span><span class="no">sp</span><span class="w"></span>
+<span class="w">    </span><span class="nf">csrr</span><span class="w">    </span><span class="no">a1</span><span class="p">,</span><span class="w"> </span><span class="no">mcause</span><span class="w"></span>
+<span class="w">    </span><span class="nf">csrr</span><span class="w">    </span><span class="no">a2</span><span class="p">,</span><span class="w"> </span><span class="no">mepc</span><span class="w"></span>
+<span class="w">    </span><span class="nf">jal</span><span class="w">     </span><span class="no">irq_handler</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1"># Restore registers.</span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">ra</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">a0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">a1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">a2</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">a3</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">4</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">a4</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">5</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">a5</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">6</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">s0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">7</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">s1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">8</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">t0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">9</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">t1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">lw</span><span class="w">    </span><span class="no">t2</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">11</span><span class="p">*</span><span class="mi">4</span><span class="p">)(</span><span class="no">sp</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nf">addi</span><span class="w">  </span><span class="no">sp</span><span class="p">,</span><span class="w"> </span><span class="no">sp</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">12</span><span class="p">*</span><span class="mi">4</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1"># Return</span>
+<span class="w">    </span><span class="nf">mret</span><span class="w"></span>
 </code></pre></div>
+</details>
 <ul>
 <li>タイマー割り込み<br />
   64bit タイマーカウンタ mtime は、リセット解除後 clock でインクリメントし続ける。<br />
