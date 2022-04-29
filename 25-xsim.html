@@ -13,7 +13,7 @@
     
     
       
-        <title>FPGA 実装 - rv32emc</title>
+        <title>論理シミュレーション - rv32emc</title>
       
     
     
@@ -59,7 +59,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fpga" class="md-skip">
+        <a href="#_1" class="md-skip">
           Skip to content
         </a>
       
@@ -92,7 +92,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              FPGA 実装
+              論理シミュレーション
             
           </span>
         </div>
@@ -247,21 +247,6 @@
 
   
   
-  
-    <li class="md-nav__item">
-      <a href="25-xsim.html" class="md-nav__link">
-        論理シミュレーション
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
     
   
   
@@ -274,12 +259,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          FPGA 実装
+          論理シミュレーション
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="30-fpga.html" class="md-nav__link md-nav__link--active">
-        FPGA 実装
+      <a href="25-xsim.html" class="md-nav__link md-nav__link--active">
+        論理シミュレーション
       </a>
       
         
@@ -298,30 +283,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#example-design" class="md-nav__link">
-    example design
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    処理の流れ
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#_2" class="md-nav__link">
-    プログラム実行
+    シミュレーション手順
+  </a>
+  
+    <nav class="md-nav" aria-label="シミュレーション手順">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    テストプログラムをクロスコンパイル
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
-    サンプルプログラム
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    論理シミュレーション
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -329,6 +313,21 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="30-fpga.html" class="md-nav__link">
+        FPGA 実装
+      </a>
     </li>
   
 
@@ -362,162 +361,57 @@
                 
 
 
-<h1 id="fpga">FPGA 実装<a class="headerlink" href="#fpga" title="Permanent link">&para;</a></h1>
-<p>rv_core の動作を Xilinx Artix7 FPGA で確認するために example design を用意した。<br />
-<a href="x_env.html#arty-a7-35t">Taget board : Arty-A7</a>  </p>
-<p><a href="https://github.com/shin-yamashita/rv32emc/tree/main/rv_core">source(github)</a>  rv32emc/rv_core/  </p>
-<h2 id="example-design">example design<a class="headerlink" href="#example-design" title="Permanent link">&para;</a></h2>
-<p>rv_core とメモリ dpram、シリアル通信回路 rv_sio を接続した回路 rvc.sv を用意し、Arty-A7-35 ボードのターミナルで動作を確認する。
-<div class="highlight"><pre><span></span><code>rv_core/syn
-├── build.sh              # 論理合成スクリプト
-├── build.tcl             # vivado tcl scripts
-├── read_hdl.tcl
-├── write_mmi.tcl         
-├── arty-a7-pinassign.xdc # 制約ファイル、timing / pin assign
-├── chgmem.sh             # rev/rvc.bit ファイルの RAM の初期値を書き換える
-├── config.sh             # Arty-A7 FPGAに rev/rvc.bit をコンフィグレーション
-├── program.sh            # Arty-A7 の spi flash にプログラム
-├── rvc.sv                # top module
-├── clk_gen.xcix          # clock 生成 PLL
-</code></pre></div></p>
-<p><div class="highlight"><span class="filename">rvc.sv</span><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">rvc</span><span class="w"> </span><span class="p">#(</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="n">debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="kt">logic</span><span class="w"> </span><span class="n">clk</span><span class="p">,</span><span class="w">     </span><span class="c1">// Arty-A7 のシステムクロック(100MHz)を入力、rvc内部のPLLでCPUクロックを生成</span>
-<span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="n">u8_t</span><span class="w">  </span><span class="n">pin</span><span class="p">,</span><span class="w">     </span><span class="c1">// 8bit pararell 入力 SW に接続</span>
-<span class="w">  </span><span class="k">output</span><span class="w"> </span><span class="n">u8_t</span><span class="w">  </span><span class="n">pout</span><span class="p">,</span><span class="w">    </span><span class="c1">// 8bit pararell 出力 LED に接続</span>
-<span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="kt">logic</span><span class="w"> </span><span class="n">rxd</span><span class="p">,</span><span class="w">     </span><span class="c1">// シリアルターミナル</span>
-<span class="w">  </span><span class="k">output</span><span class="w"> </span><span class="kt">logic</span><span class="w"> </span><span class="n">txd</span><span class="w"></span>
-<span class="w">  </span><span class="p">);</span><span class="w"></span>
+<h1 id="_1">論理シミュレーション<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<p>rv_core の動作を論理シミュレーションで確認する。<br />
+rvsim の動作と比較し、RTL のデバッグを行う。  </p>
+<div class="highlight"><pre><span></span><code>├── rv_core
+│   ├── hdl/                <span class="c1"># HDL source</span>
+│   ├── sim/                <span class="c1"># 論理シミュレーション環境</span>
+│   │   ├── convmem.py     <span class="c1"># .mem ファイルを prog_u.mem/prog_l.mem に変換する</span>
+│   │   ├── compile.sh     <span class="c1"># HDL を読み込んで vivado の xelab で elaboration → xsim.dir/tb_rvc</span>
+│   │   ├── run.sh         <span class="c1"># シミュレーション実行 (xsim command line)</span>
+│   │   ├── sim.sh         <span class="c1"># シミュレーション実行 (xsim GUI)</span>
+│   │   ├── regression.sh  <span class="c1"># いくつかのプログラム(.mem)をシミュレーション実行し、結果を .ref と比較</span>
+│   │   ├── tb_rvc.prj     <span class="c1"># HDL source list</span>
+│   │   ├── rvc.sv         <span class="c1"># rv_core と dpram を実装した module</span>
+│   　　 ├── tb_rvc.sv      <span class="c1"># rvc のテストベンチ</span>
+│
+├── rv-test                  <span class="c1"># テストプログラム</span>
+│   ├── Makefile
+│   ├── crt0.S              <span class="c1"># startup routine</span>
+│   ├── *.c                 <span class="c1"># program C source</span>
+│   ├── rv32ldscr.x         <span class="c1"># linker script</span>
+│   ├── include/
+│   ├── lib/                <span class="c1"># mini stdio (printf etc)</span>
 </code></pre></div>
-入出力ポートの接続先は、<code>arty-a7-pinassign.xdc</code> を参照。  </p>
-<h2 id="_1">処理の流れ<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
-<ol>
-<li>
-<p>rv_core で実行する program を用意<br />
-   モニタープログラム rvmon<br />
-   クロスコンパイル環境を用意し、rvmon をコンパイル → 実行バイナリ(rvmon)を作成し、メモリの初期パターンに読み込む形式 (prog_u.mem, prog_l.mem) に変換する。<br />
-   <div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> rv32emc/rvmon
-$ make         <span class="c1"># rvmon を作成</span>
-$ make install <span class="c1"># ../rv_core/syn/ にメモリ初期パターンをインストール</span>
-<span class="c1"># /opt/rv32e/bin/riscv32-unknown-elf-objcopy -O binary -S -R .stack rvmon rvmon.bin</span>
-<span class="c1"># od -An -tx4 -v rvmon.bin &gt; rvmon.mem</span>
-<span class="c1"># ./convmem.py rvmon.mem</span>
-<span class="c1"># cp -p prog_u.mem prog_l.mem ../rv_core/syn/</span>
-<span class="c1"># cp -p rvmon ../rv_core/syn/rvmon.elf</span>
+<h2 id="_2">シミュレーション手順<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h3 id="_3">テストプログラムをクロスコンパイル<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> rv32emc/rv-test
+$ make                  <span class="c1"># クロスコンパイル → 実行バイナリ生成</span>
+    :
+/opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -nostartfiles -I./include  -c pi.c
+/opt/rv32e/bin/riscv32-unknown-elf-gcc -o pi crt0.o pi.o -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -Wl,-Map,pi.map,-T,rv32ldscr.x -nostdlib -L./lib -lmc -lm -lc -lgcc
+    :
+$ make install          <span class="c1"># 実行バイナリから RAMの初期値ファイル(.mem)、ISS での実行結果(.ref) を作成</span>
+    :
+/opt/rv32e/bin/riscv32-unknown-elf-objcopy -O binary -S -R .stack pi pi.bin     <span class="c1"># 実行バイナリ pi をRAMの初期値ファイル pi.mem に変換</span>
+od -An -tx4 -v pi.bin &gt; pi.mem
+    :
+rvsim -r pi <span class="m">2</span>&gt; pi.ref   <span class="c1"># ISS(rvsim) で実行バイナリ pi を実行し、printf() 出力を pi.ref にセーブ</span>
+reset_pc<span class="o">()</span>
+exit<span class="o">()</span>: <span class="m">19</span>
+Total clock cycles: <span class="m">26717123</span>   stall - bra: <span class="m">1093043</span> <span class="o">[</span> <span class="m">4</span>.1%<span class="o">]</span>  data: <span class="m">346613</span> <span class="o">[</span> <span class="m">1</span>.3%<span class="o">]</span>  exec: <span class="m">10115680</span> <span class="o">[</span><span class="m">37</span>.9%<span class="o">]</span>
+    :
+cp -p hello.mem fptest.mem gauss.mem pi.mem ecc.mem mul.mem hello.ref fptest.ref gauss.ref pi.ref ecc.ref mul.ref ../rv_core/sim/
+                        <span class="c1"># .mem .ref を、シミュレーション実行 dir ../rv_core/sim/ にコピー</span>
 </code></pre></div>
-   rvmon.mem は 論理シミュレーション時、論理合成時に verilog の $readmemh() で読み込む形式。<br />
-   dpram では 32bit ワードの 上位、下位 16bit に分けた初期化ファイルを読み込むので、スクリプトで変換する。<br />
-   <div class="highlight"><span class="filename">dpram.sv</span><pre><span></span><code><span class="w">   </span><span class="n">dpram</span><span class="w"> </span><span class="p">#(.</span><span class="n">ADDR_WIDTH</span><span class="p">(</span><span class="mh">13</span><span class="p">),</span><span class="w"></span>
-<span class="w">           </span><span class="p">.</span><span class="n">init_file_u</span><span class="p">(</span><span class="s">&quot;prog_u.mem&quot;</span><span class="p">),</span><span class="w"> </span><span class="c1">// upper 16bit (31:16) initial data</span>
-<span class="w">           </span><span class="p">.</span><span class="n">init_file_l</span><span class="p">(</span><span class="s">&quot;prog_l.mem&quot;</span><span class="p">)</span><span class="w">  </span><span class="c1">// lower 16bit  (15:0) initial data</span>
-<span class="w">           </span><span class="p">)</span><span class="w"> </span><span class="n">u_dpram</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-</code></pre></div></p>
-</li>
-<li>
-<p>論理合成、コンフィグレーション<br />
-   Vivado (2020.2) で論理合成。<br />
-   build.sh で合成時、prog_u.mem  prog_l.mem  ファイルで RAM を初期化。<br />
-   <div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> ../rv_core/syn
-$ ./build.sh  <span class="c1"># vivado で hdl ソースを読み込み、論理合成</span>
-<span class="c1"># FPGAのプログラム rev/rvc.bit を生成</span>
-<span class="c1"># rev/ の下に各種レポートを生成</span>
-$ ./config.sh   <span class="c1"># bit file を FPGA にロード  </span>
-$ ./program.sh  <span class="c1"># bit file を Arty-A7 の ROM にプログラム  </span>
-</code></pre></div></p>
-</li>
-<li>合成済み bit file 中の RAM の内容を書き換える<br />
-   合成時、write_mmi.tcl で block RAM の配置情報をもとに、メモリマッピング情報ファイル <code>prog.mmi</code> を出力している。<br />
-   Vivado の updatemem ツールで bit file を読み込み、<code>prog.mmi</code> にしたがって BRAM の初期値をクロスコンパイルで生成した実行ファイル(elf 形式)の内容に書き換えて出力することができる。<br />
-   <div class="highlight"><pre><span></span><code><span class="c1"># chgmem.sh</span>
-$ updatemem -meminfo prog.mmi -data <span class="nv">$elf</span> -bit rev/rvc.bit -proc u_dpram -force -out rvcchg.bit
-</code></pre></div>
-   再合成することなく BRAM の初期値を書き換えることができる。<br />
-   write_mmi.tcl は dpram の構成に対応して記述される必要がある。  </li>
-</ol>
-<h2 id="_2">プログラム実行<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<p>Arty-A7 にモニタープログラム(rvmon) をロードし、USB-UART 経由でターミナル接続する。<br />
-rvmon 用のターミナルプログラム(term)を用意した。 Host から S-format 形式のプログラムをメモリにロードするのが容易になる。<br />
-rvmon で 'l <em>cmd</em>' コマンドと打つと、term に対して '\033&lt;<em>cmd</em>\n'  を送出する。term は '\033&lt;' を検出すると、'<em>cmd</em>.mot' ファイルを open し、<em>cmd</em>.mot の内容を rvmon にダウンロードする。<br />
-<em>cmd</em>.mot の終了時、EOT ('\004') を送出し、ダウンロードを終了する。  </p>
-<div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> ../../rvmon/term  
-$ make
-$ ./term
-<span class="m">0</span> : usb-Xilinx_JTAG+Serial_1234-oj1-if01-port0
-<span class="m">1</span> : usb-Digilent_Digilent_USB_Device_210319B26865-if01-port0
-<span class="k">select</span> port <span class="o">(</span><span class="m">0</span>~1<span class="o">)</span> : <span class="m">1</span>
-*** open <span class="s1">&#39;/dev/serial/by-id/usb-Digilent_Digilent_USB_Device_210319B26865-if01-port0&#39;</span>
-
-rvmon$ <span class="nb">help</span>
-    d  <span class="o">{</span>addr<span class="o">}</span>      : dump memory
-    l  <span class="o">{</span>cmd<span class="o">(</span>.mot<span class="o">)}</span> : load S-record file <span class="c1"># cmd.mot ファイルをメモリにダウンロード。0x4000 から実行する。</span>
-    go             : <span class="nb">exec</span> cmd <span class="o">(</span>@0x4000<span class="o">)</span>
-
-rvmon$     <span class="c1"># Ctrl-Alt-&#39;C&#39; で term 終了</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>lrwxrwxrwx 1 root root 13 Apr 23 08:45 /dev/serial/by-id/usb-Digilent_Digilent_USB_Device_210319B26865-if01-port0 -&gt; ../../ttyUSB2  
-crw-rw---- 1 root dialout 188, 2 Apr 23 22:45 /dev/ttyUSB2  
-** &#39;dialout&#39; group をサブグループに加えておくと、ユーザー権限でターミナルにアクセスできる。  
-</code></pre></div>
-<h2 id="_3">サンプルプログラム<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
-<p>rv32emc/rvmon/app にいくつかのサンプルプログラムを用意した。<br />
-rvmon でロードし、FPGA 上で実行する。  </p>
-<table>
-<thead>
-<tr>
-<th>name</th>
-<th>descrip</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>pi</td>
-<td>多倍長演算で多数桁の <span class="arithmatex">\(\pi\)</span> を求める</td>
-</tr>
-<tr>
-<td>ecc</td>
-<td>Reed Solomon エラー訂正</td>
-</tr>
-<tr>
-<td>gauss</td>
-<td>正規分布ランダム発生(soft float のテスト)</td>
-</tr>
-</tbody>
-</table>
-<p><div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> ../../rvmon
-$ make apps
-make -C app install
-make<span class="o">[</span><span class="m">1</span><span class="o">]</span>: ディレクトリ <span class="s1">&#39;xxx/rv32emc/rvmon/app&#39;</span> に入ります
-/opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -nostartfiles -I../include  -c gauss.c
-/opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -nostartfiles -I../include  -c crt0.c
-/opt/rv32e/bin/riscv32-unknown-elf-gcc -o gauss.elf crt0.o gauss.o -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -Wl,-Map,gauss.map,-T,lnkscr.x -nostdlib -L../lib -Xlinker -R../rvmon -lmc -lm -lc -lgcc
-/opt/rv32e/bin/riscv32-unknown-elf-objcopy -O srec --srec-forceS3 -S -R .stack gauss.elf gauss.mot
-/opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -nostartfiles -I../include  -c pi.c
-/opt/rv32e/bin/riscv32-unknown-elf-gcc -o pi.elf crt0.o pi.o -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -Wl,-Map,pi.map,-T,lnkscr.x -nostdlib -L../lib -Xlinker -R../rvmon -lmc -lm -lc -lgcc
-/opt/rv32e/bin/riscv32-unknown-elf-objcopy -O srec --srec-forceS3 -S -R .stack pi.elf pi.mot
-/opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -nostartfiles -I../include  -c ecc.c
-/opt/rv32e/bin/riscv32-unknown-elf-gcc -o ecc.elf crt0.o ecc.o -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -Wl,-Map,ecc.map,-T,lnkscr.x -nostdlib -L../lib -Xlinker -R../rvmon -lmc -lm -lc -lgcc
-/opt/rv32e/bin/riscv32-unknown-elf-objcopy -O srec --srec-forceS3 -S -R .stack ecc.elf ecc.mot
-cp -p gauss.mot pi.mot ecc.mot ../term/     <span class="c1"># term のディレクトリにインストールする</span>
-rm crt0.o
-make<span class="o">[</span><span class="m">1</span><span class="o">]</span>: ディレクトリ <span class="s1">&#39;xxx/rv32emc/rvmon/app&#39;</span> から出ます
-</code></pre></div>
-サンプルプログラムは 0x4000 番地から実行するようにリンクされる。
-また、リンクオプション <code>-Xlinker -R../rvmon</code> により、モニタプログラム rvmon に含まれるライブラリをリンクする(memory 節約)。</p>
-<div class="highlight"><pre><span></span><code>rvmon$ l pi     # pi.mot(円周率計算プログラム) をメモリにロード、0x4000 番地から実行
-................................................................................................
-..................................................................................
-[13062 bytes tfr    cs:691498]
-rvmon$ go       # ロードしたプログラムを call 0x4000 
-run user func : 4000
-iter:679
-3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211
-  :
-2620522489407726719478268482601476990902640136394437455305068203496252451749399651431429809190659
-2509372216964615157098583874105978859597729754989301617539284681382686838689427741559918559252459
-53959431049972524680845987273644695848653836736222626099124608057
-cs : 2069485033 OK
-elapsed : 2288.07ms
-0
-rvmon$ 
+<h3 id="_4">論理シミュレーション<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> rv32emc/rv_core/sim
+$ ./convmem.py pi.mem   <span class="c1"># 実行するプログラムの .mem ファイルを dpram の初期値ファイル prog_u.mem/prog_l.mem に変換</span>
+$ ./compile.sh          <span class="c1"># elaboration</span>
+$ ./run.sh              <span class="c1"># xsim 実行 (command line)</span>
+<span class="o">(</span>$ ./sim.sh<span class="o">)</span>            <span class="c1"># xsim 実行 (GUI)</span>
+            <span class="c1"># printf() 出力は、&quot;stderr.out&quot; に出力される</span>
 </code></pre></div>
 
               
@@ -537,7 +431,7 @@ rvmon$
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="25-xsim.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: 論理シミュレーション" rel="prev">
+        <a href="20-rv_core.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: rv_core module" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -546,20 +440,20 @@ rvmon$
               <span class="md-footer__direction">
                 Previous
               </span>
-              論理シミュレーション
+              rv_core module
             </div>
           </div>
         </a>
       
       
         
-        <a href="x_env.html" class="md-footer__link md-footer__link--next" aria-label="Next: 開発環境" rel="next">
+        <a href="30-fpga.html" class="md-footer__link md-footer__link--next" aria-label="Next: FPGA 実装" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              開発環境
+              FPGA 実装
             </div>
           </div>
           <div class="md-footer__button md-icon">
