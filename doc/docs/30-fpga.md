@@ -83,8 +83,8 @@ module rvc #( parameter debug = 0 ) (
 
 Arty-A7 にモニタープログラム(rvmon) をロードし、USB-UART 経由でターミナル接続する。  
 rvmon 用のターミナルプログラム(term)を用意した。 Host から S-format 形式のプログラムをメモリにロードするのが容易になる。  
-rvmon で 'l cmd' コマンドを打つと、term に対して '\033<cmd\n'  を送出する。term は '\033<' を検出すると、'cmd.mot' ファイルを open し、cmd.mot の内容を rvmon にダウンロードする。  
-cmd.mot の終了時、EOT ('\004') を送出し、ダウンロードを終了する。  
+rvmon で 'l *cmd*' コマンドと打つと、term に対して '\033<*cmd*\n'  を送出する。term は '\033<' を検出すると、'*cmd*.mot' ファイルを open し、*cmd*.mot の内容を rvmon にダウンロードする。  
+*cmd*.mot の終了時、EOT ('\004') を送出し、ダウンロードを終了する。  
 
 ```bash
 $ cd ../../rvmon/term  
@@ -114,9 +114,15 @@ crw-rw---- 1 root dialout 188, 2 Apr 23 22:45 /dev/ttyUSB2
 rv32emc/rvmon/app にいくつかのサンプルプログラムを用意した。  
 rvmon でロードし、FPGA 上で実行する。  
 
+name |descrip
+---- |----
+pi   |多倍長演算で多数桁の $\pi$ を求める
+ecc  |Reed Solomon エラー訂正
+gauss|正規分布ランダム発生(soft float のテスト)  
+
 ```bash
 $ cd ../../rvmon
-$ make app
+$ make apps
 make -C app install
 make[1]: ディレクトリ 'xxx/rv32emc/rvmon/app' に入ります
 /opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march=rv32emc -mabi=ilp32e -nostartfiles -I../include  -c gauss.c
@@ -133,14 +139,15 @@ cp -p gauss.mot pi.mot ecc.mot ../term/     # term のディレクトリにイ�
 rm crt0.o
 make[1]: ディレクトリ 'xxx/rv32emc/rvmon/app' から出ます
 ```
+サンプルプログラムは 0x4000 番地から実行するようにリンクされる。
+また、リンクオプション `-Xlinker -R../rvmon` により、モニタプログラム rvmon に含まれるライブラリをリンクする(memory 節約)。
 
 ```
-rvmon$ l pi
-................................................................................................
+rvmon$ l pi     # pi.mot(円周率計算プログラム) をメモリにロード、0x4000 番地から実行
 ................................................................................................
 ..................................................................................
 [13062 bytes tfr    cs:691498]
-rvmon$ go
+rvmon$ go       # ロードしたプログラムを call 0x4000 
 run user func : 4000
 iter:679
 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211

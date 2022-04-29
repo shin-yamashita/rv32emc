@@ -16,6 +16,8 @@ markdown_extensions:
     - pymdownx.inlinehilite
     - pymdownx.superfences
     - pymdownx.snippets    
+    - pymdownx.arithmatex:
+        generic: true
     - admonition
     - pymdownx.details
     - attr_list
@@ -28,7 +30,9 @@ markdown_extensions:
         permalink: true
 
 extra_javascript:     
-    - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
+    - javascripts/mathjax.js
+    - https://polyfill.io/v3/polyfill.min.js?features=es6
+    - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 repo_url: https://github.com/shin-yamashita/rv32emc
 
