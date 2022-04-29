@@ -368,19 +368,34 @@
 <p><a href="https://github.com/shin-yamashita/rv32emc/tree/main/rv_core">source(github)</a>  rv32emc/rv_core/  </p>
 <h2 id="example-design">example design<a class="headerlink" href="#example-design" title="Permanent link">&para;</a></h2>
 <p>rv_core とメモリ dpram、シリアル通信回路 rv_sio を接続した回路 rvc.sv を用意し、Arty-A7-35 ボードのターミナルで動作を確認する。
-<div class="highlight"><pre><span></span><code>rv_core/syn
-├── build.sh              # 論理合成スクリプト
-├── build.tcl             # vivado tcl scripts
-├── read_hdl.tcl
-├── write_mmi.tcl         
-├── arty-a7-pinassign.xdc # 制約ファイル、timing / pin assign
-├── chgmem.sh             # rev/rvc.bit ファイルの RAM の初期値を書き換える
-├── config.sh             # Arty-A7 FPGAに rev/rvc.bit をコンフィグレーション
-├── program.sh            # Arty-A7 の spi flash にプログラム
-├── rvc.sv                # top module
-├── clk_gen.xcix          # clock 生成 PLL
-</code></pre></div></p>
-<p><div class="highlight"><span class="filename">rvc.sv</span><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">rvc</span><span class="w"> </span><span class="p">#(</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="n">debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code>├── rv_core
+│   ├── hdl/            # rv_core HDL source
+│   └── syn
+│     ├── build.sh              # 論理合成スクリプト
+│     ├── build.tcl             # vivado tcl scripts
+│     ├── read_hdl.tcl          # HDL source を読み込む
+│     ├── write_mmi.tcl
+│     ├── arty-a7-pinassign.xdc # 制約ファイル、timing / pin assign
+│     ├── chgmem.sh             # rev/rvc.bit ファイルの RAM の初期値を書き換える
+│     ├── config.sh             # Arty-A7 FPGAに rev/rvc.bit をコンフィグレーション
+│     ├── program.sh            # Arty-A7 の spi flash にプログラム
+│     ├── rvc.sv                # top module
+│     └── clk_gen.xcix          # clock 生成 PLL
+├── rv_io/              # rv_sio UART HDL source
+└── rvmon               # デバッグ用モニタープログラム
+    ├── Makefile
+    ├── convmem.py      # メモリ初期パターン変換スクリプト
+    ├── crt0.S          # スタートアップルーチン、割り込みハンドラ
+    ├── rvmon.c         # モニタープログラム
+    ├── lnkscr.x        # linker script
+    ├── include/
+    ├── lib/            # mini stdio (printf etc.)
+    ├── app/            # テストプログラム例
+    └── term            # シリアルターミナルプログラム
+      ├── Makefile
+      └── term.c
+</code></pre></div>
+<div class="highlight"><span class="filename">rvc.sv</span><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">rvc</span><span class="w"> </span><span class="p">#(</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="n">debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
 <span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="kt">logic</span><span class="w"> </span><span class="n">clk</span><span class="p">,</span><span class="w">     </span><span class="c1">// Arty-A7 のシステムクロック(100MHz)を入力、rvc内部のPLLでCPUクロックを生成</span>
 <span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="n">u8_t</span><span class="w">  </span><span class="n">pin</span><span class="p">,</span><span class="w">     </span><span class="c1">// 8bit pararell 入力 SW に接続</span>
 <span class="w">  </span><span class="k">output</span><span class="w"> </span><span class="n">u8_t</span><span class="w">  </span><span class="n">pout</span><span class="p">,</span><span class="w">    </span><span class="c1">// 8bit pararell 出力 LED に接続</span>
