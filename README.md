@@ -11,6 +11,9 @@
 - 開発した CPU core の応用として、[5th AI Edge Contest](https://signate.jp/competitions/537) の課題に適用した。  
 
 ----
+
+[rv32emc の公開 githubio ページ](https://shin-yamashita.github.io/rv32emc/)
+
 ## files
 ```
 .
@@ -18,7 +21,7 @@
 ├── rv_core/    rv32emc core RTL sources
 │   ├── hdl/    RTL (SystemVerilog)
 │   ├── sim/    logic simulation
-│   ├── syn/    FPGA synthesis 
+│   └── syn/    FPGA synthesis 
 ├── rv_io/      serial I/O source
 ├── rvmon/      Monitor program for FPGA debug
 └── rvsim/      ISS sources
