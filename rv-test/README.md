@@ -73,16 +73,18 @@ rv32emc のコンパイルには、riscv-gnu-toolchain の gcc を用いた。
 EMC 命令セットに対応するため、以下のように configure, build を行った  
 
 ```bash
-$ git clone --recursive https://github.com/riscv/riscv-gnu-toolchain  
-$ cd riscv-gnu-toolchain
+$ sudo apt install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk \
+        build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev  
+                        # gcc の build で必要となるツール Prerequisites  
+$ sudo mkdir /opt/rv32e # cross tool のインストール先  
 
-$ sudo apt install gawk texinfo bison flex
-$ sudo mkdir /opt/rv32e
+$ git clone --branch rvv-0.9.x --recursive https://github.com/riscv/riscv-gnu-toolchain  
+$ cd riscv-gnu-toolchain  
 
-$ ./configure --prefix=/opt/rv32e --disable-linux --with-arch=rv32emac --with-abi=ilp32e
-$ make newlib
+$ patch -p1 < riscv-gdb-sim.patch   # run の修正 patch
 
-/opt/rv32e/bin/riscv32-unknown-elf-gcc etc.
+$ ./configure --prefix=/opt/rv32e --disable-linux --with-arch=rv32emac --with-abi=ilp32e  
+$ make newlib   # ツール群を /opt/rv32e/ にインストール、書き込み権限が必要
 ```
 gcc 9.2.0 で動作を確認した。  
 (ただし、最新の gcc 11.1.0 では動作がおかしい、詳細は未確認)  　
