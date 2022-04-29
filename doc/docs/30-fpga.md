@@ -10,19 +10,33 @@ rv_core の動作を Xilinx Artix7 FPGA で確認するために example design 
 
 rv_core とメモリ dpram、シリアル通信回路 rv_sio を接続した回路 rvc.sv を用意し、Arty-A7-35 ボードのターミナルで動作を確認する。
 ```
-rv_core/syn
-├── build.sh              # 論理合成スクリプト
-├── build.tcl             # vivado tcl scripts
-├── read_hdl.tcl
-├── write_mmi.tcl         
-├── arty-a7-pinassign.xdc # 制約ファイル、timing / pin assign
-├── chgmem.sh             # rev/rvc.bit ファイルの RAM の初期値を書き換える
-├── config.sh             # Arty-A7 FPGAに rev/rvc.bit をコンフィグレーション
-├── program.sh            # Arty-A7 の spi flash にプログラム
-├── rvc.sv                # top module
-├── clk_gen.xcix          # clock 生成 PLL
+├── rv_core
+│   ├── hdl/            # rv_core HDL source
+│   └── syn
+│     ├── build.sh              # 論理合成スクリプト
+│     ├── build.tcl             # vivado tcl scripts
+│     ├── read_hdl.tcl          # HDL source を読み込む
+│     ├── write_mmi.tcl
+│     ├── arty-a7-pinassign.xdc # 制約ファイル、timing / pin assign
+│     ├── chgmem.sh             # rev/rvc.bit ファイルの RAM の初期値を書き換える
+│     ├── config.sh             # Arty-A7 FPGAに rev/rvc.bit をコンフィグレーション
+│     ├── program.sh            # Arty-A7 の spi flash にプログラム
+│     ├── rvc.sv                # top module
+│     └── clk_gen.xcix          # clock 生成 PLL
+├── rv_io/              # rv_sio UART HDL source
+└── rvmon               # デバッグ用モニタープログラム
+    ├── Makefile
+    ├── convmem.py      # メモリ初期パターン変換スクリプト
+    ├── crt0.S          # スタートアップルーチン、割り込みハンドラ
+    ├── rvmon.c         # モニタープログラム
+    ├── lnkscr.x        # linker script
+    ├── include/
+    ├── lib/            # mini stdio (printf etc.)
+    ├── app/            # テストプログラム例
+    └── term            # シリアルターミナルプログラム
+      ├── Makefile
+      └── term.c
 ```
-
 ```verilog title="rvc.sv"
 module rvc #( parameter debug = 0 ) (
   input  logic clk,     // Arty-A7 のシステムクロック(100MHz)を入力、rvc内部のPLLでCPUクロックを生成

@@ -6,22 +6,38 @@
 **Taget board : Arty-A7-35**  
 
 rv_core の動作を Xilinx Artix7 で確認する。  
-rv_core とメモリ dpram、シリアル通信回路 rv_sio を接続した回路 rvc.sv を用意し、Arty-A7-35 ボードのターミナルで動作を確認する。
-```
-rv_core/syn
-├── build.sh              # 論理合成スクリプト
-├── build.tcl             # vivado tcl scripts
-├── read_hdl.tcl
-├── write_mmi.tcl         
-├── arty-a7-pinassign.xdc # 制約ファイル、timing / pin assign
-├── chgmem.sh             # rev/rvc.bit ファイルの RAM の初期値を書き換える
-├── config.sh             # Arty-A7 FPGAに rev/rvc.bit をコンフィグレーション
-├── program.sh            # Arty-A7 の spi flash にプログラム
-├── rvc.sv                # top module
-├── clk_gen.xcix          # clock 生成 PLL
-```
+rv_core とメモリ dpram、シリアル通信回路 rv_sio を接続した回路 rvc.sv を用意し、Arty-A7-35 ボードのターミナルで動作を確認する。  
 
+```
+├── rv_core
+│   ├── hdl/            # rv_core HDL source
+│   └── syn
+│     ├── build.sh              # 論理合成スクリプト
+│     ├── build.tcl             # vivado tcl scripts
+│     ├── read_hdl.tcl          # HDL source を読み込む
+│     ├── write_mmi.tcl
+│     ├── arty-a7-pinassign.xdc # 制約ファイル、timing / pin assign
+│     ├── chgmem.sh             # rev/rvc.bit ファイルの RAM の初期値を書き換える
+│     ├── config.sh             # Arty-A7 FPGAに rev/rvc.bit をコンフィグレーション
+│     ├── program.sh            # Arty-A7 の spi flash にプログラム
+│     ├── rvc.sv                # top module
+│     └── clk_gen.xcix          # clock 生成 PLL
+├── rv_io/              # rv_sio UART HDL source
+└── rvmon               # デバッグ用モニタープログラム
+    ├── Makefile
+    ├── convmem.py      # メモリ初期パターン変換スクリプト
+    ├── crt0.S          # スタートアップルーチン、割り込みハンドラ
+    ├── rvmon.c         # モニタープログラム
+    ├── lnkscr.x        # linker script
+    ├── include/
+    ├── lib/            # mini stdio (printf etc.)
+    ├── app/            # テストプログラム例
+    └── term            # シリアルターミナルプログラム
+      ├── Makefile
+      └── term.c
+```
 ```verilog
+// rvc.sv
 module rvc #( parameter debug = 0 ) (
   input  logic clk,     // Arty-A7 のシステムクロック(100MHz)を入力、rvc内部のPLLでCPUクロックを生成
   input  u8_t  pin,     // 8bit pararell 入力 SW に接続
@@ -51,6 +67,7 @@ module rvc #( parameter debug = 0 ) (
    rvmon.mem は 論理シミュレーション時、論理合成時に verilog の $readmemh() で読み込む形式。  
    dpram では 32bit ワードの 上位、下位 16bit に分けた初期化ファイルを読み込むので、スクリプトで変換する。  
     ```verilog title=dpram.sv
+    // dpram.sv
       dpram #(.ADDR_WIDTH(13),
               .init_file_u("prog_u.mem"), // upper 16bit (31:16) initial data
               .init_file_l("prog_l.mem")  // lower 16bit  (15:0) initial data
@@ -74,6 +91,7 @@ module rvc #( parameter debug = 0 ) (
    合成時、write_mmi.tcl で block RAM の配置情報をもとに、メモリマッピング情報ファイル `prog.mmi` を出力している。  
    Vivado の updatemem ツールで bit file を読み込み、`prog.mmi` にしたがって BRAM の初期値をクロスコンパイルで生成した実行ファイル(elf 形式)の内容に書き換えて出力することができる。  
    ```bash title=chgmem.sh
+   # chgmem.sh
    $ updatemem -meminfo prog.mmi -data $elf -bit rev/rvc.bit -proc u_dpram -force -out rvcchg.bit
    ```
    再合成することなく BRAM の初期値を書き換えることができる。  
