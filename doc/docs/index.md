@@ -25,4 +25,17 @@ FPGAへの実装を行い、[5th AI Edge Contest](https://signate.jp/competition
 ## 公開ソース
 
 - [rv32emc](https://github.com/shin-yamashita/rv32emc)  
+
+```
+rv32emc
+├── rv-test/    test programs for logic simulation
+├── rv_core/    rv32emc core RTL sources
+│   ├── hdl/    RTL (SystemVerilog)
+│   ├── sim/    logic simulation
+│   └── syn/    FPGA synthesis / example design for Arty-A7
+├── rv_io/      serial I/O source
+├── rvmon/      Monitor program for FPGA debug
+└── rvsim/      ISS sources
+```
+
 - [5th-AI-Edge-Contest](https://github.com/shin-yamashita/5th-AI-Edge-Contest)  
