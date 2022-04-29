@@ -394,7 +394,7 @@ CPU コア開発の流れは以下のようになる。  </p>
 <div class="highlight"><pre><span></span><code>rvsim
 ├── RV-insn.ods   : RV32 instruction table source 
 │      ├─ RV-insn tab → RV-insn.csv  
-│      ├─ c-insn tab  → c-insn.csv  
+│      └─ c-insn tab  → c-insn.csv  
 ├── insntab.py    : RV-insn.csv to optab.h / rv_dec_insn.sv converter
 ├── c-insntab.py  : c-insn.csv to c-optab.h / rv_exp_cinsn.sv converter
 ├── simcore.c     : ISS core  

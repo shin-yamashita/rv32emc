@@ -366,23 +366,23 @@
 rvsim の動作と比較し、RTL のデバッグを行う。  </p>
 <div class="highlight"><pre><span></span><code>├── rv_core
 │   ├── hdl/                <span class="c1"># HDL source</span>
-│   ├── sim/                <span class="c1"># 論理シミュレーション環境</span>
-│   │   ├── convmem.py     <span class="c1"># .mem ファイルを prog_u.mem/prog_l.mem に変換する</span>
-│   │   ├── compile.sh     <span class="c1"># HDL を読み込んで vivado の xelab で elaboration → xsim.dir/tb_rvc</span>
-│   │   ├── run.sh         <span class="c1"># シミュレーション実行 (xsim command line)</span>
-│   │   ├── sim.sh         <span class="c1"># シミュレーション実行 (xsim GUI)</span>
-│   │   ├── regression.sh  <span class="c1"># いくつかのプログラム(.mem)をシミュレーション実行し、結果を .ref と比較</span>
-│   │   ├── tb_rvc.prj     <span class="c1"># HDL source list</span>
-│   │   ├── rvc.sv         <span class="c1"># rv_core と dpram を実装した module</span>
-│   　　 ├── tb_rvc.sv      <span class="c1"># rvc のテストベンチ</span>
+│   └── sim/                <span class="c1"># 論理シミュレーション環境</span>
+│      ├── convmem.py     <span class="c1"># .mem ファイルを prog_u.mem/prog_l.mem に変換する</span>
+│      ├── compile.sh     <span class="c1"># HDL を読み込んで vivado の xelab で elaboration → xsim.dir/tb_rvc</span>
+│      ├── run.sh         <span class="c1"># シミュレーション実行 (xsim command line)</span>
+│      ├── sim.sh         <span class="c1"># シミュレーション実行 (xsim GUI)</span>
+│      ├── regression.sh  <span class="c1"># いくつかのプログラム(.mem)をシミュレーション実行し、結果を .ref と比較</span>
+│      ├── tb_rvc.prj     <span class="c1"># HDL source list</span>
+│      ├── rvc.sv         <span class="c1"># rv_core と dpram を実装した module</span>
+│   　 └── tb_rvc.sv      <span class="c1"># rvc のテストベンチ</span>
 │
-├── rv-test                  <span class="c1"># テストプログラム</span>
-│   ├── Makefile
-│   ├── crt0.S              <span class="c1"># startup routine</span>
-│   ├── *.c                 <span class="c1"># program C source</span>
-│   ├── rv32ldscr.x         <span class="c1"># linker script</span>
-│   ├── include/
-│   ├── lib/                <span class="c1"># mini stdio (printf etc)</span>
+└── rv-test                  <span class="c1"># テストプログラム</span>
+   ├── Makefile
+   ├── crt0.S              <span class="c1"># startup routine</span>
+   ├── *.c                 <span class="c1"># program C source</span>
+   ├── rv32ldscr.x         <span class="c1"># linker script</span>
+   ├── include/
+   └── lib/                <span class="c1"># mini stdio (printf etc)</span>
 </code></pre></div>
 <h2 id="_2">シミュレーション手順<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <h3 id="_3">テストプログラムをクロスコンパイル<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
