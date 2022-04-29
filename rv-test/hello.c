@@ -16,35 +16,21 @@
 
 int main(void) 
 {
- char *msg = "Hello world!\n";
- char *str = "uart test\n";
+ char *msg = "Hello world!";
  int i;
 
- uint32_t val = 0x180;
-
-  init_timer(100000);	// 10 us
-//  uart_set_baudrate(0);
-//  set_port(0);
-//  uart_write(0, str, strlen(str));
-//  set_port(1);
-
-//  char *d;
-//  d = (char*)0x3001;
-//  set_port(2);
-//  memclr(d, 106);
-//  reset_port(2);
-
+//  init_timer(100000);	// 10 us
+  set_port(0);
   printf("mtvec : %x\n", csrr(mtvec));
- int r = csrr(time);
-//  printf("mtime : %d\n", r);
-//  set_port(2);
+  printf("mtime : %d\n", csrr(time));
+  set_port(1);
 //  init_timer(50000);	// 20 us
-  set_port(3);
+//  set_port(3);
 
   for(i = 0; i < 5; i++){
 //    *mtimecmp = *mtime + 1000;
 //    printf("%d ", (uint32_t)(*mtime));
-    printf("%d: %s", i, msg);
+    printf("%d: %s  %d\n", i, msg, csrr(time));
     if(i%2) set_port(4);
     else    reset_port(4);
   }

@@ -6,7 +6,7 @@ rv32emc の動作確認に用いたテストプログラム
 printf() から呼ばれる文字列出力の下位関数 _write() を実行環境に合わせて用意する  
 
 **lib/fprint.c**
-```
+```C 
 #define DBG_PUTC        ((volatile u8*)0xffff0004)  // debug 用キャラクタ出力ポート
 
 ssize_t _write (int fd, const char *ptr, size_t len)
@@ -46,7 +46,7 @@ _write() 関数を変えることで、ISS / RTL sim / FPGA実機 / cross-gdb、
 
 
 ```
-.
+rv-test
 ├── Makefile
 ├── crt0.S          RISC-V startup routine, interrupt handler
 ├── ecc.c           RS error correction test
@@ -72,7 +72,7 @@ _write() 関数を変えることで、ISS / RTL sim / FPGA実機 / cross-gdb、
 rv32emc のコンパイルには、riscv-gnu-toolchain の gcc を用いた。  
 EMC 命令セットに対応するため、以下のように configure, build を行った  
 
-```
+```bash
 $ git clone --recursive https://github.com/riscv/riscv-gnu-toolchain  
 $ cd riscv-gnu-toolchain
 

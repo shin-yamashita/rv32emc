@@ -68,7 +68,7 @@ ref:	$(REF)
 
 list:	$(SRCS:.c=.lst)
 
-lib:
+lib/libmc.a:
 	make -C lib
 
 #gauss:	gauss.o crt0.o
@@ -91,7 +91,6 @@ init.o:	init.c
 	$(CC) $(CFLAGS) -c $<
 
 %:	crt0.o  %.o
-	make -C lib
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.ref:	%
@@ -118,7 +117,8 @@ clean:
 	@rm -f $(PRGS) *.o core* a.out *~ \#*\# *.map *.lst *.ref *.gcc *.out *.bin *.mot *.mem *.bak
 
 %.dep:	%.c
-	$(CC) $(CFLAGS) -MM $< > $@
+	$(CC) $(CFLAGS) -MM $< | head -c -1 - > $@
+	echo " lib/libmc.a " >> $@
 
 %.dep:	%.S
 	$(CC) $(CFLAGS) -MM $< > $@
@@ -133,14 +133,13 @@ depend:	$(DEPS)
 #----- dependences -----
 
 crt0.o: crt0.S
-ecc.o: ecc.c include/stdio.h include/types.h
-endian.o: endian.c include/stdio.h include/types.h
+ecc.o: ecc.c include/stdio.h include/types.h lib/libmc.a 
 fptest.o: fptest.c include/stdio.h include/types.h include/ulib.h \
- include/uartdrv.h
-gauss.o: gauss.c include/stdio.h include/types.h
+ include/uartdrv.h lib/libmc.a 
+gauss.o: gauss.c include/stdio.h include/types.h lib/libmc.a 
 hello.o: hello.c include/stdio.h include/types.h include/ulib.h \
- include/uartdrv.h
+ include/uartdrv.h lib/libmc.a 
 mul.o: mul.c include/stdio.h include/types.h include/ulib.h \
- include/uartdrv.h
+ include/uartdrv.h lib/libmc.a 
 pi.o: pi.c include/stdio.h include/types.h include/time.h include/ulib.h \
- include/uartdrv.h
+ include/uartdrv.h lib/libmc.a 
