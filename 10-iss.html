@@ -259,6 +259,40 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    usage
+  </a>
+  
+    <nav class="md-nav" aria-label="usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trace-command" class="md-nav__link">
+    trace command 実行例
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-command-ecc" class="md-nav__link">
+    run command 実行例 (ecc)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    直接実行例
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -357,6 +391,112 @@ CPU コア開発の流れは以下のようになる。  </p>
 </ol>
 <h2 id="iss-rvsim">開発した ISS (rvsim)<a class="headerlink" href="#iss-rvsim" title="Permanent link">&para;</a></h2>
 <p><a href="https://github.com/shin-yamashita/rv32emc/tree/main/rvsim">source(github)</a></p>
+<div class="highlight"><pre><span></span><code>rvsim
+├── RV-insn.ods   : RV32 instruction table source 
+│      ├─ RV-insn tab → RV-insn.csv  
+│      ├─ c-insn tab  → c-insn.csv  
+├── insntab.py    : RV-insn.csv to optab.h / rv_dec_insn.sv converter
+├── c-insntab.py  : c-insn.csv to c-optab.h / rv_exp_cinsn.sv converter
+├── simcore.c     : ISS core  
+├── syscall.h     : rv32 gcc system call deffs  
+├── rvsim.c       : main() console command processor  
+├── consio.c      : console interface 
+└── monlib.c      : command processor utility  
+(generated files) 
+├── optab.h       : RV32 instruction table
+├── c-optab.h     : Compressed instruction table
+├── rv_dec_insn.sv  : decoder RTL
+└── rv_exp_cinsn.sv : c-insn decoder RTL
+</code></pre></div>
+<p>simcore.c が rv_core のエミュレータ本体である。<br />
+レジスタ(flip flop)の入力 d と、出力 q を持つ構造体 <code>reg32</code> などを定義し、論理演算結果を d にセットし、 <code>clock()</code> 関数で全レジスタの d→q を一斉に行うことで、回路動作をエミュレートした。<br />
+<code>typedef struct _reg32 { u32 d; u32 q; } reg32;</code>  </p>
+<p>rvsim.c が ISS のコマンドラインインターフェースである。<br />
+GNU binutil の libbfd.so を用いて elf ファイルのハンドリングを行っている。  </p>
+<p><a href="x_env.html#rvsim-iss">rvsim の compile install 手順</a>  </p>
+<h2 id="usage">usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>$ rvsim {rv32 executable (elf)}    # elf ファイルを読み込む。または起動後 load コマンドで読み込む。
+======= rvsim ==============================================
+   rv32 processor simulator.
+ load ELF file &#39;xxx&#39; : RISCV RVC RVE   # elf file から arch を判別
+ number_of_symbols = 155
+ vaddr:0 memsize:10000 _end:333c start:0
+rvsim-E&gt;                               # prompt : rv32e は &#39;rvsim-E&gt;&#39; その他は &#39;rvsim-I&gt;&#39; 
+  load       &lt;file (rv32 executable)&gt;
+  dump       &lt;-stk&gt; &lt;addr|label&gt;       # メモリダンプ　(PgUp/PgDn/Up/Down キーでアドレス移動、&#39;q&#39; で終了)
+  reg                                  # register file dump
+  run        &lt;N cyc|-all&gt;              # N cycle(or 無制限) 実行 &#39;q&#39; キーで中断
+  cont       &lt;N cyc|-all&gt;              # 継続実行
+  trace      &lt;N cyc|-all&gt; &lt;-r&gt; &lt;| tee (fn)&gt;  # 実行トレース （| tee でファイルにダンプ)
+  break      &lt;addr|label&gt; &lt;-d|-e (n)&gt;  # break point 設定/表示 (-d/-e で disable/enable)
+  info                                 # 読み込んだ elf のメモリマップなど表示
+  header                               # elf header 表示
+  symbol                               # symbol list (address : symbol name) 表示
+  dis        &lt;addr|lable&gt;              # addr/label 以降の disassemble list 表示 {space:next-page q:quit}
+  debug      &lt;-r (fn)&gt; &lt;-m (fn)&gt; &lt;-c&gt;  # Register / Memory write log を指定のファイルに出力
+  help       &lt;cmd&gt;
+  quit       
+  exit       
+
+rvsim-E&gt; 
+</code></pre></div>
+<h3 id="trace-command">trace command 実行例<a class="headerlink" href="#trace-command" title="Permanent link">&para;</a></h3>
+<p><span class="keys"><kbd class="key-enter">Enter</kbd></span> : 1 cycle 実行<br />
+<span class="keys"><kbd class="key-space">Space</kbd></span> : 1 page 実行<br />
+   10進数値 : 指定サイクル実行<br />
+<span class="keys"><kbd class="key-q">Q</kbd></span> : quit  </p>
+<div class="highlight"><pre><span></span><code>rvsim-E&gt; trace
+ ra(      2a)  sp(    8000)  gp(    33f8)  tp(       0)  t0(      50)  t1(       0)  t2(       0)  s0(       0)  s1(       0)  a0(    2c14)  a1(     728) 
+ a2(       0)  a3(       0)  a4(     728)  a5(    2c14) 
+   cnt     pc       ir opc      opr                  mar      mdr      mdw     rrd1     rrd2  alu rwa rwd    rwdat     ra(1)    sp(2)    gp(3)   a0(10)   a1(11)   a2(12)   a3(13)    s0(8)    s1(9)
+     0      0 ffffffff auipc    gp,12288               0        0       --        0        0   --  --  xx        0         0  3ffffd0        0        0        0        0        0        0        0  
+     1      0 00003197 auipc    gp,12288               0        0       --        0        0   --  --  xx        0         0  3ffffd0        0        0        0        0        0        0        0  
+     2      4 3f818193 addi     gp,gp,1016             0        0       --        0     3000  ADD  gp ALU        0         0  3ffffd0        0        0        0        0        0        0        0  
+     3      8 00008117 auipc    sp,32768               0        0       --     3000      3f8  ADD  gp ALU     3000         0  3ffffd0        0        0        0        0        0        0        0  
+     4      c ff810113 addi     sp,sp,-8               0        0       --        8     8000  ADD  sp ALU     33f8         0  3ffffd0        0        0        0        0        0        0        0  
+     5     10 00000297 auipc    t0,0                   0        0       --     8008 fffffff8  ADD  sp ALU     8008         0  3ffffd0     3000        0        0        0        0        0        0  
+     6     14 04028293 addi     t0,t0,64               0        0       --       10        0  ADD  t0 ALU     8000         0  3ffffd0     33f8        0        0        0        0        0        0  
+     7     18 30529073 csrrw    x0,t0,mtvec            0        0       --       10       40  ADD  t0 ALU       10         0     8008     33f8        0        0        0        0        0        0  
+     8     1c 81c18513 addi     a0,gp,-2020            0        0       --       50        0  FLD  x0 ALU       50         0     8000     33f8        0        0        0        0        0        0  
+     9     20 f4418593 addi     a1,gp,-188             0        0       --     33f8 fffff81c  ADD  a0 ALU        0         0     8000     33f8        0        0        0        0        0        0  
+    10     24     8d89 c.sub    a1,a1,a0               0        0       --     33f8 ffffff44  ADD  a1 ALU     2c14         0     8000     33f8        0        0        0        0        0        0  
+    11     26 607010ef jal      ra,(1e2c)              0        0       --     333c     2c14  SUB  a1 ALU     333c         0     8000     33f8        0        0        0        0        0        0  
+    12     2a     4502 -b-      --                     0        0       --        0       2a   S2  ra ALU      728         0     8000     33f8     2c14        0        0        0        0        0  
+    13   1e2c 00357793 andi     a5,a0,3                0        0       --        0       2a   S2  --  xx       2a         0     8000     33f8     2c14     333c        0        0        0        0  
+    14   1e30     c7b9 c.beqz   a5,x0,(1e7e)           0        0       --     2c14        3  AND  a5 ALU        0         0     8000     33f8     2c14      728        0        0        0        0  
+    15   1e32 fff58713 -b-      --                     0        0       --        0        0   xx  x0  --        0        2a     8000     33f8     2c14      728        0        0        0        0  
+    16   1e7e     87aa c.mv     a5,x0,a0               0        0       --        0        0   xx  --  xx        0        2a     8000     33f8     2c14      728        0        0        0        0  
+    17   1e80     872e c.mv     a4,x0,a1               0        0       --        0     2c14  ADD  a5 ALU        0        2a     8000     33f8     2c14      728        0        0        0        0  
+    18   1e82     b7f9 c.j      x0,(1e50)              0        0       --        0      728  ADD  a4 ALU     2c14        2a     8000     33f8     2c14      728        0        0        0        0  
+    19   1e84     577d -b-      --                     0        0       --        0     1e84   S2  x0 ALU      728        2a     8000     33f8     2c14      728        0        0        0        0  
+    20   1e50     460d c.li     a2,x0,3                0        0       --        0     1e84   S2  --  xx     1e84        2a     8000     33f8     2c14      728        0        0        0        0  
+    21   1e52     86be c.mv     a3,x0,a5               0        0       --        0        3  ADD  a2 ALU        0        2a     8000     33f8     2c14      728        0        0        0        0  
+   cnt     pc       ir opc      opr                  mar      mdr      mdw     rrd1     rrd2  alu rwa rwd    rwdat     ra(1)    sp(2)    gp(3)   a0(10)   a1(11)   a2(12)   a3(13)    s0(8)    s1(9)
+rvsim-E&gt;   (&#39;q&#39; キーでプロンプトに戻る)
+</code></pre></div>
+<h3 id="run-command-ecc">run command 実行例 (ecc)<a class="headerlink" href="#run-command-ecc" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>rvsim-E&gt; r -all
+reset_pc()
+*** GF(2^8) Reed Solomon Coding. 12 parity, 6 error correction.
+   :
+**** No error.
+** exit() timer: 0
+exit(): 19
+
+Total clock cycles: 1021788   stall - bra: 108623 [10.6%]  data: 72042 [ 7.1%]  exec: 1768 [ 0.2%]
+rvsim-E&gt; 
+</code></pre></div>
+<h3 id="_2">直接実行例<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>$ rvsim -r ecc
+reset_pc()
+*** GF(2^8) Reed Solomon Coding. 12 parity, 6 error correction.
+   :
+**** No error.
+** exit() timer: 0
+exit(): 19
+
+Total clock cycles: 1021788   stall - bra: 108623 [10.6%]  data: 72042 [ 7.1%]  exec: 1768 [ 0.2%]
+</code></pre></div>
 
               
             </article>
