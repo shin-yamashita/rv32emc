@@ -7,23 +7,23 @@ rvsim の動作と比較し、RTL のデバッグを行う。
 ```bash
 ├── rv_core
 │   ├── hdl/                # HDL source
-│   ├── sim/                # 論理シミュレーション環境
-│   │   ├── convmem.py     # .mem ファイルを prog_u.mem/prog_l.mem に変換する
-│   │   ├── compile.sh     # HDL を読み込んで vivado の xelab で elaboration → xsim.dir/tb_rvc
-│   │   ├── run.sh         # シミュレーション実行 (xsim command line)
-│   │   ├── sim.sh         # シミュレーション実行 (xsim GUI)
-│   │   ├── regression.sh  # いくつかのプログラム(.mem)をシミュレーション実行し、結果を .ref と比較
-│   │   ├── tb_rvc.prj     # HDL source list
-│   │   ├── rvc.sv         # rv_core と dpram を実装した module
-│   　　 ├── tb_rvc.sv      # rvc のテストベンチ
+│   └── sim/                # 論理シミュレーション環境
+│      ├── convmem.py     # .mem ファイルを prog_u.mem/prog_l.mem に変換する
+│      ├── compile.sh     # HDL を読み込んで vivado の xelab で elaboration → xsim.dir/tb_rvc
+│      ├── run.sh         # シミュレーション実行 (xsim command line)
+│      ├── sim.sh         # シミュレーション実行 (xsim GUI)
+│      ├── regression.sh  # いくつかのプログラム(.mem)をシミュレーション実行し、結果を .ref と比較
+│      ├── tb_rvc.prj     # HDL source list
+│      ├── rvc.sv         # rv_core と dpram を実装した module
+│   　 └── tb_rvc.sv      # rvc のテストベンチ
 │
-├── rv-test                  # テストプログラム
-│   ├── Makefile
-│   ├── crt0.S              # startup routine
-│   ├── *.c                 # program C source
-│   ├── rv32ldscr.x         # linker script
-│   ├── include/
-│   ├── lib/                # mini stdio (printf etc)
+└── rv-test                  # テストプログラム
+   ├── Makefile
+   ├── crt0.S              # startup routine
+   ├── *.c                 # program C source
+   ├── rv32ldscr.x         # linker script
+   ├── include/
+   └── lib/                # mini stdio (printf etc)
 ```
 
 ## シミュレーション手順
