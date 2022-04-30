@@ -15,7 +15,7 @@ rvsim の動作と比較し、RTL のデバッグを行う。
 │      ├── regression.sh  # いくつかのプログラム(.mem)をシミュレーション実行し、結果を .ref と比較
 │      ├── tb_rvc.prj     # HDL source list
 │      ├── rvc.sv         # rv_core と dpram を実装した module
-│   　 └── tb_rvc.sv      # rvc のテストベンチ
+│      └── tb_rvc.sv      # rvc のテストベンチ
 │
 └── rv-test                  # テストプログラム
    ├── Makefile

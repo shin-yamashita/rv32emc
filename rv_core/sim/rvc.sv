@@ -28,7 +28,7 @@ module rvc #( parameter debug = 0 ) (
  logic d_rdy;   // mem data ready
  logic d_be;	// mem bus big endian
 
- logic irq;
+ logic irq = 1'b0;
 
  u32_t d_dr1, d_dr2;
  logic pin_en;

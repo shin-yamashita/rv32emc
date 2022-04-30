@@ -181,11 +181,11 @@ int calc_pi3(int n, uint32_t *at1, uint32_t *at2, uint32_t *at3, uint32_t *at4, 
   return i/2;
 }
 
-#define N 113
-#define CS 1063823358
+//#define N 113
+//#define CS 1063823358
 
-//#define N 57
-//#define CS -1133672077
+#define N 57
+#define CS -1133672077
 
 #include "time.h"
 
