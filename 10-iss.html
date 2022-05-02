@@ -414,7 +414,15 @@ CPU コア開発の流れは以下のようになる。  </p>
 <p>rvsim.c が ISS のコマンドラインインターフェースである。<br />
 GNU binutil の libbfd.so を用いて elf ファイルのハンドリングを行っている。  </p>
 <p><a href="x_env.html#rvsim-iss">rvsim の compile install 手順</a>  </p>
+<p>https://github.com/shin-yamashita/rv32emc/tree/main/rv-test</p>
 <h2 id="usage">usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<p>rvsim では write system call を実装しているので、rv32e のバイナリを実行し、printf() などで標準出力に表示することができる。  </p>
+<ul>
+<li>newlib/libc の 標準出力は system call を用いているので、そのまま表示できる。  </li>
+<li>logic simulation では system call (ecall ソフト割り込み) を実装していないが、デバッグ用キャラクタ出力 I/O port (DBG_PUTC) を設けており、下位関数の _write() の出力先を DBG_PUTC に切り替えることでメッセージをファイルに出力することができる。  </li>
+<li>rvsim は DBG_PUTC ポートに対応しているので、logic simulation と同じバイナリで実行、検証ができる。  </li>
+</ul>
+<p>→ <a href="https://github.com/shin-yamashita/rv32emc/tree/main/rv-test">rv-test(github)</a>参照  </p>
 <div class="highlight"><pre><span></span><code>$ rvsim {rv32 executable (elf)}    # elf ファイルを読み込む。または起動後 load コマンドで読み込む。
 ======= rvsim ==============================================
    rv32 processor simulator.
