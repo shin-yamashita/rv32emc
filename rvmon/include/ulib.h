@@ -85,7 +85,8 @@ void *memclr(void *s, size_t n);
 extern u32 _bss_start, _end;
 #define	zero_bss()	{u32 *p;for(p=&_bss_start;p<&_end;*p++=0);}
 // get stack pointer
-//static inline u32 get_sp(){u32 sp;__asm__("mov sp,%0" : "=r" (sp));return sp;}
+static inline u32 get_sp(){u32 sp;__asm__("mv %0,sp" : "=r" (sp));return sp;}
+static inline u32 get_gp(){u32 gp;__asm__("mv %0,gp" : "=r" (gp));return gp;}
 
 //------------------------------------------------------------------
 // CPU clock frequency (Hz)

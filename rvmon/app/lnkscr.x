@@ -13,6 +13,7 @@ SECTIONS
   .text :
   {
      _stext = . ; 
+    *(.init)
     *(.text.startup)
     *(.text*)
     *(.rodata*)
