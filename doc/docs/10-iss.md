@@ -45,7 +45,19 @@ rvsim.c が ISS のコマンドラインインターフェースである。
 GNU binutil の libbfd.so を用いて elf ファイルのハンドリングを行っている。  
 
 [rvsim の compile install 手順](x_env.html#rvsim-iss)  
+
+https://github.com/shin-yamashita/rv32emc/tree/main/rv-test
+
 ## usage
+
+rvsim では write system call を実装しているので、rv32e のバイナリを実行し、printf() などで標準出力に表示することができる。  
+
+- newlib/libc の 標準出力は system call を用いているので、そのまま表示できる。  
+- logic simulation では system call (ecall ソフト割り込み) を実装していないが、デバッグ用キャラクタ出力 I/O port (DBG_PUTC) を設けており、下位関数の _write() の出力先を DBG_PUTC に切り替えることでメッセージをファイルに出力することができる。  
+- rvsim は DBG_PUTC ポートに対応しているので、logic simulation と同じバイナリで実行、検証ができる。  
+
+→ [rv-test(github)](https://github.com/shin-yamashita/rv32emc/tree/main/rv-test)参照  
+
 ```
 $ rvsim {rv32 executable (elf)}    # elf ファイルを読み込む。または起動後 load コマンドで読み込む。
 ======= rvsim ==============================================
