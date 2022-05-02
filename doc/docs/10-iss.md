@@ -46,8 +46,6 @@ GNU binutil の libbfd.so を用いて elf ファイルのハンドリングを�
 
 [rvsim の compile install 手順](x_env.html#rvsim-iss)  
 
-https://github.com/shin-yamashita/rv32emc/tree/main/rv-test
-
 ## usage
 
 rvsim では write system call を実装しているので、rv32e のバイナリを実行し、printf() などで標準出力に表示することができる。  

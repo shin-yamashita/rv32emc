@@ -135,7 +135,7 @@ ecc  |Reed Solomon エラー訂正
 gauss|正規分布ランダム発生(soft float のテスト)  
 
 ```bash
-$ cd ../../rvmon
+$ cd rv32emc/rvmon
 $ make apps
 make -C app install
 make[1]: ディレクトリ 'xxx/rv32emc/rvmon/app' に入ります
@@ -156,7 +156,7 @@ make[1]: ディレクトリ 'xxx/rv32emc/rvmon/app' から出ます
 サンプルプログラムは 0x4000 番地から実行するようにリンクされる。
 また、リンクオプション `-Xlinker -R../rvmon` により、モニタプログラム rvmon に含まれるライブラリをリンクする(memory 節約)。
 
-```
+```bash title="term でのサンプルプログラム実行"
 rvmon$ l pi     # pi.mot(円周率計算プログラム) をメモリにロード、0x4000 番地から実行
 ................................................................................................
 ..................................................................................
@@ -175,3 +175,46 @@ elapsed : 2288.07ms
 rvmon$ 
 ```
 
+coremark をコンパイルするスクリプト coremark.sh を用意した。  
+
+```bash
+$ cd rv32emc/rvmon/app
+$ sh coremark.sh
+Cloning into 'coremark'...  # https://github.com/eembc/coremark.git から clone  
+   :
+Receiving objects: 100% (338/338), 494.88 KiB | 4.16 MiB/s, done.
+make clean -C coremark
+make PORT_DIR=`pwd`/rv32port -C coremark
+cp coremark/coremark.exe coremark.elf
+/opt/rv32e/bin/riscv32-unknown-elf-objcopy -O srec --srec-forceS3 -S -R .stack  coremark.elf coremark.mot
+/opt/rv32e/bin/riscv32-unknown-elf-objdump -D -S -h coremark.elf > coremark.lst
+cp coremark.mot ../term/
+```
+```bash title="term での coremark 実行"
+rvmon$ l coremark
+.............................................................................
+[25054 bytes tfr    cs:1321594]
+
+rvmon$ go 0 0 0x66        # 引数を渡す。 0 0 0x66 -> performance run / 0x3415 0x3415 0x66 -> validation run
+run user func : 4000
+_bss:6088 _end:60a8 sp:ffc8 gp:3190
+2K performance run parameters for coremark.
+CoreMark Size    : 666
+Total ticks      : 829247167
+Total time (secs): 13
+Iterations/Sec   : 153
+Iterations       : 2000
+Compiler version : GCC9.2.0
+Compiler flags   : -O2 -march=rv32emc -mabi=ilp32e   -Wl,-Map,coremark.map,-T,/home/shin//github/rv32emc/rvmon/app/rv32port/lnkscr.x -nostdlib -L/home/shin//github/rv32emc/rvmon/app/rv32port/../..//lib -Xlinker -R/home/shin//github/rv32emc/rvmon/app/rv32port/../..//rvmon -lmc -lm -lc -lgcc
+Memory location  : STACK
+seedcrc          : 0xe9f5
+[0]crclist       : 0xe714
+[0]crcmatrix     : 0x1fd7
+[0]crcstate      : 0x8e3a
+[0]crcfinal      : 0x4983
+Correct operation validated. See README.md for run and reporting rules.
+0
+rvmon$ 
+```
+clock = 60MHz での結果  
+CoreMark/MHz = 2.55 / GCC9.2.0 -O2 / Stack  
