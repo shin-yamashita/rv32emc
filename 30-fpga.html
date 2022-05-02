@@ -497,7 +497,7 @@ rvmon でロードし、FPGA 上で実行する。  </p>
 </tr>
 </tbody>
 </table>
-<p><div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> ../../rvmon
+<p><div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> rv32emc/rvmon
 $ make apps
 make -C app install
 make<span class="o">[</span><span class="m">1</span><span class="o">]</span>: ディレクトリ <span class="s1">&#39;xxx/rv32emc/rvmon/app&#39;</span> に入ります
@@ -517,23 +517,63 @@ make<span class="o">[</span><span class="m">1</span><span class="o">]</span>: �
 </code></pre></div>
 サンプルプログラムは 0x4000 番地から実行するようにリンクされる。
 また、リンクオプション <code>-Xlinker -R../rvmon</code> により、モニタプログラム rvmon に含まれるライブラリをリンクする(memory 節約)。</p>
-<div class="highlight"><pre><span></span><code>rvmon$ l pi     # pi.mot(円周率計算プログラム) をメモリにロード、0x4000 番地から実行
+<div class="highlight"><span class="filename">term でのサンプルプログラム実行</span><pre><span></span><code>rvmon$ l pi     <span class="c1"># pi.mot(円周率計算プログラム) をメモリにロード、0x4000 番地から実行</span>
 ................................................................................................
 ..................................................................................
-[13062 bytes tfr    cs:691498]
-rvmon$ go       # ロードしたプログラムを call 0x4000 
-run user func : 4000
+<span class="o">[</span><span class="m">13062</span> bytes tfr    cs:691498<span class="o">]</span>
+rvmon$ go       <span class="c1"># ロードしたプログラムを call 0x4000 </span>
+run user func : <span class="m">4000</span>
 iter:679
-3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211
+<span class="m">3</span>.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211
   :
-2620522489407726719478268482601476990902640136394437455305068203496252451749399651431429809190659
-2509372216964615157098583874105978859597729754989301617539284681382686838689427741559918559252459
-53959431049972524680845987273644695848653836736222626099124608057
-cs : 2069485033 OK
-elapsed : 2288.07ms
-0
+<span class="m">2620522489407726719478268482601476990902640136394437455305068203496252451749399651431429809190659</span>
+<span class="m">2509372216964615157098583874105978859597729754989301617539284681382686838689427741559918559252459</span>
+<span class="m">53959431049972524680845987273644695848653836736222626099124608057</span>
+cs : <span class="m">2069485033</span> OK
+elapsed : <span class="m">2288</span>.07ms
+<span class="m">0</span>
 rvmon$ 
 </code></pre></div>
+<p>coremark をコンパイルするスクリプト coremark.sh を用意した。  </p>
+<p><div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> rv32emc/rvmon/app
+$ sh coremark.sh
+Cloning into <span class="s1">&#39;coremark&#39;</span>...  <span class="c1"># https://github.com/eembc/coremark.git から clone  </span>
+   :
+Receiving objects: <span class="m">100</span>% <span class="o">(</span><span class="m">338</span>/338<span class="o">)</span>, <span class="m">494</span>.88 KiB <span class="p">|</span> <span class="m">4</span>.16 MiB/s, <span class="k">done</span>.
+make clean -C coremark
+make <span class="nv">PORT_DIR</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/rv32port -C coremark
+cp coremark/coremark.exe coremark.elf
+/opt/rv32e/bin/riscv32-unknown-elf-objcopy -O srec --srec-forceS3 -S -R .stack  coremark.elf coremark.mot
+/opt/rv32e/bin/riscv32-unknown-elf-objdump -D -S -h coremark.elf &gt; coremark.lst
+cp coremark.mot ../term/
+</code></pre></div>
+<div class="highlight"><span class="filename">term での coremark 実行</span><pre><span></span><code>rvmon$ l coremark
+.............................................................................
+<span class="o">[</span><span class="m">25054</span> bytes tfr    cs:1321594<span class="o">]</span>
+
+rvmon$ go <span class="m">0</span> <span class="m">0</span> 0x66        <span class="c1"># 引数を渡す。 0 0 0x66 -&gt; performance run / 0x3415 0x3415 0x66 -&gt; validation run</span>
+run user func : <span class="m">4000</span>
+_bss:6088 _end:60a8 sp:ffc8 gp:3190
+2K performance run parameters <span class="k">for</span> coremark.
+CoreMark Size    : <span class="m">666</span>
+Total ticks      : <span class="m">829247167</span>
+Total <span class="nb">time</span> <span class="o">(</span>secs<span class="o">)</span>: <span class="m">13</span>
+Iterations/Sec   : <span class="m">153</span>
+Iterations       : <span class="m">2000</span>
+Compiler version : GCC9.2.0
+Compiler flags   : -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e   -Wl,-Map,coremark.map,-T,/home/shin//github/rv32emc/rvmon/app/rv32port/lnkscr.x -nostdlib -L/home/shin//github/rv32emc/rvmon/app/rv32port/../..//lib -Xlinker -R/home/shin//github/rv32emc/rvmon/app/rv32port/../..//rvmon -lmc -lm -lc -lgcc
+Memory location  : STACK
+seedcrc          : 0xe9f5
+<span class="o">[</span><span class="m">0</span><span class="o">]</span>crclist       : 0xe714
+<span class="o">[</span><span class="m">0</span><span class="o">]</span>crcmatrix     : 0x1fd7
+<span class="o">[</span><span class="m">0</span><span class="o">]</span>crcstate      : 0x8e3a
+<span class="o">[</span><span class="m">0</span><span class="o">]</span>crcfinal      : 0x4983
+Correct operation validated. See README.md <span class="k">for</span> run and reporting rules.
+<span class="m">0</span>
+rvmon$ 
+</code></pre></div>
+clock = 60MHz での結果<br />
+CoreMark/MHz = 2.55 / GCC9.2.0 -O2 / Stack  </p>
 
               
             </article>
