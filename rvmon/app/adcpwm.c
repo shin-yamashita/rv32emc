@@ -43,8 +43,8 @@ void thermo(float x, float sc)
 int main()
 {
     // Arty-A7 board RGB LED drive 
-    float Tpwm = 16e-3f;
-    int prescale = Tpwm * f_clk / 512;
+    float Tpwm = 16e-3f;    // LED drive pulse period (s)  , 512 count / period
+    int prescale = Tpwm * f_clk / 512;  // prescaler count
     *PWMPS = prescale;
 
     add_timer_irqh(led_scan);
@@ -74,7 +74,7 @@ int main()
             if(c == 'q') break;
         }
         printf("\033[7A");  // cursor up 7 lines
-        while(get_timer() < 500) ;    // wait 500 ms 
+        while(get_timer() < 750) ;    // wait 750 ms 
     }
     remove_timer_irqh();
     led_clear();
