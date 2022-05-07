@@ -48,12 +48,12 @@ module rv_alu (
   SUB:    rwdat = rrd1 - rrd2;	
 
   CSR:    rwdat = csr_rd;
-  
+/*
   MUL:    rwdat = rwd;
   MULH:   rwdat = rwd;
   MULHSU: rwdat = rwd;
   MULHU:  rwdat = rwd;
-
+*/
   DIV:    rwdat = rwd;
   DIVU:   rwdat = rwd;
   REM:    rwdat = rwd;

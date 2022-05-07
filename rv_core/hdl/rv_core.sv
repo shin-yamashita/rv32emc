@@ -272,16 +272,27 @@ parameter MTIMECMP = 32'hffff8008;
     endcase
   endfunction
 
+  function u32_t csr_rd_sel(csrmd_t md, u12_t adr);
+    u32_t csr_rd;
+    if(md != NOP)
+      case(adr)
+      12'h305: csr_rd = mtvec;
+      12'h304: csr_rd = mie;
+      12'h344: csr_rd = mip;
+      12'h341: csr_rd = mepc;
+      12'h342: csr_rd = mcause;
+      12'hc01: csr_rd = mtime[31:0];  // time
+      12'hc81: csr_rd = mtime[63:32]; // timeh
+      default: csr_rd = 'd0;
+      endcase
+    else
+      csr_rd = 'd0;
+    return csr_rd;
+  endfunction
+
   assign csren = f_dec.ex == ex_C;
-//  assign mret  = f_dec.ex == ex_R;
 
   always_ff @ (posedge clk) begin
-/*    csrmd <= csr_mode(csren, func3);
-    csr_adr <= IR[31:20];
-    mtirq <= s32_t'(mtimecmp - mtime) < 0;  // timer expire interrupt request
-    irq_s <= {irq_s[0], irq};
-    mret  <= f_dec.ex == ex_R;
-*/
     if(!xreset) begin
       mtvec <= 'd0;
       mepc  <= 'd0;
@@ -289,8 +300,10 @@ parameter MTIMECMP = 32'hffff8008;
       mip   <= 'd0;
       mcause<= 'd0;
     end else if(rdy) begin
-      csrmd <= csr_mode(csren, func3);
+      csrmd   <= csr_mode(csren, func3);
       csr_adr <= IR[31:20];
+      csr_rd  <= csr_rd_sel(csr_mode(csren, func3), IR[31:20]);
+
       mtirq <= s32_t'(mtimecmp - mtime) < 0;  // timer expire interrupt request
       irq_s <= {irq_s[0], irq};
       mret  <= f_dec.ex == ex_R;
@@ -320,23 +333,6 @@ parameter MTIMECMP = 32'hffff8008;
   assign issue_int[0] = 1'b0;
   assign issue_int[1] = !mip && (mie[7]  && mtirq) && !stall;
   assign issue_int[2] = !mip && (mie[11] && irq_s[1]) && !stall;
-
-
-  always_comb begin
-    if(csrmd != NOP)
-      case(csr_adr)
-      12'h305: csr_rd = mtvec;
-      12'h304: csr_rd = mie;
-      12'h344: csr_rd = mip;
-      12'h341: csr_rd = mepc;
-      12'h342: csr_rd = mcause;
-      12'hc01: csr_rd = mtime[31:0];  // time
-      12'hc81: csr_rd = mtime[63:32]; // timeh
-      default: csr_rd = 'd0;
-      endcase
-    else
-      csr_rd = 'd0;
-  end
 
 //---- mtime register ----
   u32_t d_dr1;

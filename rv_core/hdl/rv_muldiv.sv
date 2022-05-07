@@ -33,6 +33,7 @@ module rv_muldiv (
   alu_t alu1;
   u64_t umul;
   s32_t smul, sumul;
+  //s32_t sdiv, srem;
 
   /*
   s17_t al, ah, bl, bh;	// rrd1:a rrd2:b
@@ -79,15 +80,18 @@ module rv_muldiv (
     MULHU:  rwdatx = umul[63:32]; // u32*u32 >> 32
     default: rwdatx = 'd0;
     endcase
-
+  /*
     case(alu)	// rrd1 op rrd2
-    DIV:    rwdat = sgn ? 32'd0 - Q.A : Q.A;	// rrd1 / rrd2
+//    DIV:    rwdat = sgn ? 32'd0 - Q.A : Q.A;	// rrd1 / rrd2
+    DIV:    rwdat = sdiv;
     DIVU:   rwdat = Q.A;
-    REM:    rwdat = msgn ? 2'd0 - Q.B : Q.B;	// rrd1 % rrd2
+//    REM:    rwdat = msgn ? 2'd0 - Q.B : Q.B;	// rrd1 % rrd2
+    REM:    rwdat = srem;
     REMU:   rwdat = Q.B;
     default: rwdat = 'd0;
     //    printf("ill ALU operation %d.\n", alu);	
     endcase
+    */
   end
 
 
@@ -110,6 +114,8 @@ module rv_muldiv (
   typedef enum logic {Idle, Calc} state_t;
   state_t st;
   u5_t exc;
+  div_t vQ;
+  assign vQ = div_sub(Q);
 
   always_ff@(posedge clk) begin
     if(!xreset) begin
@@ -142,7 +148,19 @@ module rv_muldiv (
           end
         endcase
       end else if(st == Calc) begin
-        Q <= div_sub(Q);
+        Q <= vQ;
+
+        case(alu)	// rrd1 op rrd2
+        DIV:    rwdat <= sgn ? 32'd0 - vQ.A : vQ.A;	// rrd1 / rrd2
+        DIVU:   rwdat <= vQ.A;
+        REM:    rwdat <= msgn ? 2'd0 - vQ.B : vQ.B;	// rrd1 % rrd2
+        REMU:   rwdat <= vQ.B;
+        default: rwdat <= 'd0;
+        endcase
+
+        //sdiv <= sgn ? 32'd0 - vQ.A : vQ.A;	// rrd1 / rrd2
+        //srem <= msgn ? 2'd0 - vQ.B : vQ.B;	// rrd1 % rrd2
+
         exc <= exc - 'd1;
         if(exc == 0) begin
           st <= Idle;
