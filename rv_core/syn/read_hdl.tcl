@@ -10,6 +10,8 @@ read_verilog -library xil_defaultlib -sv {
   ../hdl/dpram.sv
   ./rvc.sv
   ../../rv_io/rv_sio.sv
+  ../../rv_io/rv_pwm.sv
+  ../../rv_io/rv_xadcif.sv
 }
 
 read_verilog -library xil_defaultlib {
@@ -18,5 +20,6 @@ read_verilog -library xil_defaultlib {
 
 set_property file_type "Verilog Header" [get_files ../hdl/rv_types.svh]
 
-read_ip ./clk_gen.xcix
-generate_target {Synthesis} [get_ips  clk_gen ]
+read_ip { ../ip/clk_gen.xcix ../ip/xadcif.xcix }
+generate_target {Synthesis} [get_ips  {clk_gen xadcif} ]
+

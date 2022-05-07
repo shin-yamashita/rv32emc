@@ -12,7 +12,22 @@ module rvc #( parameter debug = 0 ) (
   input  u8_t  pin,
   output u8_t  pout,
   input  logic rxd,
-  output logic txd
+  output logic txd,
+
+  input vauxp1, // analog signal connection
+  input vauxn1,
+  input vauxp2,
+  input vauxn2,
+  input vauxp4,
+  input vauxn4,
+  input vauxp5,
+  input vauxn5,
+  input vauxp9,
+  input vauxn9,
+  input vauxp10,
+  input vauxn10,
+
+  output u12_t led  // LED drive pwm
   );
 
 
@@ -31,7 +46,7 @@ module rvc #( parameter debug = 0 ) (
 
  logic irq;
 
- u32_t d_dr1, d_dr2;
+ u32_t d_dr0, d_dr1, d_dr2, d_dr3, d_dr4;
  logic pin_en;
  logic enaB, re1;
 
@@ -48,14 +63,16 @@ clk_gen u_clk_gen
     // Clock out ports
     .clk80(clk80),     // output clk80
     .clk60(clk60),     // output clk60
-    .clk50(clk50),     // output clk50
+    .clk48(clk48),     // output clk48
+    .clk_sys(sys_clk),     // output clk_out4 100M
+
     // Status and control signals
     .reset(1'b0), // input reset
     .locked(locked),       // output locked
    // Clock in ports
     .clk_in1(clk));      // input clk_in1
 
-  assign cclk = clk60;
+  assign cclk = clk48;
 
 // synthesis translate_off
   integer STDERR;
@@ -81,13 +98,12 @@ clk_gen u_clk_gen
 // synthesis translate_on
 
     if(d_re && d_adr == 32'hffff0000) // 8bit pararell input port
-      pin_en <= 1'b1;
+      d_dr0 <= u32_t'(pin);
     else
-      pin_en <= 1'b0;
+      d_dr0 <= 'd0;
   end
 
-  assign d_dr = pin_en ? u32_t'(pin) : 
-                re1    ? d_dr2 : d_dr1;
+  assign d_dr = d_dr0 | d_dr1 | d_dr2 | d_dr3 | d_dr4;
 
   rv_core #(.Nregs(16), .debug(debug)) u_rv_core (
     .clk  (cclk),     // input  logic clk,
@@ -155,6 +171,48 @@ clk_gen u_clk_gen
     .txd  (txd),    .rxd  (rxd),    .dsr  (dsr),  .dtr  (dtr),  .txen (txen)
   );
 
+  logic cs_adcif;
+  u12_t device_temp;
+  logic adclk, ui_clk;
+// ffff0040 XADC 
+  assign cs_adcif = {d_adr[31:5],5'h0} == 32'hffff0040;
+  assign adclk = sys_clk;
+  assign ui_clk = clk80;
+
+  rv_adcif u_rv_adcif(
+      .clk    (cclk),   // cpu bus clock
+      .xreset (xreset),
+      // bus
+      .adr    (d_adr[4:0]),
+      .cs     (cs_adcif), .rdy  (d_rdy),
+      .we     (d_we),     .re   (d_re),
+      .dw     (d_dw),     .dr   (d_dr3),
+      // XADC clock
+      .adclk  (adclk),     // XADC dclk 100MHz
+      .vauxp1 (vauxp1),      .vauxn1 (vauxn1),      .vauxp2 (vauxp2),      .vauxn2 (vauxn2),
+      .vauxp4 (vauxp4),      .vauxn4 (vauxn4),      .vauxp5 (vauxp5),      .vauxn5 (vauxn5),
+      .vauxp9 (vauxp9),      .vauxn9 (vauxn9),      .vauxp10(vauxp10),      .vauxn10(vauxn10),
+      // MIG 
+      .ui_clk (ui_clk),    // MIG ui_clk
+      .device_temp(device_temp)  // temperature data for MIG
+    );
+
+  logic cs_pwm;
+  // ffff0060 PWM for RGB LED
+  assign cs_pwm = {d_adr[31:5],5'h0} == 32'hffff0060;
+
+  rv_pwm u_rv_pwm(
+      .clk    (cclk),   // cpu bus clock
+      .xreset (xreset),
+      // bus
+      .adr    (d_adr[4:0]),
+      .cs     (cs_pwm),   .rdy  (d_rdy),
+      .we     (d_we),     .re   (d_re),
+      .dw     (d_dw),     .dr   (d_dr4),
+
+      // LED pwm out
+      .led    (led) // u12_t
+    );
 
 endmodule
 

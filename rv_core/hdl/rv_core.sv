@@ -73,20 +73,22 @@ endfunction
 
 function logic [32:0] Reg_fwd(u5_t ix, u32_t rd, u32_t mdr, u5_t rwa[3], regs_t rwd[3], logic rwdx[3], u32_t rwdat[3]); // Register read with fowarding
   logic d_stall;
+  u32_t rdi;
+  rdi = rd;
   d_stall = 1'b0;
   if(ix == 5'd0) return 'd0;
   if(rwa[0] == ix) begin
     if(rwd[0] == ALU && rwdx[0]) d_stall = 1'b1;
-    else if(rwd[0] == ALU) rd = rwdat[0];
+    else if(rwd[0] == ALU) rdi = rwdat[0];
     else if(rwd[0] == MDR) d_stall = 1'b1;
   end else if(rwa[1] == ix) begin
-    if(rwd[1] == ALU) rd = rwdat[1];
+    if(rwd[1] == ALU) rdi = rwdat[1];
     else if(rwd[1] == MDR) d_stall = 1'b1;
   end else if(rwa[2] == ix) begin
-    if(rwd[2] == ALU) rd = rwdat[2];
-    else if(rwd[2] == MDR) rd = mdr;
+    if(rwd[2] == ALU) rdi = rwdat[2];
+    else if(rwd[2] == MDR) rdi = mdr;
   end
-  return {d_stall,rd};
+  return {d_stall,rdi};
 endfunction
 
 logic   rdy, cmpl, mulop;
@@ -332,6 +334,8 @@ parameter MTIMECMP = 32'hffff8008;
       12'hc81: csr_rd = mtime[63:32]; // timeh
       default: csr_rd = 'd0;
       endcase
+    else
+      csr_rd = 'd0;
   end
 
 //---- mtime register ----

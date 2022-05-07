@@ -33,8 +33,8 @@ file mkdir $outputDir
 source read_hdl.tcl
 #source read_ip.tcl
 
-#read_xdc timing.xdc
-read_xdc arty-a7-pinassign.xdc
+read_xdc timing.xdc
+read_xdc arty-a7-pinassign.xdc 
 #read_xdc dont_touch.xdc
 
 ### error? set_property file_type "Verilog Header" [get_files ../hdl/acc/logic_types.svh]
@@ -104,7 +104,7 @@ set_property config_mode SPIx4 [current_design]
 endgroup
 
 write_bitstream -force $outputDir/$proj.bit
-write_cfgmem -format mcs -interface SPIx4 -size 16 -loadbit "up 0 $outputDir/$proj.bit" -force -file $outputDir/$proj.mcs
+# write_cfgmem -format mcs -interface SPIx4 -size 16 -loadbit "up 0 $outputDir/$proj.bit" -force -file $outputDir/$proj.mcs
 
 exit
 

@@ -37,9 +37,23 @@ _BEGIN_STD_C
 #define POUT    ((volatile u8*)0xffff0000)
 
 //      rv_sio interface
-#define SIOTRX  (volatile char *)0xffff0020
-#define SIOFLG  (volatile char *)0xffff0021
-#define SIOBR   (volatile short *)0xffff0022
+#define SIOTRX  ((volatile char *)0xffff0020)
+#define SIOFLG  ((volatile char *)0xffff0021)
+#define SIOBR   ((volatile short *)0xffff0022)
+
+//      rv_xadcif  XADC interface
+#define XADC    ((volatile u16 *)0xffff0040)  // 
+// 0 0x0  temperature  
+// 1 0x11 aux1  vsns5v0
+// 2 0x12 aux2  vsnsvu
+// 3 0x14 aux4 
+// 4 0x15 aux5 
+// 5 0x19 aux9  isns5v0
+// 6 0x1a aux10 isns0v95
+
+//      rv_pwm  12 channel LED pwm interface
+#define PWM     ((volatile u8 *)0xffff0060)  // 
+#define PWMPS   ((volatile u16 *)0xffff0070)    // prescaler
 
 //      ulib.c function prototypes
 
@@ -91,8 +105,8 @@ static inline u32 get_gp(){u32 gp;__asm__("mv %0,gp" : "=r" (gp));return gp;}
 //------------------------------------------------------------------
 // CPU clock frequency (Hz)
 //#define f_clk	100e6f
-#define f_clk	60e6f
-//#define f_clk	48e6f
+//#define f_clk	60e6f
+#define f_clk	48e6f
 //#define f_clk	42e6f
 //#define f_clk	36e6f
 //#define f_clk	30e6f

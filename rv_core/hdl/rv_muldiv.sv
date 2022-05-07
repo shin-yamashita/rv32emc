@@ -92,7 +92,9 @@ module rv_muldiv (
 
 
   // 2bit divide
-  function div_t div_sub(div_t q);
+  function div_t div_sub(div_t Q);
+    div_t q;
+    q = Q;
     for(int i = 0; i < 2; i++) begin
       q.R = {1'b0, q.R[63:1]};
       if((q.R[63:32] == 'd0) && (q.B >= q.R[31:0])) begin
