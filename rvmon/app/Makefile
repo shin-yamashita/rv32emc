@@ -48,7 +48,7 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$(@:.elf=.map),-T,lnkscr.x -nostdlib -L../lib $(LNKR
 
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= gauss.c pi.c ecc.c
+SRCS	= gauss.c pi.c ecc.c adcpwm.c
 # hello.c fptest.c 
 
 PRGS    = $(SRCS:.c=.elf)
@@ -100,6 +100,8 @@ depend:	$(DEPS)
 
 #----- dependences -----
 
+adcpwm.o: adcpwm.c ../include/stdio.h ../include/types.h \
+ ../include/ulib.h ../include/uartdrv.h ../rvmon ../lib/libmc.a 
 ecc.o: ecc.c ../include/stdio.h ../include/types.h ../rvmon ../lib/libmc.a 
 gauss.o: gauss.c ../include/stdio.h ../include/types.h ../rvmon ../lib/libmc.a 
 pi.o: pi.c ../include/stdio.h ../include/types.h ../include/time.h \
