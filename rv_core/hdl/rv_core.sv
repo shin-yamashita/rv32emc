@@ -163,7 +163,8 @@ assign i_re = 1'b1;
   u32_t c_imm, f_imm, imm;
   u32_t exir, eir;
   u3_t func3;
-  
+//  logic ins_ecall;
+
   parameter ECALL = 32'h00000073;
 
   assign c_insn = IR[1:0] != 2'b11;
@@ -172,6 +173,8 @@ assign i_re = 1'b1;
   assign {eir, c_imm} = exp_cinsn(IR[15:0]);
   assign imm  = c_insn ? c_imm : f_imm;
   assign exir = issue_int ? ECALL : (c_insn ? eir : IR);
+  //assign exir = ins_ecall ? ECALL : (c_insn ? eir : IR);
+
   assign f_dec = dec_insn(exir);
   assign func3 = exir[14:12];
 // : f_dec = '{   type,     ex,    alu,   mode,    mar,    ofs,    mwe,   rrd1,   rrd2,    rwa,    rwd,     pc,  excyc }; // mnemonic
@@ -207,7 +210,8 @@ assign i_re = 1'b1;
                 (f_dec.rrd1 == SHAMT ? exir[19:15] : rs1f));
 
   assign rrd2a = f_dec.rrd2 == IMM ? imm :
-                (f_dec.rrd2 == INC ? pc1 + pcinc :
+            //  (f_dec.rrd2 == INC ? pc1 + pcinc : 
+                (f_dec.rrd2 == INC ? pc1 + (d_stall ? 'd0 : pcinc) :  // 220509 jalr-bug
                 (f_dec.rrd2 == SHAMT ? exir[24:20] : rs2f));
 
   assign bdsta = d_stall ? bdst : pc1 + imm;
@@ -248,6 +252,7 @@ parameter MTIMECMP = 32'hffff8008;
   u12_t   csr_adr;
   csrmd_t csrmd;
   logic   mret;
+  logic   zmip;
 
   function csrmd_t csr_mode(logic csren, u3_t func3);
     if(csren)
@@ -298,6 +303,7 @@ parameter MTIMECMP = 32'hffff8008;
       mepc  <= 'd0;
       mie   <= 'd0;
       mip   <= 'd0;
+      zmip  <= 1'b1;
       mcause<= 'd0;
     end else if(rdy) begin
       csrmd   <= csr_mode(csren, func3);
@@ -314,11 +320,13 @@ parameter MTIMECMP = 32'hffff8008;
         mie[7] <= mie[7] & ~issue_int[1];
         mie[11] <= mie[11] & ~issue_int[2];
       end
-      if(csr_adr == 12'h344 && csrmd != NOP)  // mip
+      if(csr_adr == 12'h344 && csrmd != NOP) begin // mip
         mip <= csr_wsc(csrmd, mip, rrd1) & 32'b100010001000;
-      else begin
+        zmip <= (csr_wsc(csrmd, mip, rrd1) & 32'b100010001000) == 'd0;
+      end else begin
         mip[7] <= (mip[7] | issue_int[1]) & ~mret; 
         mip[11] <= (mip[11] | issue_int[2]) & ~mret; 
+        zmip <= ~((mip[7] | issue_int[1]) & ~mret || (mip[11] | issue_int[2]) & ~mret);
       end
       if(csrmd != NOP) begin
         case(csr_adr)
@@ -329,6 +337,7 @@ parameter MTIMECMP = 32'hffff8008;
       end
       if(issue_int) mepc <= pc1;
     end
+  //  ins_ecall <= issue_int != 'd0;
   end
   assign issue_int[0] = 1'b0;
   assign issue_int[1] = !mip && (mie[7]  && mtirq) && !stall;

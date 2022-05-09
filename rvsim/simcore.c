@@ -607,7 +607,8 @@ void decode()
               //          Reg_fwd(iRs1(IR));
         // rrd2
         rrd2.d = (optab[i].rrd2 == IMM) ? imm :
-                 (optab[i].rrd2 == INC) ? pc1.q + pcinc :
+            //     (optab[i].rrd2 == INC) ? pc1.q + pcinc :
+                 (optab[i].rrd2 == INC) ? pc1.q + (d_stall.q ? 0 : pcinc) : // 220509 jalr-bug
                  (optab[i].rrd2 == SHAMT) ? iRs2(IR) :
                  (optab[i].rrd2 == RS2) ? Reg_fwd(iRs2(IR)) : 0;
               //          Reg_fwd(iRs2(IR));
