@@ -13,6 +13,7 @@ rvsim-I>
   load       <file (rv32 executable)>
   dump       <-stk> <addr|label>
   reg        
+  viewreg    
   run        <N cyc|-all>
   cont       <N cyc|-all>
   trace      <N cyc|-all> <-r> <| tee (fn)>
