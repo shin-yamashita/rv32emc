@@ -367,40 +367,50 @@
 <a href="x_env.html#arty-a7-35t">Taget board : Arty-A7</a>  </p>
 <p><a href="https://github.com/shin-yamashita/rv32emc/tree/main/rv_core">source(github)</a>  rv32emc/rv_core/  </p>
 <h2 id="example-design">example design<a class="headerlink" href="#example-design" title="Permanent link">&para;</a></h2>
-<p>rv_core とメモリ dpram、シリアル通信回路 rv_sio を接続した回路 rvc.sv を用意し、Arty-A7-35 ボードのターミナルで動作を確認する。
+<p>rv_core とメモリ dpram、シリアル通信回路 rv_sio 等を接続した回路 rvc.sv を用意し、Arty-A7-35 ボードのターミナルで動作を確認する。
 <div class="highlight"><pre><span></span><code>├── rv_core
 │   ├── hdl/            # rv_core HDL source
 │   └── syn
 │     ├── build.sh              # 論理合成スクリプト
 │     ├── build.tcl             # vivado tcl scripts
 │     ├── read_hdl.tcl          # HDL source を読み込む
-│     ├── write_mmi.tcl
-│     ├── arty-a7-pinassign.xdc # 制約ファイル、timing / pin assign
+│     ├── write_mmi.tcl         # BRAM mapping file(prog.mmi) 生成
+│     ├── arty-a7-pinassign.xdc # pin assign 制約
+│     ├── timing.xdc            # timing 制約
 │     ├── chgmem.sh             # rev/rvc.bit ファイルの RAM の初期値を書き換える
 │     ├── config.sh             # Arty-A7 FPGAに rev/rvc.bit をコンフィグレーション
 │     ├── program.sh            # Arty-A7 の spi flash にプログラム
-│     ├── rvc.sv                # top module
-│     └── clk_gen.xcix          # clock 生成 PLL
-├── rv_io/              # rv_sio UART HDL source
+│     └── rvc.sv                # Example design top module
+├── ip                  # xilinx IP
+│   ├── clk_gen.xcix     # clock 生成 PLL
+│   └── xadcif.xcix      # XADC
+├── rv_io/              # peripheral HDL source
+│   ├── rv_pwm.sv        # LED control pwm unit
+│   ├── rv_sio.sv        # UART 
+│   └── rv_xadcif.sv     # XADC controler
 └── rvmon               # デバッグ用モニタープログラム
-    ├── Makefile
-    ├── convmem.py      # メモリ初期パターン変換スクリプト
-    ├── crt0.S          # スタートアップルーチン、割り込みハンドラ
-    ├── rvmon.c         # モニタープログラム
-    ├── lnkscr.x        # linker script
-    ├── include/
-    ├── lib/            # mini stdio (printf etc.)
-    ├── app/            # テストプログラム例
-    └── term            # シリアルターミナルプログラム
-      ├── Makefile
-      └── term.c
-</code></pre></div>
-<div class="highlight"><span class="filename">rvc.sv</span><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">rvc</span><span class="w"> </span><span class="p">#(</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="n">debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+     ├── Makefile
+     ├── convmem.py        # メモリ初期パターン変換スクリプト
+     ├── crt0.S            # スタートアップルーチン、割り込みハンドラ
+     ├── rvmon.c           # モニタープログラム
+     ├── lnkscr.x          # linker script
+     ├── include/
+     ├── lib/              # mini stdio (printf etc.)
+     ├── app/              # テストプログラム例
+     └── term              # シリアルターミナルプログラム
+       ├── Makefile
+       └── term.c
+</code></pre></div></p>
+<p><div class="highlight"><span class="filename">rvc.sv</span><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">rvc</span><span class="w"> </span><span class="p">#(</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="n">debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
 <span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="kt">logic</span><span class="w"> </span><span class="n">clk</span><span class="p">,</span><span class="w">     </span><span class="c1">// Arty-A7 のシステムクロック(100MHz)を入力、rvc内部のPLLでCPUクロックを生成</span>
 <span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="n">u8_t</span><span class="w">  </span><span class="n">pin</span><span class="p">,</span><span class="w">     </span><span class="c1">// 8bit pararell 入力 SW に接続</span>
 <span class="w">  </span><span class="k">output</span><span class="w"> </span><span class="n">u8_t</span><span class="w">  </span><span class="n">pout</span><span class="p">,</span><span class="w">    </span><span class="c1">// 8bit pararell 出力 LED に接続</span>
 <span class="w">  </span><span class="k">input</span><span class="w">  </span><span class="kt">logic</span><span class="w"> </span><span class="n">rxd</span><span class="p">,</span><span class="w">     </span><span class="c1">// シリアルターミナル</span>
-<span class="w">  </span><span class="k">output</span><span class="w"> </span><span class="kt">logic</span><span class="w"> </span><span class="n">txd</span><span class="w"></span>
+<span class="w">  </span><span class="k">output</span><span class="w"> </span><span class="kt">logic</span><span class="w"> </span><span class="n">txd</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="k">input</span><span class="w"> </span><span class="n">vauxp1</span><span class="p">,</span><span class="w">         </span><span class="c1">// analog signal connection</span>
+<span class="w">   </span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="k">input</span><span class="w"> </span><span class="n">vauxn10</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="k">output</span><span class="w"> </span><span class="n">u12_t</span><span class="w"> </span><span class="n">led</span><span class="w">      </span><span class="c1">// LED drive pwm </span>
 <span class="w">  </span><span class="p">);</span><span class="w"></span>
 </code></pre></div>
 入出力ポートの接続先は、<code>arty-a7-pinassign.xdc</code> を参照。  </p>
@@ -431,11 +441,12 @@ $ make install <span class="c1"># ../rv_core/syn/ にメモリ初期パターン
 <p>論理合成、コンフィグレーション<br />
    Vivado (2020.2) で論理合成。<br />
    build.sh で合成時、prog_u.mem  prog_l.mem  ファイルで RAM を初期化。<br />
-   <div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> ../rv_core/syn
+   コンフィグレーション完了後、0x0 番地から実行を開始する。<br />
+   <div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> rv32emc/rv_core/syn
 $ ./build.sh  <span class="c1"># vivado で hdl ソースを読み込み、論理合成</span>
 <span class="c1"># FPGAのプログラム rev/rvc.bit を生成</span>
 <span class="c1"># rev/ の下に各種レポートを生成</span>
-$ ./config.sh   <span class="c1"># bit file を FPGA にロード  </span>
+$ ./config.sh   <span class="c1"># bit file を FPGA にロード  (script 中の hw_server, hw_target を環境に合わせて変更)  </span>
 $ ./program.sh  <span class="c1"># bit file を Arty-A7 の ROM にプログラム  </span>
 </code></pre></div></p>
 </li>
@@ -453,7 +464,7 @@ $ updatemem -meminfo prog.mmi -data <span class="nv">$elf</span> -bit rev/rvc.bi
 rvmon 用のターミナルプログラム(term)を用意した。 Host から S-format 形式のプログラムをメモリにロードするのが容易になる。<br />
 rvmon で 'l <em>cmd</em>' コマンドと打つと、term に対して '\033&lt;<em>cmd</em>\n'  を送出する。term は '\033&lt;' を検出すると、'<em>cmd</em>.mot' ファイルを open し、<em>cmd</em>.mot の内容を rvmon にダウンロードする。<br />
 <em>cmd</em>.mot の終了時、EOT ('\004') を送出し、ダウンロードを終了する。  </p>
-<div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> ../../rvmon/term  
+<div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> rv32emc/rvmon/term  
 $ make
 $ ./term
 <span class="m">0</span> : usb-Xilinx_JTAG+Serial_1234-oj1-if01-port0
@@ -495,6 +506,10 @@ rvmon でロードし、FPGA 上で実行する。  </p>
 <td>gauss</td>
 <td>正規分布ランダム発生(soft float のテスト)</td>
 </tr>
+<tr>
+<td>adcpwm</td>
+<td>Arty-A7 の XADC で電圧電流測定、カラー LED の点灯、btn で明るさ等変更</td>
+</tr>
 </tbody>
 </table>
 <p><div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> rv32emc/rvmon
@@ -515,8 +530,8 @@ cp -p gauss.mot pi.mot ecc.mot ../term/     <span class="c1"># term のディレ
 rm crt0.o
 make<span class="o">[</span><span class="m">1</span><span class="o">]</span>: ディレクトリ <span class="s1">&#39;xxx/rv32emc/rvmon/app&#39;</span> から出ます
 </code></pre></div>
-サンプルプログラムは 0x4000 番地から実行するようにリンクされる。
-また、リンクオプション <code>-Xlinker -R../rvmon</code> により、モニタプログラム rvmon に含まれるライブラリをリンクする(memory 節約)。</p>
+サンプルプログラムは 0x4000 番地から実行するようにリンクされる。(lnkscr.x 参照)<br />
+また、リンクオプション <code>-Xlinker -R../rvmon</code> により、モニタプログラム rvmon に含まれるライブラリをリンクする(memory 節約)。  </p>
 <div class="highlight"><span class="filename">term でのサンプルプログラム実行</span><pre><span></span><code>rvmon$ l pi     <span class="c1"># pi.mot(円周率計算プログラム) をメモリにロード、0x4000 番地から実行</span>
 ................................................................................................
 ..................................................................................
@@ -532,13 +547,28 @@ iter:679
 cs : <span class="m">2069485033</span> OK
 elapsed : <span class="m">2288</span>.07ms
 <span class="m">0</span>
+rvmon$  l adcpwm  <span class="c1"># XADC LED テスト</span>
+.................................................................................................
+<span class="o">[</span><span class="m">24392</span> bytes tfr    cs:1301413<span class="o">]</span>
+rvmon$ go
+run user func : <span class="m">4000</span>
+
+<span class="s1">&#39;q&#39;</span> <span class="k">for</span> quit.
+ LED amp: <span class="m">1</span>.0  rate:1.0  sw:00   <span class="c1"># Arty-A7 の btn0~3 で LED の明るさ(amp)、色の更新レート(rate) を up/down</span>
+temp: <span class="m">38</span>.5 deg<span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>*********    <span class="c1"># XADC により、chip 温度、各種電圧、電流を測定し表示</span>
+V5v :  <span class="m">4</span>.93 V <span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>*********
+VU  : <span class="m">11</span>.92 V <span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>
+Va4 : <span class="m">1</span>.259 V <span class="p">|</span>*********<span class="p">|</span>***
+Va5 : <span class="m">0</span>.006 V <span class="p">|</span>
+IU  : <span class="m">0</span>.241 A <span class="p">|</span>*********<span class="p">|</span>*********<span class="p">|</span>****
+Iint: <span class="m">0</span>.119 A <span class="p">|</span>*********<span class="p">|</span>**
+<span class="m">0</span>
 rvmon$ 
 </code></pre></div>
 <p>coremark をコンパイルするスクリプト coremark.sh を用意した。  </p>
 <p><div class="highlight"><pre><span></span><code>$ <span class="nb">cd</span> rv32emc/rvmon/app
 $ sh coremark.sh
 Cloning into <span class="s1">&#39;coremark&#39;</span>...  <span class="c1"># https://github.com/eembc/coremark.git から clone  </span>
-   :
 Receiving objects: <span class="m">100</span>% <span class="o">(</span><span class="m">338</span>/338<span class="o">)</span>, <span class="m">494</span>.88 KiB <span class="p">|</span> <span class="m">4</span>.16 MiB/s, <span class="k">done</span>.
 make clean -C coremark
 make <span class="nv">PORT_DIR</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/rv32port -C coremark
@@ -561,7 +591,7 @@ Total <span class="nb">time</span> <span class="o">(</span>secs<span class="o">)
 Iterations/Sec   : <span class="m">153</span>
 Iterations       : <span class="m">2000</span>
 Compiler version : GCC9.2.0
-Compiler flags   : -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e   -Wl,-Map,coremark.map,-T,/home/shin//github/rv32emc/rvmon/app/rv32port/lnkscr.x -nostdlib -L/home/shin//github/rv32emc/rvmon/app/rv32port/../..//lib -Xlinker -R/home/shin//github/rv32emc/rvmon/app/rv32port/../..//rvmon -lmc -lm -lc -lgcc
+Compiler flags   : -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e   -Wl,-Map,coremark.map,-T,/home/xxx/rv32emc/rvmon/app/rv32port/lnkscr.x -nostdlib -L/home/xxx/rv32emc/rvmon/app/rv32port/../..//lib -Xlinker -R/home/xxx/rv32emc/rvmon/app/rv32port/../..//rvmon -lmc -lm -lc -lgcc
 Memory location  : STACK
 seedcrc          : 0xe9f5
 <span class="o">[</span><span class="m">0</span><span class="o">]</span>crclist       : 0xe714
