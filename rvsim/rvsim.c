@@ -43,7 +43,7 @@ u32     heap_ptr = 0x0;
         //"a6","a7","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","t3","t4","t5","t6"};
 
 static u32 simadr;
-int     view_reg[100] = {1,2,3,10,11,12,13,8,9,0};
+int     view_reg[100] = {1,2,10,11,12,13,15,8,9,0};
 int     nview = 9;
 int     reset = 1;
 int     sys_exit = 0;
@@ -372,6 +372,42 @@ void Info(int argc, char *argv[])
     printf(" heap_ptr  (heapsize)  : %8x (%d)\n", heap_ptr, HEAP_SIZE);
     printf(" end_addr              : %8x\n", _end_adr);
     printf(" start_address         : %8x\n", (u32)abfd->start_address);
+}
+
+extern const char *regnam[];
+
+void SetRegView(int argc, char *argv[])
+{
+    int i, c;
+    int ix = 0;
+    initerm();
+    printf("trace view registers\n");
+    do{
+        printf("\r");
+        for(i = 0; i < nview; i++){
+            printf("%s ", regnam[view_reg[i]]);
+        }
+        printf("\n");
+        for(i = 0; i < nview; i++){
+            printf("%2d ", view_reg[i]);
+        }
+        printf("\n");
+        printf("\033[2A\033[%dC", ix*3);  // cursor up 2 lines, right ix*3 chr
+        c = inchr();
+        c = esc_seq(c);
+        switch(c){
+        case K_Up: view_reg[ix]++; break;
+        case K_Down: view_reg[ix]--; break;
+        case K_Right: ix++; break;
+        case K_Left: ix--; break;
+        default:  break; // stay
+        }
+        ix = ix < 0 ? 0 : (ix < nview ? ix : nview-1);
+        view_reg[ix] = view_reg[ix] < 1 ? 1 : (view_reg[ix] < 16 ? view_reg[ix] : 15);
+
+    }while(c != 'q');
+    printf("\r\n\n");
+    deinitrm();
 }
 
 void RegDump(int argc, char *argv[])
@@ -704,6 +740,7 @@ struct {
         {Load,  "lo$ad",    "<file (rv32 executable)>", "\n             Load absolute binary (elf)."},
         {Dump,  "du$mp",    "<-stk> <addr|label>",      "\n             Dump memory."},
         {RegDump,"re$g",    "",                         "\n             Dump Register."},
+        {SetRegView,"v$iewreg", "",                     "\n             Set trace view regsters."},
         {Run,   "r$un",     "<N cyc|-all>",             "\n             Run simulation."},
         {Cont,  "c$ont",    "<N cyc|-all>",             "\n             Continue simulation."},
         {Trace, "t$race",   "<N cyc|-all> <-r> <| tee (fn)>", "\n             Trace simulation. -r : reset"},
