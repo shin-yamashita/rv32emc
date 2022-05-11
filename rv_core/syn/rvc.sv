@@ -57,6 +57,7 @@ module rvc #( parameter debug = 0 ) (
 int rst_cnt = 0;
 logic xreset, cclk;
 
+u8_t  pin_s;
 
 clk_gen u_clk_gen
    (
@@ -97,8 +98,9 @@ clk_gen u_clk_gen
 //      $write("%c", d_dw[7:0]);
 // synthesis translate_on
 
+    pin_s <= pin; // async
     if(d_re && d_adr == 32'hffff0000) // 8bit pararell input port
-      d_dr0 <= u32_t'(pin);
+      d_dr0 <= u32_t'(pin_s);
     else
       d_dr0 <= 'd0;
   end

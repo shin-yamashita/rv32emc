@@ -7,6 +7,7 @@ bitfn=rev/rvc.bit
 
 hw_server=e6520         # remote machine name
 #hw_server=localhost    # local
+hw_target=*/xilinx_tcf/Digilent/210319B26865A   # Arty-A7 board の USB JTAG
 
 if [ $# -ge 1 ]; then
   bitfn=$1      # argv[1] : bit file 
@@ -18,8 +19,8 @@ vivado -mode tcl <<EOF
 
 open_hw_manager
 connect_hw_server -url $hw_server:3121 -allow_non_jtag
-current_hw_target [get_hw_targets */xilinx_tcf/Digilent/210319B26865A]
-set_property PARAM.FREQUENCY 15000000 [get_hw_targets */xilinx_tcf/Digilent/210319B26865A]
+current_hw_target [get_hw_targets $hw_target]
+set_property PARAM.FREQUENCY 15000000 [get_hw_targets $hw_target]
 open_hw_target
 current_hw_device [get_hw_devices xc7a35t_0]
 refresh_hw_device -update_hw_probes false [lindex [get_hw_devices xc7a35t_0] 0]

@@ -1,5 +1,7 @@
 
-create_generated_clock -name cclk -source [get_pins u_clk_gen/inst/plle2_adv_inst/CLKIN1] -master_clock [get_clocks clk] [get_pins u_clk_gen/inst/plle2_adv_inst/CLKOUT2]
+#create_generated_clock -name cclk -source [get_pins u_clk_gen/inst/plle2_adv_inst/CLKIN1] -master_clock [get_clocks clk] [get_pins u_clk_gen/inst/plle2_adv_inst/CLKOUT1]; # 60MHz
+create_generated_clock -name cclk -source [get_pins u_clk_gen/inst/plle2_adv_inst/CLKIN1] -master_clock [get_clocks clk] [get_pins u_clk_gen/inst/plle2_adv_inst/CLKOUT2]; # 48MHz
+
 
 set_input_delay -clock [get_clocks cclk] -min -add_delay 5.000 [get_ports rxd]
 set_input_delay -clock [get_clocks cclk] -max -add_delay 5.000 [get_ports rxd]
