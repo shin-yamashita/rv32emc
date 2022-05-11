@@ -15,14 +15,20 @@ rv_core とメモリ dpram、シリアル通信回路 rv_sio を接続した回�
 │     ├── build.sh              # 論理合成スクリプト
 │     ├── build.tcl             # vivado tcl scripts
 │     ├── read_hdl.tcl          # HDL source を読み込む
-│     ├── write_mmi.tcl
-│     ├── arty-a7-pinassign.xdc # 制約ファイル、timing / pin assign
+│     ├── write_mmi.tcl         # BRAM mapping file(prog.mmi) 生成
+│     ├── arty-a7-pinassign.xdc # 制約ファイル pin assign
+│     ├── timing.xdc            # timing 制約
 │     ├── chgmem.sh             # rev/rvc.bit ファイルの RAM の初期値を書き換える
 │     ├── config.sh             # Arty-A7 FPGAに rev/rvc.bit をコンフィグレーション
 │     ├── program.sh            # Arty-A7 の spi flash にプログラム
-│     ├── rvc.sv                # top module
-│     └── clk_gen.xcix          # clock 生成 PLL
-├── rv_io/              # rv_sio UART HDL source
+│     └── rvc.sv                # Example design top module
+├── ip                  # xilinx IP
+│   ├── clk_gen.xcix     # clock 生成 PLL
+│   └── xadcif.xcix      # XADC
+├── rv_io/              # peripheral HDL source
+│   ├── rv_pwm.sv        # LED control pwm unit
+│   ├── rv_sio.sv        # UART 
+│   └── rv_xadcif.sv     # XADC controler
 └── rvmon               # デバッグ用モニタープログラム
     ├── Makefile
     ├── convmem.py      # メモリ初期パターン変換スクリプト
