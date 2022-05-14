@@ -91,6 +91,21 @@ function logic [32:0] Reg_fwd(u5_t ix, u32_t rd, u32_t mdr, u5_t rwa[3], regs_t 
   return {d_stall,rdi};
 endfunction
 
+function u32_t dec_imm(f_insn_t f_dec, u32_t insn);
+  u32_t f_imm;
+  case (f_dec.itype)
+  type_I  : f_imm = u32_t'(signed'(insn[31:20]));
+  type_S  : f_imm = u32_t'(signed'({insn[31:25],insn[11:7]}));
+  type_SB : f_imm = u32_t'(signed'({insn[31],insn[7],insn[30:25],insn[11:8],1'b0}));
+  type_U  : f_imm = {insn[31:12],12'h0};
+  type_UJ : f_imm = u32_t'(signed'({insn[31],insn[19:12],insn[20],insn[30:21],1'b0}));
+  type_R  : f_imm = 'h00000000;
+  type_RF : f_imm = 'h00000000;
+  default : f_imm = 'h00000000;
+  endcase
+  return f_imm;
+endfunction
+
 logic   rdy, cmpl, mulop;
 logic   bstall, ds1, ds2; // stall signal
 u3_t    issue_int;
@@ -158,26 +173,34 @@ assign i_re = 1'b1;
   assign IR = (ex_stall || d_stall) ? irh : ir;
 
 //---- decode ----
-  logic c_insn;
-  f_insn_t f_dec;
-  u32_t c_imm, f_imm, imm;
-  u32_t exir, eir;
+  logic c_insn, c_insna;
+  f_insn_t f_dec, f_deca;
+  u32_t c_imm, c_imma, f_imm, f_imma, imm, imma;
+  u32_t exir, eir, eira;
   u3_t func3;
 //  logic ins_ecall;
 
   parameter ECALL = 32'h00000073;
 
   assign c_insn = IR[1:0] != 2'b11;
+  assign c_insna = ira[1:0] != 2'b11;
   assign pcinc = c_insn ? 'd2 : 'd4;
-  assign pcinca = ira[1:0] != 2'b11 ? 'd2 : 'd4;
+  assign pcinca = c_insna ? 'd2 : 'd4;
   assign {eir, c_imm} = exp_cinsn(IR[15:0]);
+  assign {eira, c_imma} = exp_cinsn(ira[15:0]);
+  assign f_imm = dec_imm(f_dec, IR);
+  assign f_imma = dec_imm(f_deca, ira);
   assign imm  = c_insn ? c_imm : f_imm;
-  assign exir = issue_int ? ECALL : (c_insn ? eir : IR);
+  assign imma  = c_insna ? c_imma : f_imma;
+  assign exir = issue_int ? ECALL : (c_insn ? eir : IR);  // 
+  assign exira = issue_int ? ECALL : (c_insna ? eira : ira);
   //assign exir = ins_ecall ? ECALL : (c_insn ? eir : IR);
-
   assign f_dec = dec_insn(exir);
+  assign f_deca = dec_insn(exira);
+
   assign func3 = exir[14:12];
 // : f_dec = '{   type,     ex,    alu,   mode,    mar,    ofs,    mwe,   rrd1,   rrd2,    rwa,    rwd,     pc,  excyc }; // mnemonic
+/*
   always_comb
     case (f_dec.itype)
     type_I  : f_imm = u32_t'(signed'(IR[31:20]));
@@ -189,7 +212,7 @@ assign i_re = 1'b1;
     type_RF : f_imm = 'h00000000;
     default : f_imm = 'h00000000;
     endcase
-
+*/
   assign ars1 = f_dec.rrd1 == RS1 ? exir[19:15] : 'd0;
   assign ars2 = f_dec.rrd2 == RS2 ? exir[24:20] : 'd0;
 //  assign ars1 = exir[19:15];
