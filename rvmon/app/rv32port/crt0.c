@@ -9,10 +9,7 @@ int __attribute__ ((section (".init"))) crt0(int argc, char *argv[])
 {
     int i;
     zero_bss();
-//    remove_timer_irqh_sys();
-//    for(i = 1; i < argc; i++)
-//        printf(" %s", argv[i]);
-    printf("_bss:%x _end:%x sp:%x gp:%x\n", &_bss_start, &_end, get_sp(), get_gp());
+    printf("_bss:%x _end:%x sp:%x gp:%x f_clk:%4.1fMHz\n", &_bss_start, &_end, get_sp(), get_gp(), fu(f_clk*1e-6f));
 
     main(argc, argv);
 

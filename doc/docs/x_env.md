@@ -19,15 +19,16 @@
 RISC-V の RV32EMC に対応したクロスコンパイラのビルド、インストール  
 
 ```bash
+# 2022/05/15 
 $ sudo apt install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk \
         build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev  
                         # gcc の build で必要となるツール Prerequisites  
 $ sudo mkdir /opt/rv32e # cross tool のインストール先  
 
-$ git clone --branch rvv-0.9.x --recursive https://github.com/riscv/riscv-gnu-toolchain  
+$ git clone https://github.com/riscv/riscv-gnu-toolchain  
 $ cd riscv-gnu-toolchain  
 
-$ patch -p1 < riscv-gdb-sim.patch   # run の修正 patch
+$ patch -p1 < riscv-gdb-sim.patch   # run の修正 patch 下記の Download: から
 
 $ ./configure --prefix=/opt/rv32e --disable-linux --with-arch=rv32emac --with-abi=ilp32e  
 $ make newlib   # ツール群を /opt/rv32e/ にインストール、書き込み権限が必要
@@ -50,8 +51,6 @@ Download: [riscv-gdb-sim.patch](refdoc/riscv-gdb-sim.patch)
     (gdb) load  
     ```
 
-
-
 インストールされるツール、ライブラリ  
 ```
 /opt/rv32e/bin/riscv32-unknown-elf-*                          # コンパイラ、リンカ、gdb etc
@@ -67,10 +66,13 @@ Download: [riscv-gdb-sim.patch](refdoc/riscv-gdb-sim.patch)
 $ /opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march=rv32emc -mabi=ilp32e -c c_source.c  
 ```
 
-
-!!! Note
-    **rv_core は gcc ver 9.2.0 で動作確認を行った**  
-    gcc ver 11.1.0 では動作不具合が発生したが、原因不明  
+??? "gcc ver 11.1 での不具合について"
+    2022/05/15 時点で https://github.com/riscv/riscv-gnu-toolchain の master は gcc-11.1.0 になっている。  
+    gcc-9.2.0 で問題なかった rv-test/ の test program が、gcc-11.1.0 で動作不具合が発生した。  
+    調査の結果、rv-test/crt0.S の中で呼んでいる memclr() の中で、gcc の最適化(-O2 flag)で gcc builtin-memset() 関数を呼ぶように最適化され、
+    自前で用意していた memset() 関数がリンクされ、自前のmemset()の内部から builtin-memset() を呼ぶような code になり、無限ループとなっていた。  
+    自前の memset() 関数を破棄することで正常になった。  
+    ref: http://blog.kmckk.com/archives/5710914.html  
 
 
 ### rvsim (ISS) 
