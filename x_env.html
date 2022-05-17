@@ -414,15 +414,16 @@
 </ul>
 <h3 id="riscv32-gcc-for-rv32emc">クロスコンパイラ riscv32 gcc (for rv32emc)<a class="headerlink" href="#riscv32-gcc-for-rv32emc" title="Permanent link">&para;</a></h3>
 <p>RISC-V の RV32EMC に対応したクロスコンパイラのビルド、インストール  </p>
-<div class="highlight"><pre><span></span><code>$ sudo apt install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk <span class="se">\</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># 2022/05/15 </span>
+$ sudo apt install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk <span class="se">\</span>
         build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev  
                         <span class="c1"># gcc の build で必要となるツール Prerequisites  </span>
 $ sudo mkdir /opt/rv32e <span class="c1"># cross tool のインストール先  </span>
 
-$ git clone --branch rvv-0.9.x --recursive https://github.com/riscv/riscv-gnu-toolchain  
+$ git clone https://github.com/riscv/riscv-gnu-toolchain  
 $ <span class="nb">cd</span> riscv-gnu-toolchain  
 
-$ patch -p1 &lt; riscv-gdb-sim.patch   <span class="c1"># run の修正 patch</span>
+$ patch -p1 &lt; riscv-gdb-sim.patch   <span class="c1"># run の修正 patch 下記の Download: から</span>
 
 $ ./configure --prefix<span class="o">=</span>/opt/rv32e --disable-linux --with-arch<span class="o">=</span>rv32emac --with-abi<span class="o">=</span>ilp32e  
 $ make newlib   <span class="c1"># ツール群を /opt/rv32e/ にインストール、書き込み権限が必要</span>
@@ -451,11 +452,13 @@ cross gdb で simulation 実行するときは、以下のように指定する�
 <p>クロスコンパイラで RV32EMC に対応したバイナリを生成するには、コンパイル flag <code>-march=rv32emc -mabi=ilp32e</code> を与える  </p>
 <div class="highlight"><pre><span></span><code>$ /opt/rv32e/bin/riscv32-unknown-elf-gcc -g -Wall -O2 -march<span class="o">=</span>rv32emc -mabi<span class="o">=</span>ilp32e -c c_source.c  
 </code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><strong>rv_core は gcc ver 9.2.0 で動作確認を行った</strong><br />
-gcc ver 11.1.0 では動作不具合が発生したが、原因不明  </p>
-</div>
+<details><summary>gcc ver 11.1 での不具合について</summary><p>2022/05/15 時点で https://github.com/riscv/riscv-gnu-toolchain の master は gcc-11.1.0 になっている。<br />
+gcc-9.2.0 で問題なかった rv-test/ の test program が、gcc-11.1.0 で動作不具合が発生した。<br />
+調査の結果、rv-test/crt0.S の中で呼んでいる memclr() の中で、gcc の最適化(-O2 flag)で gcc builtin-memset() 関数を呼ぶように最適化され、
+自前で用意していた memset() 関数がリンクされ、自前のmemset()の内部から builtin-memset() を呼ぶような code になり、無限ループとなっていた。<br />
+自前の memset() 関数を破棄することで正常になった。<br />
+ref: http://blog.kmckk.com/archives/5710914.html  </p>
+</details>
 <h3 id="rvsim-iss">rvsim (ISS)<a class="headerlink" href="#rvsim-iss" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>$ sudo apt install binutils-dev libreadline8 libtinfo6 libncurses-dev  libreadline-dev  
 
