@@ -1,6 +1,6 @@
 #
 # 2010/04/20	mini-stdio library
-#
+# 2022/05/17    rm memset.c memclr.c : gcc-11.1 -O2 conflict builtin-memset 
 
 PREFIX  = /opt/rv32e/bin/riscv32-unknown-elf-
 MFLAG   = -march=rv32emc -mabi=ilp32e
@@ -16,7 +16,8 @@ CFLAGS	= -g -Wall $(MFLAG) -nostartfiles -O2 -I../include -DTXIRQ
 LDFLAGS = -g -Wall $(MFLAG) -nostdlib
 ARFLAGS	= crs
 
-SRCS1    = ulib.c uartdrv.c fprint.c strtok.c strlen.c memset.c memclr.c
+SRCS1    = ulib.c uartdrv.c fprint.c strtok.c strlen.c
+# memset.c memclr.c 
 OBJS1    = $(SRCS1:.c=.o)
 DEPS    = $(SRCS1:.c=.dep)
 
@@ -50,8 +51,6 @@ depend:	$(DEPS)
 fprint.o: fprint.c ../include/stdio.h ../include/types.h \
  ../include/time.h ../include/ulib.h ../include/uartdrv.h \
  ../include/ulib.h
-memclr.o: memclr.c
-memset.o: memset.c
 strlen.o: strlen.c
 strtok.o: strtok.c
 uartdrv.o: uartdrv.c ../include/stdio.h ../include/types.h \
