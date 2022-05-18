@@ -37,10 +37,10 @@ long number_of_symbols = 0;
 u32     _end_adr;
 u32     heap_ptr = 0x0;
 
-        //   0    1    2    3    4    5    6    7    8    9   10    11    12   13   14   15
-        //{"x0","ra","sp","gp","tp","t0","t1","t2","s0","s1","a0", "a1", "a2","a3","a4","a5",
-        //  16   17   18   19   20   21   22   23   24   25   26    27    28   29   30   31
-        //"a6","a7","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","t3","t4","t5","t6"};
+//   0    1    2    3    4    5    6    7    8    9   10    11    12   13   14   15
+//{"x0","ra","sp","gp","tp","t0","t1","t2","s0","s1","a0", "a1", "a2","a3","a4","a5",
+//  16   17   18   19   20   21   22   23   24   25   26    27    28   29   30   31
+//"a6","a7","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","t3","t4","t5","t6"};
 
 static u32 simadr;
 int     view_reg[100] = {1,2,10,11,12,13,15,8,9,0};
@@ -173,6 +173,19 @@ dump_bfd_header (bfd *abfd)
     printf ("\n");
 }
 
+static int compare_addr(const void* a, const void* b)
+{
+    asymbol **asy = (asymbol**)a;
+    asymbol **bsy = (asymbol**)b;
+
+    int aval = bfd_asymbol_value(asy[0]);
+    int bval = bfd_asymbol_value(bsy[0]);
+    aval = (asy[0]->flags & (BSF_GLOBAL|BSF_FUNCTION|BSF_OBJECT)) ? aval : -1;
+    bval = (bsy[0]->flags & (BSF_GLOBAL|BSF_FUNCTION|BSF_OBJECT)) ? bval : -1;
+
+    return -(aval - bval);
+}
+
 void load_symtab(bfd *abfd)
 {
     int i;
@@ -183,19 +196,23 @@ void load_symtab(bfd *abfd)
     }
     symbol_table = (asymbol **) malloc (storage_needed);
     number_of_symbols = bfd_canonicalize_symtab (abfd, symbol_table);
-
     if (number_of_symbols < 0) {
         fprintf (stderr, "Error: number_of_symbols < 0\n");
         return ;
     }
+    qsort(symbol_table, number_of_symbols, sizeof(asymbol*), compare_addr);
+
     for (i = 0; i < number_of_symbols; i++) {
         if ((symbol_table[i]->flags & BSF_GLOBAL) ){
             if(!strcmp(bfd_asymbol_name (symbol_table[i]), "_end")){
                 _end_adr = bfd_asymbol_value (symbol_table[i]);
-                break;
             }
         }
+        if(! (symbol_table[i]->flags & (BSF_GLOBAL|BSF_FUNCTION|BSF_OBJECT)) )
+            break;
     }
+    number_of_symbols = i;
+
     if(debug){
         for (i = 0; i < number_of_symbols; i++) {
             ////    fprintf (stdout, "%08x %08x ", bfd_asymbol_base (symbol_table[i]), bfd_asymbol_value (symbol_table[i]));
@@ -218,7 +235,7 @@ char *search_symbol(u32 pc)
 {
     int i;
     for (i = 0; i < number_of_symbols; i++) {
-        if((symbol_table[i]->flags & (BSF_FUNCTION|BSF_GLOBAL)) && bfd_asymbol_value (symbol_table[i]) == pc)
+        if(bfd_asymbol_value (symbol_table[i]) == pc)
             return (char*)bfd_asymbol_name (symbol_table[i]);
     }
     return NULL;
@@ -245,7 +262,7 @@ static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UN
     if ((section->flags & SEC_ALLOC) == 0) return;
     if ((datasize = bfd_section_size (section)) == 0)
         return;
-//    printf (" section %s:\n", section->name);
+    //    printf (" section %s:\n", section->name);
     if(vaddr == (bfd_vma)-1) vaddr = section->vma;
     memsize = section->vma - vaddr + datasize;
     memsize = memsize > RAMSIZE ? memsize : RAMSIZE;
@@ -259,24 +276,24 @@ static void load_section (bfd *abfd, asection *section, void *dummy ATTRIBUTE_UN
 
 //----- elf header  riscv
 typedef struct elf_internal_ehdr {      // from  binutils/include/elf/internal.h
-  unsigned char         e_ident[EI_NIDENT]; /* ELF "magic number" */
-  bfd_vma               e_entry;        /* Entry point virtual address */
-  bfd_size_type         e_phoff;        /* Program header table file offset */
-  bfd_size_type         e_shoff;        /* Section header table file offset */
-  unsigned long         e_version;      /* Identifies object file version */
-  unsigned long         e_flags;        /* Processor-specific flags */
-  unsigned short        e_type;         /* Identifies object file type */
-  unsigned short        e_machine;      /* Specifies required architecture */
-  unsigned int          e_ehsize;       /* ELF header size in bytes */
-  unsigned int          e_phentsize;    /* Program header table entry size */
-  unsigned int          e_phnum;        /* Program header table entry count */
-  unsigned int          e_shentsize;    /* Section header table entry size */
-  unsigned int          e_shnum;        /* Section header table entry count */
-  unsigned int          e_shstrndx;     /* Section header string table index */
+    unsigned char         e_ident[EI_NIDENT]; /* ELF "magic number" */
+    bfd_vma               e_entry;        /* Entry point virtual address */
+    bfd_size_type         e_phoff;        /* Program header table file offset */
+    bfd_size_type         e_shoff;        /* Section header table file offset */
+    unsigned long         e_version;      /* Identifies object file version */
+    unsigned long         e_flags;        /* Processor-specific flags */
+    unsigned short        e_type;         /* Identifies object file type */
+    unsigned short        e_machine;      /* Specifies required architecture */
+    unsigned int          e_ehsize;       /* ELF header size in bytes */
+    unsigned int          e_phentsize;    /* Program header table entry size */
+    unsigned int          e_phnum;        /* Program header table entry count */
+    unsigned int          e_shentsize;    /* Section header table entry size */
+    unsigned int          e_shnum;        /* Section header table entry count */
+    unsigned int          e_shstrndx;     /* Section header string table index */
 } Elf_Internal_Ehdr;
 struct elf_obj_tdata
 {
-  Elf_Internal_Ehdr elf_header[1];      /* Actual data, but ref like ptr */
+    Elf_Internal_Ehdr elf_header[1];      /* Actual data, but ref like ptr */
 };
 #define elf_tdata(bfd)          ((bfd) -> tdata.elf_obj_data)   // from binutils/bfd/elf-bfd.h
 #define EF_RISCV_RVE 0x0008
@@ -297,41 +314,41 @@ static void load_abs(char *filename, int verb)
         abfd = NULL;
     } else {
         if (abfd->xvec->flavour == bfd_target_elf_flavour){
-          unsigned long e_flags = elf_tdata(abfd)->elf_header->e_flags;
+            unsigned long e_flags = elf_tdata(abfd)->elf_header->e_flags;
 
-          if(verb) printf(" load ELF file '%s' :", filename);
-          int elfclass = elf_tdata(abfd)->elf_header->e_ident[4];
-          if(elfclass != 1){
-              printf("\n not a elf32 excutable\n");
-              return;
-          }
-          if(elf_tdata(abfd)->elf_header->e_machine == EM_RISCV) {
-              if(verb) printf(" RISCV");
-          } else {
-              printf("\n not a risc-v excutable\n");
-              return;
-          }
-          //printf("e_flags:   %lx\n", e_flags);
-          if(e_flags & EF_RISCV_RVC) {
-              compress = 'c';
-              if(verb) printf(" RVC");
-          }
-          if(e_flags & EF_RISCV_RVE) {
-              arch = 'e';
-              if(verb) printf(" RVE");
-          }
-          if(verb) printf("\n");
-          if(e_flags & EF_RISCV_FLOAT_ABI){
-              printf(" float insn not supported.\n");
-              return;
-          }
+            if(verb) printf(" load ELF file '%s' :", filename);
+            int elfclass = elf_tdata(abfd)->elf_header->e_ident[4];
+            if(elfclass != 1){
+                printf("\n not a elf32 excutable\n");
+                return;
+            }
+            if(elf_tdata(abfd)->elf_header->e_machine == EM_RISCV) {
+                if(verb) printf(" RISCV");
+            } else {
+                printf("\n not a risc-v excutable\n");
+                return;
+            }
+            //printf("e_flags:   %lx\n", e_flags);
+            if(e_flags & EF_RISCV_RVC) {
+                compress = 'c';
+                if(verb) printf(" RVC");
+            }
+            if(e_flags & EF_RISCV_RVE) {
+                arch = 'e';
+                if(verb) printf(" RVE");
+            }
+            if(verb) printf("\n");
+            if(e_flags & EF_RISCV_FLOAT_ABI){
+                printf(" float insn not supported.\n");
+                return;
+            }
 
-          bfd_map_over_sections (abfd, load_section, NULL);
-          load_symtab(abfd);
-          if(verb) printf (" number_of_symbols = %ld\n", number_of_symbols);
-          if(verb) printf(" vaddr:%x memsize:%x _end:%x start:%x\n", (unsigned)vaddr, (unsigned)memsize, _end_adr, (u32)abfd->start_address);
-          memsize += HEAP_SIZE;
-          memory = (bfd_byte*) realloc(memory, memsize);
+            bfd_map_over_sections (abfd, load_section, NULL);
+            load_symtab(abfd);
+            if(verb) printf (" number_of_symbols = %ld\n", number_of_symbols);
+            if(verb) printf(" vaddr:%x memsize:%x _end:%x start:%x\n", (unsigned)vaddr, (unsigned)memsize, _end_adr, (u32)abfd->start_address);
+            memsize += HEAP_SIZE;
+            memory = (bfd_byte*) realloc(memory, memsize);
         } else {
             printf(" not a elf excutable.\n");
         }
@@ -350,13 +367,13 @@ void List_symbol(int argc, char *argv[])
     int i;
 
     for (i = 0; i < number_of_symbols; i++) {
-        if ((symbol_table[i]->flags & BSF_GLOBAL) != 0x00) {
-            fprintf (stdout, "%08lx global : %s\n", bfd_asymbol_value (symbol_table[i]), bfd_asymbol_name (symbol_table[i]));
-        }
-    }
-    for (i = 0; i < number_of_symbols; i++) {
-        if ((symbol_table[i]->flags & BSF_FUNCTION) != 0x00) {
-            fprintf (stdout, "%08lx Func   : %s\n", bfd_asymbol_value (symbol_table[i]), bfd_asymbol_name (symbol_table[i]));
+        int flag = symbol_table[i]->flags;
+        if (1 || flag & (BSF_GLOBAL|BSF_FUNCTION|BSF_OBJECT)) {
+            fprintf (stdout, "%08lx %s %s : %s\n",
+                    bfd_asymbol_value (symbol_table[i]),
+                    (flag & BSF_GLOBAL) ? "glbl":"    ",
+                            (flag & BSF_FUNCTION) ? "func": (flag & BSF_OBJECT) ? "obj " : "    ",
+                                    bfd_asymbol_name (symbol_table[i]));
         }
     }
 }
@@ -431,7 +448,7 @@ void Dump(int argc, char *argv[])
             adr = stack_top-512;
         }else if(isxdigit(*argv[i])){
             adr = get_symbol_addr(argv[i]);
-//            adr = strtol(argv[i], NULL, 16);
+            //            adr = strtol(argv[i], NULL, 16);
         }
     }
     initerm();
@@ -480,7 +497,7 @@ void Dump(int argc, char *argv[])
         case K_PgDn: break;
         default: adr -= 256; break; // stay
         }
-//        if(c == 'b') adr -=1024;
+        //        if(c == 'b') adr -=1024;
     }while(c != 'q');
     deinitrm();
 }
@@ -579,7 +596,7 @@ void Break(int argc, char *argv[])
             if(j < n_break){
                 break_en[j] = 0;
                 printf(" disable %d\n", j);
-           }else{
+            }else{
                 printf(" ill break point number '%s'\n", argv[i]);
             }
         }else if(!strcmp(argv[i], "-e")){
@@ -588,9 +605,9 @@ void Break(int argc, char *argv[])
             if(j < n_break){
                 break_en[j] = 1;
                 printf(" enable %d\n", j);
-           }else{
+            }else{
                 printf(" ill break point number '%s'\n", argv[i]);
-           }
+            }
         }else{
             u32 adr = get_symbol_addr(argv[i]);
             if(adr){
@@ -717,9 +734,9 @@ void DebugDump(int argc, char *argv[])
                 debfp_reg = NULL;
             }
             if(debfp_mem) {
-                 fclose(debfp_mem);
-                 debfp_mem = NULL;
-             }
+                fclose(debfp_mem);
+                debfp_mem = NULL;
+            }
         }
     }
 
@@ -874,11 +891,11 @@ void help_message()
 {
     printf("=== rv32emc simulator ===\n");
     printf(
-    "Usage: rvsim {opts} {elf32 binary}\n"
-    "Options:\n"
-    "  -i SCR-FILE  Execute command script\n"
-    "  -r           Run all and exit\n"
-    "  -t           Trace all and exit\n"
+            "Usage: rvsim {opts} {elf32 binary}\n"
+            "Options:\n"
+            "  -i SCR-FILE  Execute command script\n"
+            "  -r           Run all and exit\n"
+            "  -t           Trace all and exit\n"
     );
 
 }
@@ -935,14 +952,14 @@ int main (int argc, char **argv)
         }
     }
 
- //   bfd_init ();
- //   ofp = stdout;
+    //   bfd_init ();
+    //   ofp = stdout;
 
     printf("======= rvsim ==============================================\n"
             "   rv32 processor simulator.\n");
 
     if(lfn) load_abs(lfn, 1);
-//    stack = (bfd_byte*)malloc(stacksize+0x100);
+    //    stack = (bfd_byte*)malloc(stacksize+0x100);
 
     Nregs = arch == 'e' ? 16 : 32;
     prompt = arch == 'e' ? "rvsim-E> " : "rvsim-I> ";
