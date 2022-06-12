@@ -105,8 +105,8 @@ static inline u32 get_gp(){u32 gp;__asm__("mv %0,gp" : "=r" (gp));return gp;}
 //------------------------------------------------------------------
 // CPU clock frequency (Hz)
 //#define f_clk	100e6f
-//#define f_clk	60e6f
-#define f_clk	48e6f
+#define f_clk	60e6f
+//#define f_clk	48e6f
 //#define f_clk	42e6f
 //#define f_clk	36e6f
 //#define f_clk	30e6f

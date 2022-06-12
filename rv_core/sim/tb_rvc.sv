@@ -7,7 +7,7 @@
 
 parameter SYS_exit = 93;
 
-module tb_rvc #(parameter debug = 0) (
+module tb_rvc #(parameter debug = 1) (
   input  u8_t  pin,
   output u8_t  pout
   );

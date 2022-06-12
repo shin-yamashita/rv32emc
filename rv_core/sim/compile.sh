@@ -16,7 +16,8 @@ if [ $# = 1 ] ; then
  prj=$1
 fi
 
-#-generic_top "debug=0"
+#DEBUG=debug=0
+DEBUG=debug=1
 
 echo Simulation Tool: Viavdo Simulator $prj
 

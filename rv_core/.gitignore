@@ -11,5 +11,6 @@ sim/*.wdb
 sim/xsim.dir/
 syn/rev/
 sim/.Xil/
-
-
+project_1/
+.ip_user_files/
+managed_ip_project/

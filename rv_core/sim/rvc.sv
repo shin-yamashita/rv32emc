@@ -48,17 +48,20 @@ module rvc #( parameter debug = 0 ) (
   initial begin
     STDERR = $fopen("stderr.out", "w");
   end
+  logic dbg_we;
+  u8_t  dbg_char;
+  assign dbg_we = d_we[0] && d_adr == 32'hffff0004;
+  always @(posedge clk) begin
+    if(dbg_we) begin  // debug _write()
+      $fwrite(STDERR, "%c", d_dw[7:0]);
+      dbg_char <= d_dw[7:0];
+    end
+  end
 // synthesis translate_on
 
   always @(posedge clk) begin
     if(d_we[0] && d_adr == 32'hffff0000)  // 8bit pararell output port
       pout <= d_dw[7:0];
-// synthesis translate_off
-    else if(d_we[0] && d_adr == 32'hffff0004) // debug _write()
-      $fwrite(STDERR, "%c", d_dw[7:0]);
-//      $write("%c", d_dw[7:0]);
-// synthesis translate_on
-
     if(d_re && d_adr == 32'hffff0000) // 8bit pararell input port
       pin_en <= 1'b1;
     else

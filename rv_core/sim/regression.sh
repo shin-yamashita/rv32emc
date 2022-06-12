@@ -23,12 +23,15 @@ prog="hello mul ecc fptest pi gauss"
 
 for prg in $prog ; do
 
- echo "==== run $prg.mem simulation"
  ./convmem.py $prg.mem
+ runtime=`cat $prg.ref | awk  '/Total clock cycles:/{print $4 * 11, "ns"}'`
+ echo "==== run $prg.mem simulation, runtime : " $runtime
+
  xsim tb_$prj --log xsim-r.log <<EOF
-  run 80 ms
+  run $runtime
   exit
 EOF
+
  chkerr
  echo "==== diff $prg.ref $prg.out"
  cp stderr.out $prg.out
@@ -37,5 +40,4 @@ EOF
 
 done
 
-echo done
-
+echo "=== regression done"

@@ -189,6 +189,19 @@ int calc_pi3(int n, uint32_t *at1, uint32_t *at2, uint32_t *at3, uint32_t *at4, 
 
 #include "time.h"
 
+#include "ulib.h"
+volatile int count = 0;
+
+void timer_cb()
+{
+  set_port(7);
+  count++;
+  reset_port(7);
+}
+
+
+
+
 int main()
 {
   int i, itr, cs;
@@ -198,7 +211,9 @@ int main()
   uint32_t at4[N];
   uint32_t pi1[N];
   uint32_t pi[N];
-
+  
+  init_timer(100000);   // 10 us
+  add_timer_irqh(timer_cb);
 //  u64 tstart = clock();
 //  itr = calc_pi(N, at1, at2, pi1, pi);
 //  itr = calc_pi2(N, at1, at2, at3, pi1, pi);

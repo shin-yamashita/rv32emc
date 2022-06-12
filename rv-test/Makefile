@@ -49,7 +49,7 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x -nostdlib -L./lib
 # -L$(LDSCRIPT)
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c
+SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c tecc.c
 # endian.c
 # rvmon.c
 #fplib.c sr_test.c
@@ -94,7 +94,7 @@ init.o:	init.c
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.ref:	%
-	rvsim -r $< 2> $@
+	rvsim -r $< 1> $@ 2>&1
 
 %.lst:	%
 	$(OBJDUMP) -D -S -h $< > $@
@@ -143,3 +143,4 @@ mul.o: mul.c include/stdio.h include/types.h include/ulib.h \
  include/uartdrv.h lib/libmc.a 
 pi.o: pi.c include/stdio.h include/types.h include/time.h include/ulib.h \
  include/uartdrv.h lib/libmc.a 
+tecc.o: tecc.c include/stdio.h include/types.h lib/libmc.a 

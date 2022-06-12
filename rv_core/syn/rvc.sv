@@ -73,7 +73,7 @@ clk_gen u_clk_gen
    // Clock in ports
     .clk_in1(clk));      // input clk_in1
 
-  assign cclk = clk48;
+  assign cclk = clk60;
 
 // synthesis translate_off
   integer STDERR;

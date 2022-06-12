@@ -73,7 +73,7 @@ static void debounce()  // btn debounce
         }else if(swcnt[i] > SWULIM){
             swcnt[i] = SWULIM;
             if(sw[i] == 0){ // sw[i] : 0 -> 1 edge detect
-            //    __asm__("nop"); // jalr d_stall bug --> 2022/05/09 "fix: jalr bug (ra unnecessary increment when d_stall)"
+                //__asm__("nop"); // jalr d_stall bug --> 2022/05/09 "fix: jalr bug (ra unnecessary increment when d_stall)"
                 (cb_func[i])(i%2);// jalr reg fwd bug??  lw a2,0(sp); jalr a2;  
             }
             sw[i] = 1;

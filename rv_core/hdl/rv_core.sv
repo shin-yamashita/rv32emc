@@ -29,44 +29,54 @@ module rv_core #(parameter Nregs = 16,
   input  logic irq  // interrupt request
   );
 
+//---- branch take decision ----
+function logic bra_not_take(f_insn_t f_dec, u3_t func3, u32_t rs1, u32_t rs2);
+  logic bra;
+  if(f_dec.pc == BRA) begin
+    bra = 1'b0;
+    case(func3)
+    3'd0: if(!(rs1 == rs2)) bra = 1'b1;   // beq
+    3'd1: if(!(rs1 != rs2)) bra = 1'b1;   // bne
+    3'd4: if(!(s32_t'(rs1) < s32_t'(rs2))) bra = 1'b1;  // blt
+    3'd5: if(!(s32_t'(rs1) >= s32_t'(rs2))) bra = 1'b1; // bge
+    3'd6: if(!(rs1 < rs2))  bra = 1'b1;   // bltu
+    3'd7: if(!(rs1 >= rs2)) bra = 1'b1;   // bgeu
+    default: bra = 1'b1;
+    endcase
+  end else begin
+    bra = 1'b0;
+  end
+  return bra;
+endfunction
 
 //---- branch destination calc ----
-function logic [32:0] bra_dest(logic bra_stall, f_insn_t f_dec, u3_t func3,
-                               u32_t rs1, u32_t rs2, u32_t imm, u32_t bdst, u32_t pc, u4_t pcinc,
+function logic [32:0] bra_dest(f_insn_t f_dec, u5_t ars1, 
+                               u32_t imm, u32_t bdst, u32_t pc, u4_t pcinc,
                                u32_t vec, u32_t epc);
   logic bra;
   u32_t pc_nxt;
 
   bra = 1'b0;
-  if(bra_stall) begin
-    pc_nxt = pc + pcinc;
-    return {bra,pc_nxt};
-  end
+  pc_nxt = pc + pcinc;
+
   if(f_dec.pc == BRA) begin
-    case(func3)
-    3'd0: if(rs1 == rs2) bra = 1'b1;   // beq
-    3'd1: if(rs1 != rs2) bra = 1'b1;   // bne
-    3'd4: if(s32_t'(rs1) < s32_t'(rs2)) bra = 1'b1;  // blt
-    3'd5: if(s32_t'(rs1) >= s32_t'(rs2)) bra = 1'b1; // bge
-    3'd6: if(rs1 < rs2)  bra = 1'b1;   // bltu
-    3'd7: if(rs1 >= rs2) bra = 1'b1;   // bgeu
-    endcase
-    if(bra) begin
       pc_nxt = bdst;
-    end else begin
-      pc_nxt = pc + pcinc;
-    end
   end else if(f_dec.pc == JMP) begin
     if(f_dec.ex == ex_E) begin  // ecall
       pc_nxt = vec;
+      
     end else if(f_dec.ex == ex_R) begin // mret
       pc_nxt = epc;
+      
+    end else if(f_dec.rrd1 == RS1) begin // 
+      //pc_nxt = (rs1 + imm);
+      bra = ars1 != 'd0 ? 1'b1 : 1'b0;
+      pc_nxt = ars1 != 'd0 ? pc : imm;
     end else begin
-      pc_nxt = f_dec.rrd1 == RS1 ? (rs1 + imm) : bdst;
+      pc_nxt = bdst;
+      
     end
-    bra = 1'b1;
-  end else begin
-    pc_nxt = pc + pcinc;
+
   end
   return {bra,pc_nxt};        // bra_stall, bra_dest
 endfunction
@@ -107,15 +117,15 @@ function u32_t dec_imm(f_insn_t f_dec, u32_t insn);
 endfunction
 
 logic   rdy, cmpl, mulop;
-logic   bstall, ds1, ds2; // stall signal
-u3_t    issue_int;
+logic   ds1, ds2, bntk; // stall signal
+u3_t    issue_int, issue_int1;
 
 assign rdy = i_rdy & d_rdy;
 assign i_re = 1'b1;
 //assign d_re = 1'b1;
 
 //---- register file ----
-  u5_t    ars1, ars2, awd;
+  u5_t    ars1, ars2, awd, ars1a;
   u32_t   wd, rs1, rs2;
   logic   we;
 
@@ -127,7 +137,7 @@ assign i_re = 1'b1;
 
 //---- registers ---
   u32_t   IR, ir, irh;	// insn register
-  u32_t   pc,  pca, pc1, bdst;
+  u32_t   pc,  pca, pca0, pc1, pc_cnt, bdst;
   u32_t   mar, mdr, mdr1, mdw;
   u2_t    mar1[2];
   wmode_t mmd, mmd1[2];	// mem-mode
@@ -144,12 +154,13 @@ assign i_re = 1'b1;
   logic   d_stall;	// data stall
   logic   ex_stall;	// exec stall
   logic   stall;
+  logic   r1jmp, r1jmpa;
 
   //---- csr regs
   u32_t   mtvec, mepc;
   u16_t   mip, mie;
   u32_t   mcause;
-  assign stall = bra_stall | d_stall | ex_stall;
+  assign stall = bra_stall | d_stall | ex_stall| r1jmp | (f_dec.pc == BRA) | ds1 | ds2| (f_dec.excyc != 0);     //| r1jmpa|r1jmp|bntk;
 
 //---- fetch ----
   u4_t    pcinc, pcinca;
@@ -176,8 +187,8 @@ assign i_re = 1'b1;
   logic c_insn, c_insna;
   f_insn_t f_dec, f_deca;
   u32_t c_imm, c_imma, f_imm, f_imma, imm, imma;
-  u32_t exir, eir, eira;
-  u3_t func3;
+  u32_t exir, exira, eir, eira;
+  u3_t func3, func3a;
 //  logic ins_ecall;
 
   parameter ECALL = 32'h00000073;
@@ -192,31 +203,20 @@ assign i_re = 1'b1;
   assign f_imma = dec_imm(f_deca, ira);
   assign imm  = c_insn ? c_imm : f_imm;
   assign imma  = c_insna ? c_imma : f_imma;
-  assign exir = issue_int ? ECALL : (c_insn ? eir : IR);  // 
+  assign exir = issue_int1 ? ECALL : (c_insn ? eir : IR);  // 
   assign exira = issue_int ? ECALL : (c_insna ? eira : ira);
-  //assign exir = ins_ecall ? ECALL : (c_insn ? eir : IR);
   assign f_dec = dec_insn(exir);
   assign f_deca = dec_insn(exira);
 
   assign func3 = exir[14:12];
+  assign func3a = exira[14:12];
+
 // : f_dec = '{   type,     ex,    alu,   mode,    mar,    ofs,    mwe,   rrd1,   rrd2,    rwa,    rwd,     pc,  excyc }; // mnemonic
-/*
-  always_comb
-    case (f_dec.itype)
-    type_I  : f_imm = u32_t'(signed'(IR[31:20]));
-    type_S  : f_imm = u32_t'(signed'({IR[31:25],IR[11:7]}));
-    type_SB : f_imm = u32_t'(signed'({IR[31],IR[7],IR[30:25],IR[11:8],1'b0}));
-    type_U  : f_imm = {IR[31:12],12'h0};
-    type_UJ : f_imm = u32_t'(signed'({IR[31],IR[19:12],IR[20],IR[30:21],1'b0}));
-    type_R  : f_imm = 'h00000000;
-    type_RF : f_imm = 'h00000000;
-    default : f_imm = 'h00000000;
-    endcase
-*/
+
   assign ars1 = f_dec.rrd1 == RS1 ? exir[19:15] : 'd0;
   assign ars2 = f_dec.rrd2 == RS2 ? exir[24:20] : 'd0;
-//  assign ars1 = exir[19:15];
-//  assign ars2 = exir[24:20];
+  assign ars1a = f_deca.rrd1 == RS1 ? exira[19:15] : 'd0;
+
   assign awd  = exir[10:7];
 
   u32_t rrd1a, rrd2a, bdsta;
@@ -224,24 +224,34 @@ assign i_re = 1'b1;
 
 //  assign {ds1,rs1f} = bra_stall ? 'd0 : Reg_fwd(ars1, rs1, mdr, rwa, rwd, rwdx, rwdat);
 //  assign {ds2,rs2f} = bra_stall ? 'd0 : Reg_fwd(ars2, rs2, mdr, rwa, rwd, rwdx, rwdat);
-
-  assign {ds1,rs1f} = Reg_fwd(ars1, rs1, mdr, rwa, rwd, rwdx, rwdat) & ~{bra_stall, 32'd0};
-  assign {ds2,rs2f} = Reg_fwd(ars2, rs2, mdr, rwa, rwd, rwdx, rwdat) & ~{bra_stall, 32'd0};
+  assign {ds1,rs1f} = Reg_fwd(ars1, rs1, mdr, rwa, rwd, rwdx, rwdat);// & ~{bra_stall, 32'd0};
+  assign {ds2,rs2f} = Reg_fwd(ars2, rs2, mdr, rwa, rwd, rwdx, rwdat);// & ~{bra_stall, 32'd0};
 
   assign rrd1a = f_dec.rrd1 == PC ? pc1 :
                 (f_dec.rrd1 == X0 ? 'd0 :
                 (f_dec.rrd1 == SHAMT ? exir[19:15] : rs1f));
 
   assign rrd2a = f_dec.rrd2 == IMM ? imm :
-            //  (f_dec.rrd2 == INC ? pc1 + pcinc : 
                 (f_dec.rrd2 == INC ? pc1 + (d_stall ? 'd0 : pcinc) :  // 220509 jalr-bug
                 (f_dec.rrd2 == SHAMT ? exir[24:20] : rs2f));
 
-  assign bdsta = d_stall ? bdst : pc1 + imm;
-  
-  assign {bstall,pca} = xreset ? 
+  assign bdsta = (ds1|ds2) ? bdst : (r1jmpa ? pc : (pc + imma));
+
+  assign {r1jmpa,pca0} = xreset ? 
           (ds1|ds2|(ex_stall&!cmpl) ? {1'b0,pc} : 
-                  bra_dest(bra_stall, f_dec, func3, rs1f, rs2f, imm, bdsta, pc, pcinca, mtvec, mepc)) : 'd0;
+                  bra_dest(f_deca, ars1a, imm, bdsta, pc, pcinca, mtvec, mepc)) : 'd0;
+
+  assign pca = (bntk ? pc_cnt : (r1jmp ? rs1f + imm : pca0));
+
+  assign bntk = (ds1|ds2|bra_stall) ? 1'b0 : bra_not_take(f_dec, func3, rs1f, rs2f);
+
+  always_ff @ (posedge clk) begin
+    if(!ds1) begin
+      r1jmp <= r1jmpa && !r1jmp && !bntk;
+      if (f_deca.pc == BRA)
+        pc_cnt <= (bntk ? pc_cnt : pc) + pcinca;
+    end
+  end
 
 //---- exec ----
 
@@ -328,6 +338,7 @@ parameter MTIMECMP = 32'hffff8008;
       mip   <= 'd0;
       zmip  <= 1'b1;
       mcause<= 'd0;
+      issue_int1 <= '0;
     end else if(rdy) begin
       csrmd   <= csr_mode(csren, func3);
       csr_adr <= IR[31:20];
@@ -358,7 +369,9 @@ parameter MTIMECMP = 32'hffff8008;
         default: ;
         endcase
       end
-      if(issue_int) mepc <= pc1;
+//      if(issue_int) mepc <= pc1;
+      if(issue_int) mepc <= pc;
+      issue_int1 <= issue_int;
     end
   //  ins_ecall <= issue_int != 'd0;
   end
@@ -490,18 +503,15 @@ parameter MTIMECMP = 32'hffff8008;
   assign rwdat[1] = rwdx[1] ? rwdatx : rwdat1;
   assign rwdx[0] = mulop;
 
-//  logic maren, mdwen;
-  u32_t marp, mdwp, immp;
-
   always_ff @ (posedge clk) begin
     if(rdy) begin
-        bra_stall <= bra_stall ? 1'b0 : bstall;
+        bra_stall <= bntk | r1jmp;
         if(!xreset)
-        ex_stall <= 1'b0;     
+          ex_stall <= 1'b0;     
         else if(cmpl)
-        ex_stall <= 1'b0;
+          ex_stall <= 1'b0;
         else if(!bra_stall && f_dec.excyc > 0)
-        ex_stall <= 1'b1;
+          ex_stall <= 1'b1;
     
         d_stall <= (ds1 | ds2);
         if(f_dec.excyc == 0 || cmpl || bra_stall)
@@ -526,18 +536,19 @@ parameter MTIMECMP = 32'hffff8008;
         d_be1[1] <= d_be1[0];
         mdr1 <= d_dr | d_dr1;
 
+        if(!r1jmpa) bdst <= bdsta;
+
         if(!(bra_stall)) begin
             if(!ex_stall) begin
                 rrd1 <= rrd1a;
                 rrd2 <= rrd2a;
             end
-            bdst <= bdsta;
-            
-            ////mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);
-            ////mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);
-            mdw    <= (f_dec.mwe == WE ? rs2f : 'd0);
-            marp   <= rs1f;
-            immp   <= imm;
+
+          ////  mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);////
+          ////  mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);////
+            mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rs1f + imm : 'd0);////
+            mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rs2f : 'd0);////
+            ////mdw    <= (f_dec.mwe == WE ? rs2f : 'd0);
           //  mdwp   <= rs2f;
           //  maren  <= f_dec.mar == RS1;
           //  mdwen  <= f_dec.mwe == WE;
@@ -553,24 +564,39 @@ parameter MTIMECMP = 32'hffff8008;
     end
   end
 
-  assign mar = marp + immp;
+////  assign mar = marp + immp;////
 //  assign mdw = mdwen ? mdwp : 'd0;
 
 // synthesis translate_off
-  function void debug_print(u32_t pc, u32_t ir, u32_t mar, u32_t mdr, u32_t rrd1, u32_t rrd2, u32_t rwdat);
+  function void debug_print(int fd, u32_t pc, u32_t ir, logic b, logic d, logic e, u32_t mar, u32_t mdr, 
+                            u32_t rrd1, u32_t rrd2, u32_t rwdat, u32_t ra, u32_t sp);
     if(ir[1:0] == 2'd3)
-      $display("%8h %8h  %8h %8h %8h %8h %8h", pc, ir, mar, mdr, rrd1, rrd2, rwdat);
+      $fdisplay(fd, "%8h %8h  %d%d%d %8h %8h %8h %8h %8h %8h %8h", 
+                    pc, ir,       b,d,e, mar, mdr, rrd1, rrd2, rwdat, ra, sp);
     else
-      $display("%8h     %4h  %8h %8h %8h %8h %8h", pc, ir[15:0], mar, mdr, rrd1, rrd2, rwdat);
+      $fdisplay(fd, "%8h     %4h  %d%d%d %8h %8h %8h %8h %8h %8h %8h", 
+                    pc, ir[15:0], b,d,e, mar, mdr, rrd1, rrd2, rwdat, ra, sp);
   endfunction
   logic [1:0] bst;
   u32_t rrd1h, rrd2h;
+  u32_t ra, sp;
+  integer dbgfd;
+  initial begin
+    if(debug) begin
+      dbgfd = $fopen("rv_trace.out", "w");
+      $fdisplay(dbgfd, "#pc1     IR       bde  mar      mdr      rrd1     rrd2     rwdat       ra       sp");
+    end
+  end
+  assign ra = u_rv_regf.regf[1];
+  assign sp = u_rv_regf.regf[2];
   always@(posedge clk) begin
-    if(rdy) begin
+    if(xreset && rdy) begin
         bst <= {bst[0]|ex_stall,bra_stall};
         rrd1h <= ex_stall ? rrd1h : rrd1;
         rrd2h <= ex_stall ? rrd2h : rrd2;
-        if(debug) debug_print(pc1, IR, mar, mdr, ex_stall?rrd1h:rrd1, ex_stall?rrd2h:rrd2, bst[1]?'d0:rwdat[1]);
+        if(debug) debug_print(dbgfd, pc1, IR, 
+            bra_stall,d_stall,ex_stall, 
+            mar, mdr, ex_stall?rrd1h:rrd1, ex_stall?rrd2h:rrd2, bst[1]?'d0:rwdat[1],ra,sp);
     end
   end
 

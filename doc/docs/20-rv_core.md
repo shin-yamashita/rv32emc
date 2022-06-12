@@ -140,11 +140,13 @@ ISAマニュアル vol II に定義されている CSR のうち、以下の CSR
       la      t0, _irq_handle   # 割り込みハンドラアドレス
       csrw    mtvec, t0         #  mtvec に設定
 
-      # Clear bss section
+      # Clear the bss segment
       la      a0, _edata
-      la      a1, _end
-      sub     a1, a1, a0
-      call    memclr  # rv-test/lib/memclr.c
+      la      a2, _end
+      sub     a2, a2, a0
+      li      a1, 0
+      call    memset  # gcc-11.1 builtin-memset() 
+
       # Call main()
       lw      a0, 0(sp)                  # a0 = argc
       addi    a1, sp, __SIZEOF_POINTER__ # a1 = argv

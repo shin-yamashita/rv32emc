@@ -49,6 +49,7 @@ typedef struct _regalu { alu_t d; alu_t q; }	regalu;
 typedef struct _regint { int d; int q; }    regint;
 
 static reg32 R[NREG];
+#define PCINC  -1
 static reg32 pc, pc1, bdst;	// 18
 static reg32 ir, irh;
 static reg32 mar, mdr, _mdr, mdw;
@@ -133,7 +134,7 @@ void fetch()
     }
     ir.d = (u32)((memory[a+3]<<24)|(memory[a+2]<<16)|(memory[a+1]<<8)|memory[a]);
 
-    if(pc.d == (u32)-1){
+    if(pc.d == (u32)PCINC){
         pc.d = pc.q + (isCinsn(ir.d) ? 2 : 4);
     }
 }
@@ -408,11 +409,25 @@ int disasm(int adr, char *dat, char *opc, char *opr, int *dsp)
     }
     return isC ? 2 : 4;
 }
-
+int bra_take(optab_t *op, u32 rs1, u32 rs2)
+{
+    int bra = 0;
+    if(op->pc == BRA){
+        switch(op->func3){
+        case 0: if(rs1 == rs2) bra = 1; break;  // beq
+        case 1: if(rs1 != rs2) bra = 1; break;  // bne
+        case 4: if((s32)rs1 < (s32)rs2) bra = 1; break; // blt
+        case 5: if((s32)rs1 >= (s32)rs2) bra = 1; break;// bge
+        case 6: if(rs1 < rs2) bra = 1; break;   // bltu
+        case 7: if(rs1 >= rs2) bra = 1; break;  // bgeu
+        }
+    }
+    return bra;
+}
 u32 bra_dest(optab_t *op, u32 rs1, u32 rs2, u32 imm, u32 bdst, int pcinc)
 {
     int bra = 0;
-    u32 pc_nxt = -1;    // -1 => PC increment at fetch()
+    u32 pc_nxt = PCINC;    // -1 => PC increment at fetch()
     if(op->pc == BRA){
         switch(op->func3){
         case 0: if(rs1 == rs2) bra = 1; break;  // beq
@@ -566,7 +581,7 @@ void decode()
     int isC = isCinsn(IR);
     pcinc = isC ? 2 : 4;
     //    pc.d = pc.q + pcinc;
-    pc.d = -1;
+    pc.d = PCINC;  // pc increment flag
 
     if(isC){
         IR = expand_c_insn(IR);
