@@ -48,7 +48,7 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$(@:.elf=.map),-T,lnkscr.x -nostdlib -L../lib $(LNKR
 
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= gauss.c pi.c ecc.c adcpwm.c
+SRCS	= gauss.c pi.c ecc.c adcpwm.c memtst.c
 # hello.c fptest.c 
 
 PRGS    = $(SRCS:.c=.elf)

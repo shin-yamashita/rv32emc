@@ -152,31 +152,36 @@ assign i_re = 1'b1;
   assign stall = bra_stall | d_stall | ex_stall;
 
 //---- fetch ----
+  logic   rdy1;
   u4_t    pcinc, pcinca;
-  u32_t   ira;
-  u16_t   i_dr1;
-  assign  ira = i_dr;
-  assign  i_adr = rdy ? pca : pc;
+  u32_t   ira, irah;
+//  u16_t   i_dr1;
+  assign  ira = rdy1 ? i_dr : irah;
+//  assign  i_adr = rdy ? pca : pc;
+  assign  i_adr = pca;
 
   always_ff @ (posedge clk) begin
     if(!xreset) begin
       ir <= 'd0;
       irh <= 'd0;
-      i_dr1 <= 'd0;
     end else if(rdy) begin
       ir <= ira;
-      i_dr1 <= i_dr[31:16];
       if(!(ex_stall || d_stall))
         irh <= ir;
+    end
+    rdy1 <= rdy;
+    if(rdy1) begin
+      irah <= ira;
+
     end
   end
   assign IR = (ex_stall || d_stall) ? irh : ir;
 
 //---- decode ----
   logic c_insn, c_insna;
-  f_insn_t f_dec, f_deca;
-  u32_t c_imm, c_imma, f_imm, f_imma, imm, imma;
-  u32_t exir, eir, eira;
+  f_insn_t f_dec;
+  u32_t c_imm, f_imm, imm;
+  u32_t exir, eir;
   u3_t func3;
 //  logic ins_ecall;
 
@@ -187,32 +192,13 @@ assign i_re = 1'b1;
   assign pcinc = c_insn ? 'd2 : 'd4;
   assign pcinca = c_insna ? 'd2 : 'd4;
   assign {eir, c_imm} = exp_cinsn(IR[15:0]);
-  assign {eira, c_imma} = exp_cinsn(ira[15:0]);
   assign f_imm = dec_imm(f_dec, IR);
-  assign f_imma = dec_imm(f_deca, ira);
   assign imm  = c_insn ? c_imm : f_imm;
-  assign imma  = c_insna ? c_imma : f_imma;
   assign exir = issue_int ? ECALL : (c_insn ? eir : IR);  // 
-  assign exira = issue_int ? ECALL : (c_insna ? eira : ira);
-  //assign exir = ins_ecall ? ECALL : (c_insn ? eir : IR);
   assign f_dec = dec_insn(exir);
-  assign f_deca = dec_insn(exira);
-
   assign func3 = exir[14:12];
 // : f_dec = '{   type,     ex,    alu,   mode,    mar,    ofs,    mwe,   rrd1,   rrd2,    rwa,    rwd,     pc,  excyc }; // mnemonic
-/*
-  always_comb
-    case (f_dec.itype)
-    type_I  : f_imm = u32_t'(signed'(IR[31:20]));
-    type_S  : f_imm = u32_t'(signed'({IR[31:25],IR[11:7]}));
-    type_SB : f_imm = u32_t'(signed'({IR[31],IR[7],IR[30:25],IR[11:8],1'b0}));
-    type_U  : f_imm = {IR[31:12],12'h0};
-    type_UJ : f_imm = u32_t'(signed'({IR[31],IR[19:12],IR[20],IR[30:21],1'b0}));
-    type_R  : f_imm = 'h00000000;
-    type_RF : f_imm = 'h00000000;
-    default : f_imm = 'h00000000;
-    endcase
-*/
+
   assign ars1 = f_dec.rrd1 == RS1 ? exir[19:15] : 'd0;
   assign ars2 = f_dec.rrd2 == RS2 ? exir[24:20] : 'd0;
 //  assign ars1 = exir[19:15];
@@ -494,62 +480,66 @@ parameter MTIMECMP = 32'hffff8008;
   u32_t marp, mdwp, immp;
 
   always_ff @ (posedge clk) begin
-    if(rdy) begin
-        bra_stall <= bra_stall ? 1'b0 : bstall;
-        if(!xreset)
+    if(rdy1) begin
+      mdr1 <= d_dr | d_dr1;
+    end
+    if(rdy || !xreset) begin
+      bra_stall <= bra_stall ? 1'b0 : bstall;
+      if(!xreset)
         ex_stall <= 1'b0;     
-        else if(cmpl)
+      else if(cmpl)
         ex_stall <= 1'b0;
-        else if(!bra_stall && f_dec.excyc > 0)
+      else if(!bra_stall && f_dec.excyc > 0)
         ex_stall <= 1'b1;
-    
-        d_stall <= (ds1 | ds2);
-        if(f_dec.excyc == 0 || cmpl || bra_stall)
-                pc  <= pca;
+  
+      d_stall <= (ds1 | ds2);
+      if(f_dec.excyc == 0 || cmpl || bra_stall)
+              pc  <= pca;
 
-        pc1 <= pc;
-        rwdat1   <= rwdat[0];
-        rwdat[2] <= rwdat[1];
-        rwd[1]   <= rwd[0];
-        rwd[2]   <= rwd[1];
-        rwdx[1]  <= rwdx[0];
-        rwdx[2]  <= rwdx[1];
-        rwa[1]   <= rwa[0];
-        rwa[2]   <= rwa[1];
-        mmd1[0] <= mmd;
-        mmd1[1] <= mmd1[0];
-        mwe1[0] <= mwe;
-        mwe1[1] <= mwe1[0];
-        mar1[0] <= mar[1:0];
-        mar1[1] <= mar1[0];
-        d_be1[0] <= d_be;
-        d_be1[1] <= d_be1[0];
-        mdr1 <= d_dr | d_dr1;
+      pc1 <= pc;
+      rwdat1   <= rwdat[0];
+      rwdat[2] <= rwdat[1];
+      rwd[1]   <= rwd[0];
+      rwd[2]   <= rwd[1];
+      rwdx[1]  <= rwdx[0];
+      rwdx[2]  <= rwdx[1];
+      rwa[1]   <= rwa[0];
+      rwa[2]   <= rwa[1];
+      mmd1[0] <= mmd;
+      mmd1[1] <= mmd1[0];
+      mwe1[0] <= mwe;
+      mwe1[1] <= mwe1[0];
+      mar1[0] <= mar[1:0];
+      mar1[1] <= mar1[0];
+      d_be1[0] <= d_be;
+      d_be1[1] <= d_be1[0];
+    //  mdr1 <= d_dr | d_dr1;
 
-        if(!(bra_stall)) begin
-            if(!ex_stall) begin
-                rrd1 <= rrd1a;
-                rrd2 <= rrd2a;
-            end
-            bdst <= bdsta;
-            
-            ////mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);
-            ////mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);
-            mdw    <= (f_dec.mwe == WE ? rs2f : 'd0);
-            marp   <= rs1f;
-            immp   <= imm;
-          //  mdwp   <= rs2f;
-          //  maren  <= f_dec.mar == RS1;
-          //  mdwen  <= f_dec.mwe == WE;
-
-            rwa[0] <= ds1 | ds2 ? R_NA : (f_dec.rwa == RD ? awd : 'd0);
-            mmd    <= ds1 | ds2 ? SI   : f_dec.mode;
-            mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
-            rwd[0] <= ds1 | ds2 ? R_NA : f_dec.rwd;
-            alu    <= ds1 | ds2 ? A_NA : f_dec.alu;
-    //  end else begin
-    //    alu    <= ds1 | ds2 ? A_NA : f_dec.alu; //
+      if(!(bra_stall)) begin
+        if(!ex_stall) begin
+            rrd1 <= rrd1a;
+            rrd2 <= rrd2a;
         end
+        bdst <= bdsta;
+        
+        ////mar    <= ds1 | ds2 ? -2   : (f_dec.mar == RS1 ? rrd1a + imm : 'd0);
+        ////mdw    <= ds1 | ds2 ? -1   : (f_dec.mwe == WE ? rrd2a : 'd0);
+        mdw    <= (f_dec.mwe == WE ? rs2f : 'd0);
+        marp   <= rs1f;
+        immp   <= imm;
+      //  mdwp   <= rs2f;
+      //  maren  <= f_dec.mar == RS1;
+      //  mdwen  <= f_dec.mwe == WE;
+
+        rwa[0] <= ds1 | ds2 ? R_NA : (f_dec.rwa == RD ? awd : 'd0);
+        mmd    <= ds1 | ds2 ? SI   : f_dec.mode;
+        mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
+        rwd[0] <= ds1 | ds2 ? R_NA : f_dec.rwd;
+        alu    <= ds1 | ds2 ? A_NA : f_dec.alu;
+  //  end else begin
+  //    alu    <= ds1 | ds2 ? A_NA : f_dec.alu; //
+      end
+
     end
   end
 

@@ -168,3 +168,28 @@ void remove_user_irqh_2(void)
 	user_irqh2 = 0;
 }
 
+//===== 2012/08/11 memif/sr_cache control
+
+void d_cache_flush()
+{
+        *CACHECTRL = 2; // flush d-cache
+        while(*CACHECTRL & 2);
+}
+
+void d_cache_clean()
+{
+        *CACHECTRL = 1; // clean d-cache
+        while(*CACHECTRL & 1);
+}
+
+void i_cache_clean()
+{
+        *CACHECTRL = 4; // clean i-cache
+        while(*CACHECTRL & 4);
+}
+
+void cache_flush()
+{
+        *CACHECTRL = 7; // flush and clean all
+        while(*CACHECTRL & 7);
+}

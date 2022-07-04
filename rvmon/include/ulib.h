@@ -55,6 +55,9 @@ _BEGIN_STD_C
 #define PWM     ((volatile u8 *)0xffff0060)  // 
 #define PWMPS   ((volatile u16 *)0xffff0070)    // prescaler
 
+//      memif/rv_chache
+#define CACHECTRL       ((volatile u8 *)0xffff0180)     // calib_complete, i-clean(2), d-flash(1), d-clean(0)
+
 //      ulib.c function prototypes
 
 int get_pout();                 // POUT port shadow register read
@@ -92,6 +95,12 @@ void memcpydma(u8 *dst, u8 *src, size_t len);	// sr_dmac
 
 // memclr.c
 void *memclr(void *s, size_t n);
+
+//====== 2022/06/26 memif/rv_cache
+void d_cache_flush();
+void d_cache_clean();
+void i_cache_clean();
+void cache_flush();
 
 //#include "uartdrv.h"
 
