@@ -18,6 +18,9 @@ all:	rvsim
 rvsim:	$(OBJS)
 	$(CC) -o rvsim $(LDFLAGS) $(OBJS) $(LDLIBS)
 
+RV-insn.csv:	RV-insn.ods
+	soffice --convert-to csv $<
+
 optab.h:	RV-insn.csv
 	./insntab.py $^ > optab.h
 

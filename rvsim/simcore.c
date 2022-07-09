@@ -20,10 +20,14 @@
 
 extern bfd_byte 	*memory;
 extern bfd_byte 	*stack;
+extern bfd_byte 	*usr_memory;
 extern bfd_size_type 	memsize;
 extern bfd_size_type	stacksize;
+extern bfd_size_type	umemsize;
+
 extern bfd_vma 		vaddr;
 extern bfd_vma		stack_top;
+extern bfd_vma     umem_top;
 
 extern int view_reg[];
 extern int nview;
@@ -47,6 +51,10 @@ typedef struct _reg32 { u32 d; u32 q; }	reg32;
 typedef struct _reg16 { u16 d; u16 q; }	reg16;
 typedef struct _regalu { alu_t d; alu_t q; }	regalu;
 typedef struct _regint { int d; int q; }    regint;
+
+typedef union {float f; u32 u;} fu_t;
+#define fu(x)   ((fu_t)(x)).u
+#define uf(x)   ((fu_t)(x)).f
 
 static reg32 R[NREG];
 static reg32 pc, pc1, bdst;	// 18
@@ -398,9 +406,12 @@ int disasm(int adr, char *dat, char *opc, char *opr, int *dsp)
                         else
                           sprintf(opr, "%s,%s,%s", Rd, Rs1, csrnam);
                       }else{
-                        sprintf(opr, "%s,%s,%d", Rd, Rs1, imm);
+                        if(optab[i].mar == RS1)
+                            sprintf(opr, "%s,%d(%s)", Rd, imm, Rs1);
+                        else
+                            sprintf(opr, "%s,%s,%d", Rd, Rs1, imm);
                       } break;
-        case type_S:  sprintf(opr, "%s,%s,%d", Rs1, Rs2, imm);	break;
+        case type_S:  sprintf(opr, "%s,%d(%s)", Rs2, imm, Rs1);	break;
         case type_SB: sprintf(opr, "%s,%s,(%x)", Rs1, Rs2, adr+imm); *dsp = adr + imm;	break;
         case type_U:  sprintf(opr, "%s,%d", Rd, imm);	break;
         case type_UJ: sprintf(opr, "%s,(%x)", Rd, adr+imm);	*dsp = adr + imm; break;
@@ -494,12 +505,22 @@ u32 syscall(u32 func, u32 a0, u32 a1, u32 a2){
         break;
     case SYS_brk:
         if(!a0) heap_ptr = _end_adr;
-        else    heap_ptr = a0;
         rv = heap_ptr;
-        //        printf("sbrk %x %x %x (%x %x)\n", rv, heap_ptr, _end_adr, a0, a1);
+        heap_ptr += a0;
+                printf("sbrk %x %x %x (%x %x)\n", rv, heap_ptr, _end_adr, a0, a1);
         break;
         //    case SYS_close:
         //        break;
+    case SYS_fstat:
+        printf("fstat(%x %x)\n", a0,a1);
+        for(i = 0; i < 32; i++){
+            printf("%02x ", mem_rd(a1+i));
+        }
+        printf("\n");
+        break;
+    case SYS_close:
+        printf("close(%x %x)\n", a0,a1);
+        break;
     default:
         printf(" ecall %d %x %x %x\n", func, a0, a1, a2);
         break;
@@ -656,19 +677,19 @@ char mem_rd(int adr)
     //    int stk = mar.q;
     bfd_byte *mem;
 
-    if((adr >= (u32)vaddr && adr < ((u32)vaddr + memsize))		// data/bss area
-            || (adr > stack_top-stacksize && adr <= stack_top)){	// stack area
-
-        if(!(adr < ((u32)vaddr + memsize))){
-            adr -= stack_top-stacksize;
-            mem = stack;
-        }else{
-            adr -= (u32)vaddr;
-            mem = memory;
-        }
-        return mem[adr];
+    if((adr >= (u32)vaddr && adr < ((u32)vaddr + memsize))){		// data/bss area
+        adr -= (u32)vaddr;
+        mem = memory;
+    }else if(adr >= umem_top && adr < umem_top + umemsize){     // usr_memory
+        adr -= umem_top;
+        mem = usr_memory;
+    }else if(adr > stack_top-stacksize && adr <= stack_top){    // stack area
+        adr -= stack_top-stacksize;
+        mem = stack;
+    }else{
+        return 0;
     }
-    return 0;
+    return mem[adr];
 }
 
 void IO_write(u32 adr, u16 mmd, u32 wd)
@@ -696,30 +717,34 @@ u32 IO_read(u32 adr, u16 mmd)
     case MTIME+4:   rd = mtime >> 32; break;
     case MTIMECMP:  rd = mtimecmp & 0xffffffff; break;
     case MTIMECMP+4:rd = mtimecmp >> 32; break;
+    case 0xffff0180:rd = 0x8; break;
     }
 //printf("IO_read(%x,%x):%x\n", adr, mmd, rd);
     return rd;
 }
 void RAM_access(int wr)
 {
-    int adr = mar.q - (u32)vaddr;
-    int stk = mar.q;
-    bfd_byte *mem;
+    int adr = mar.q;    // - (u32)vaddr;
+    bfd_byte *mem = NULL;
 
     if((mar.q >= IOBEGIN && mar.q <= IOEND)){   // IO area
         if(wr == WE)
             IO_write(mar.q, mmd.q, mdw.q);
         else if(wr == RE)
             _mdr.d = IO_read(mar.q, mmd.q);
-    } else if((adr >= 0 && adr < memsize)		// data/bss area
-            || (stk > stack_top-stacksize && stk <= stack_top)){	// stack area
+        return;
+    } else if((adr >= (u32)vaddr && adr < ((u32)vaddr + memsize))){		// data/bss area
+        adr -= (u32)vaddr;
+        mem = memory;
+    } else if(adr >= umem_top && adr < (umem_top + umemsize)){     // usr_memory
+        adr -= umem_top;
+        mem = usr_memory;
+    } else if(adr > stack_top-stacksize && adr <= stack_top){    // stack area
+        adr -= stack_top-stacksize;
+        mem = stack;
+    }
 
-        if(!(adr < memsize)){
-            adr = stk - (stack_top-stacksize);
-            mem = stack;
-        }else{
-            mem = memory;
-        }
+    if(mem){
         if(wr == WE){   // lsb first
             u32 mask = 0;
             char *wmd = "";
@@ -765,7 +790,8 @@ void RAM_access(int wr)
                 _mdr.d =  mem[adr];	break;
             case SQI:
                 _mdr.d =  (s32)((s8)mem[adr]);
-                break;            }
+                break;
+            }
         }
     }else if((wr == WE)||(wr == RE)){
         printf("%-8d: ill memory address : mar=%x  %s\n", insncount, mar.q, wr == WE ? "WE" : "RE");
@@ -798,21 +824,25 @@ void exec()
     case REM:   rwdat[1].d = (s32)rrd1.q % (s32)rrd2.q;	break;
     case REMU:  rwdat[1].d = rrd1.q % rrd2.q;	break;
     case CSR:   rwdat[1].d = csr_rd;	break;
-    case FLD:
-    case FST:
-    case FMADD:
-    case FMSUB:
-    case FADD:
-    case FSUB:
-    case FMUL:
-    case FDIV:
-    case FSQRT:
-    case FSGN:
-    case FMIN:
-    case FMAX:
-    case FCVT:
+
+    case FADD:  rwdat[1].d = fu(uf(rrd1.q) + uf(rrd2.q));   break;
+    case FSUB:  rwdat[1].d = fu(uf(rrd1.q) - uf(rrd2.q));   break;
+    case FMUL:  rwdat[1].d = fu(uf(rrd1.q) * uf(rrd2.q));   break;
+    case FDIV:  rwdat[1].d = fu(uf(rrd1.q) / uf(rrd2.q));   break;
+
+    case FLOAT: rwdat[1].d = fu(rrd2.q ? (float)(rrd1.q) : (float)((s32)rrd1.q));   break;
+    case FEQ:   rwdat[1].d = uf(rrd1.q) == uf(rrd2.q);  break;
+    case FLT:   rwdat[1].d = uf(rrd1.q) <  uf(rrd2.q);  break;  
+    case FLE:   rwdat[1].d = uf(rrd1.q) <= uf(rrd2.q);  break;
+    case FIX:   rwdat[1].d = rrd2.q ? (u32)uf(rrd1.q) : (s32)uf(rrd1.q);    break;
+    case FSGNJ: rwdat[1].d = (rrd2.q & 0x80000000) | (rrd1.q & ~0x80000000);    break;
+    case FSGNJN: rwdat[1].d = (~rrd2.q & 0x80000000) | (rrd1.q & ~0x80000000);    break;
+    case FSGNJX: rwdat[1].d = ((rrd2.q ^ rrd1.q) & 0x80000000) | (rrd1.q & ~0x80000000);    break;
+    case FMIN:   rwdat[1].d = uf(rrd1.q) < uf(rrd2.q) ? rrd1.q : rrd2.q;  break;  
+    case FMAX:   rwdat[1].d = uf(rrd1.q) < uf(rrd2.q) ? rrd2.q : rrd1.q;  break;  
+
         //    case __: break;
-    default :	rwdat[1].d = 0;
+    default :	rwdat[1].d = 0; break;
     //    printf("ill ALU operation %d.\n", alu.q);	break;
     }
     if(rwd[1].d < 0) rwdat[1].d = 0;

@@ -25,10 +25,14 @@ extern int LPP;
 
 bfd_byte    *memory = NULL;
 bfd_byte    *stack = NULL;
+bfd_byte    *usr_memory = NULL;
 bfd_size_type   memsize = 0;
 bfd_size_type   stacksize = 0x20000;
+bfd_size_type   umemsize = 0x100000;
+
 bfd_vma     vaddr = (bfd_vma)-1;
 bfd_vma     stack_top = 0x3ffffd0;
+bfd_vma     umem_top = 0x20000000;
 bfd         *abfd = NULL;
 
 asymbol **symbol_table;
@@ -910,6 +914,7 @@ int main (int argc, char **argv)
     bfd_init ();
     ofp = stdout;
     stack = (bfd_byte*)malloc(stacksize+0x100);
+    usr_memory = (bfd_byte*)malloc(umemsize);
     s = NULL;
 
     for (i = 1; i < argc; i++) {
@@ -952,14 +957,10 @@ int main (int argc, char **argv)
         }
     }
 
-    //   bfd_init ();
-    //   ofp = stdout;
-
     printf("======= rvsim ==============================================\n"
             "   rv32 processor simulator.\n");
 
     if(lfn) load_abs(lfn, 1);
-    //    stack = (bfd_byte*)malloc(stacksize+0x100);
 
     Nregs = arch == 'e' ? 16 : 32;
     prompt = arch == 'e' ? "rvsim-E> " : "rvsim-I> ";
