@@ -1,0 +1,11 @@
+
+
+sv work ../hdl/pkg_rv_decode.sv
+sv work ../hdl/rv_alu.sv
+sv work ../hdl/rv_muldiv.sv
+sv work ../hdl/rv_fpu.sv
+
+verilog work  /opt/Xilinx/Vivado/2020.2/data/verilog/src/glbl.v
+
+sv work tb_alu.sv
+
