@@ -52,9 +52,6 @@ typedef struct _reg16 { u16 d; u16 q; }	reg16;
 typedef struct _regalu { alu_t d; alu_t q; }	regalu;
 typedef struct _regint { int d; int q; }    regint;
 
-typedef union {float f; u32 u;} fu_t;
-#define fu(x)   ((fu_t)(x)).u
-#define uf(x)   ((fu_t)(x)).f
 
 static reg32 R[NREG];
 static reg32 pc, pc1, bdst;	// 18
@@ -240,7 +237,7 @@ int optab_search(u32 ir)
         //printf("%8x/%x,",ir,optab[i].opc);
         if((ir&0x7f) == optab[i].opc){
             if(optab[i].func3 != __){
-                if(((ir>>12)&0x7) == optab[i].func3){
+                if(optab[i].func3 == RM || ((ir>>12)&0x7) == optab[i].func3){
                     if(optab[i].func7 != __){
                         if(((ir>>25)&0x7f) == optab[i].func7){
                             if(optab[i].rs2 != __){

@@ -4,38 +4,19 @@
 # 2017/03/20  risc-v test
 #
 
-#ARCH = RV32I
-#ARCH = RV32IM
-#ARCH = RV32IMC
-ARCH = RV32EMC
+#ARCH = rv32ec
+#ARCH = rv32em
+#ARCH = rv32emc
+#ARCH = rv32emzfinx
+ARCH = rv32emczfinx
 
-ifeq ($(ARCH), RV32I)
- PREFIX  = /opt/riscv/bin/riscv64-unknown-elf-
- PREFIX32  = /opt/riscv/bin/riscv32-unknown-elf-
- MFLAG   = -march=rv32i -mabi=ilp32
-endif
-ifeq ($(ARCH), RV32IM)
- PREFIX  = /opt/riscv/bin/riscv64-unknown-elf-
- PREFIX32  = /opt/riscv/bin/riscv32-unknown-elf-
- MFLAG   = -march=rv32im -mabi=ilp32
-endif
-ifeq ($(ARCH), RV32IMC)
- PREFIX  = /opt/riscv/bin/riscv64-unknown-elf-
- PREFIX32  = /opt/riscv/bin/riscv32-unknown-elf-
- MFLAG   = -march=rv32imc -mabi=ilp32
-endif
-ifeq ($(ARCH), RV32EMC)
- PREFIX  = /opt/rv32e/bin/riscv32-unknown-elf-
- PREFIX32  = $(PREFIX)
- MFLAG   = -march=rv32emc -mabi=ilp32e
-# MFLAG   = -march=rv32emc_zfinx -mabi=ilp32e
-endif
-
+PREFIX  = /opt/rv32e/bin/riscv32-unknown-elf-
+MFLAG   = -march=$(ARCH) -mabi=ilp32e
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
 LD	= $(PREFIX)ld
-RUN	= $(PREFIX32)run
+RUN	= $(PREFIX)run
 OBJCP	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 

@@ -11,6 +11,10 @@ typedef int32_t  s32;
 typedef int16_t  s16;
 typedef int8_t   s8;
 
+typedef union {float f; u32 u;} fu_t;
+#define fu(x)   ((fu_t)(x)).u
+#define uf(x)   ((fu_t)(x)).f
+
 #define XLEN	32	// word length
 #define NREG	32	// # of register
 

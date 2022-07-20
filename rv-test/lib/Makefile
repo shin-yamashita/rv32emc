@@ -2,8 +2,14 @@
 # 2010/04/20	mini-stdio library
 # 2022/05/17    rm memset.c memclr.c : gcc-11.1 -O2 conflict builtin-memset 
 
+#ARCH = rv32ec
+#ARCH = rv32em
+#ARCH = rv32emc
+#ARCH = rv32emzfinx
+ARCH = rv32emczfinx
+
 PREFIX  = /opt/rv32e/bin/riscv32-unknown-elf-
-MFLAG   = -march=rv32emc -mabi=ilp32e
+MFLAG   = -march=$(ARCH) -mabi=ilp32e
 
 CC	= $(PREFIX)gcc
 LD	= $(PREFIX)ld

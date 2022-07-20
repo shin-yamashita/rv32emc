@@ -9,7 +9,8 @@
 import  pkg_rv_decode::*;
 
 module rv_core #(parameter Nregs = 16,
-                 parameter debug = 0  ) (
+                 parameter debug = 0,
+                 parameter fpuen = 1 ) (
   input  logic clk,
   input  logic xreset,
 
@@ -233,7 +234,7 @@ assign i_re = 1'b1;
 
   u32_t csr_rd;
 
-  rv_alu u_rv_alu (
+  rv_alu #(.fpuen(fpuen)) u_rv_alu (
     .clk    (clk),
     .xreset (xreset),
     .rdy    (rdy),
@@ -516,7 +517,7 @@ parameter MTIMECMP = 32'hffff8008;
     //  mdr1 <= d_dr | d_dr1;
 
       if(!(bra_stall)) begin
-        if(!ex_stall) begin
+        if(!(ex_stall && !d_stall)) begin
             rrd1 <= rrd1a;
             rrd2 <= rrd2a;
         end
@@ -534,6 +535,7 @@ parameter MTIMECMP = 32'hffff8008;
         rwa[0] <= ds1 | ds2 ? R_NA : (f_dec.rwa == RD ? awd : 'd0);
         mmd    <= ds1 | ds2 ? SI   : f_dec.mode;
         mwe    <= ds1 | ds2 ? R_NA : f_dec.mwe;
+
         rwd[0] <= ds1 | ds2 ? R_NA : f_dec.rwd;
         alu    <= ds1 | ds2 ? A_NA : f_dec.alu;
   //  end else begin

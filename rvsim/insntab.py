@@ -15,6 +15,7 @@ print('''//
 '''%sys.argv[1])
 
 print('''
+#define RM      8
 #define NA      -2
 #define __      -1
 
@@ -38,16 +39,16 @@ typedef enum _alu {
 
 const char* _alu_nam[] = {
   "--", "S2", "ADD", "SLT",  "SLTU", "XOR", "OR", "AND", "SLL", "SRL", "SRA", "SUB",
-  "MUL", "MULH","MHSU", "MHU",  "DIV", "DIVU", "REM", "REMU",
+  "MUL", "MULH","MHSU", "MHU",  "DIV", "DIVU", "REM", "REMU", "CSR",
   "FADD","FSUB", "FMUL","FDIV", "FLOAT", "FEQ", "FLT", "FLE", "FIX", "FSGNJ", "FSGNJN", "FSGNJX", "FMIN", "FMAX"
 };
 
 typedef enum _regs {
-  X0, RS1, RS2, RD, IMM, PC, RM, WE, RE, MDR, ALU, INC, JMP, BRA, SHAMT
+  X0, RS1, RS2, RD, IMM, PC, WE, RE, MDR, ALU, INC, JMP, BRA, SHAMT
 } regs_t;
 
 const char* _regs_nam[] = {
-  "--", "X0", "RS1", "RS2", "RD", "IMM", "PC", "RM", "WE", "RE", "MDR", "ALU", "INC", "JMP","BRA","SHM"
+  "--", "X0", "RS1", "RS2", "RD", "IMM", "PC", "WE", "RE", "MDR", "ALU", "INC", "JMP","BRA","SHM"
 };
 
 typedef struct _optab {
@@ -135,7 +136,7 @@ def maskedcode(func7, rs2, func3, opc):
     mc += "???"
   else:
     mc += format(int(rs2, 16), '03b')
-  if func3 == '__':
+  if func3 == '__' or func3 == 'RM':
     mc += "???"
   else:
     mc += format(int(func3, 16), '03b')
@@ -169,12 +170,12 @@ typedef enum u3_t {
 
 typedef enum u6_t {
   A_NA, S2, ADD, SLT,  SLTU, XOR, OR, AND,  SLL, SRL, SRA, SUB,
-  MUL, MULH, MULHSU, MULHU,  DIV, DIVU, REM, REMU,
-  CSR, FADD, FSUB, FMUL, FDIV, FLOAT, FEQ, FLT, FLE, FIX, FSGNJ, FSGNJN, FSGNJX, FMIN, FMAX
+  MUL, MULH, MULHSU, MULHU,  DIV, DIVU, REM, REMU, CSR,
+  FADD, FSUB, FMUL, FDIV, FLOAT, FEQ, FLT, FLE, FIX, FSGNJ, FSGNJN, FSGNJX, FMIN, FMAX
 } alu_t;
 
 typedef enum u4_t {
-  R_NA, X0, RS1, RS2, RD, IMM, PC, RM, WE, RE, MDR, ALU, INC, JMP, BRA, SHAMT
+  R_NA, X0, RS1, RS2, RD, IMM, PC, WE, RE, MDR, ALU, INC, JMP, BRA, SHAMT
 } regs_t;
 
 typedef struct {
@@ -195,7 +196,7 @@ typedef struct {
 
 function f_insn_t dec_insn(input u32_t ir);
   f_insn_t f_dec;
-
+     //  func7     Rs2[2:0]  func3     opc
   case ({ir[31:25],ir[22:20],ir[14:12],ir[6:0]}) inside""", file=f)
 
   print("                        // : f_dec = '{   type,     ex,    alu,   mode,    mar,    ofs,    mwe,   rrd1,   rrd2,    rwa,    rwd,     pc,  excyc }; // mnemonic", file=f)

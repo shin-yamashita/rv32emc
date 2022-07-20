@@ -16,10 +16,10 @@ module rv_muldiv (
   input  alu_t alu,
   input  u32_t rrd1,
   input  u32_t rrd2,
-  output u32_t rwdat,
-  output u32_t rwdatx,
+  output u32_t rwdat,   // div/mod 17 cycle
+  output u32_t rwdatx,  // mul 2 cycle
   output logic cmpl,
-  output logic mulop
+  output logic mulop  // 2 cycle op
   );
 
   typedef struct {

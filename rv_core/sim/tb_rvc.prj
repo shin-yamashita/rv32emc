@@ -3,6 +3,7 @@
 verilog work ../hdl/dpram_h.v
 sv work ../hdl/pkg_rv_decode.sv
 sv work ../hdl/rv_alu.sv
+sv work ../hdl/rv_fpu.sv
 sv work ../hdl/rv_muldiv.sv
 sv work ../hdl/rv_regf.sv
 sv work ../hdl/rv_core.sv

@@ -13,6 +13,7 @@
  typedef logic [6:0]         u7_t;
  typedef logic [7:0]         u8_t;
  typedef logic signed [7:0]  s8_t;
+ typedef logic [8:0]         u9_t;
  typedef logic [11:0]        u12_t;
  typedef logic signed [11:0] s12_t;
  typedef logic [15:0]        u16_t;
@@ -23,6 +24,7 @@
  typedef logic [21:0]        u22_t;
  typedef logic [23:0]        u24_t;
  typedef logic signed [23:0] s24_t;
+ typedef logic [25:0]        u26_t;
  typedef logic [26:0]        u27_t;
  typedef logic [27:0]        u28_t;
  typedef logic [31:0]        u32_t;
@@ -31,6 +33,7 @@
  typedef logic signed [32:0] s33_t;
  typedef logic [33:0]        u34_t;
  typedef logic signed [33:0] s34_t;
+ typedef logic [47:0]        u48_t;
  typedef logic [63:0]        u64_t;
  typedef logic signed [63:0] s64_t;
 

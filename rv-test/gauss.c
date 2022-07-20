@@ -74,6 +74,7 @@ char *print_float(char *str, float data, int digit, int dp, int flg)
         return str;
 }
 #endif
+#include "ulib.h"
 
 int main()
 {
@@ -87,31 +88,32 @@ int main()
 
 	for(i = 0; i < 120; i++) hist[i] = 0;
 
-	rms = 0.0f;
-	for(i = 0; i < N; i++){
-		g = gaussrand();
-		rms += g*g;
-		ig = (int)(g * 10 + 60.5f);
-		hist[ig]++;
-	}
-	rms = sqrtf(rms / N);
+        rms = 0.0f;
+        for(i = 0; i < N; i++){
+                g = gaussrand();
+                rms += g*g;
+                ig = (int)(g * 10 + 60.5f);
+                hist[ig]++;
+        }
 
-	for(i = -40; i < 40; i++){
-		int j;
-	//	char fstr[20];
-	//	print_float(fstr, 100*(float)hp[i]/N, 3, 2, FLG_LEFT);
-	//	printf("%3d: %s :", i, fstr);
-		printf("%3d: %5.3f :", i, fu(100*(float)hp[i]/N));
-		for(j = 0; j < 100; j++){
-			if(2000*hp[i]/N > j){
-				printf(j%20==19 ? "|":"*");
-			}else{
-				break;
-			}
-		}
-		printf("\n");
-	}
-	return 0;
+        rms = sqrtf(rms / N);
+
+        for(i = -40; i < 40; i++){
+                int j;
+        //	char fstr[20];
+        //	print_float(fstr, 100*(float)hp[i]/N, 3, 2, FLG_LEFT);
+        //	printf("%3d: %s :", i, fstr);
+                printf("%3d: %5.3f :", i, fu(100*(float)hp[i]/N));
+                for(j = 0; j < 100; j++){
+                        if(2000*hp[i]/N > j){
+                                printf(j%20==19 ? "|":"*");
+                        }else{
+                                break;
+                        }
+                }
+                printf("\n");
+        }
+        return 0;
 }
 
 #include <math.h>
@@ -121,8 +123,8 @@ unsigned seed = 1;
 
 unsigned rand()
 {
-	seed = (seed * 1103515245 + 12345) & RAND_MAX;
-	return seed;
+        seed = (seed * 1103515245 + 12345) & RAND_MAX;
+        return seed;
 }
 
 
@@ -133,20 +135,19 @@ float gaussrand()
         float X;
 
         if(phase == 0) {
- 	       do {
- 	 	      float U1 = (float)rand() / RAND_MAX;
- 	 	      float U2 = (float)rand() / RAND_MAX;
- 	 	      V1 = 2 * U1 - 1;
- 	 	      V2 = 2 * U2 - 1;
- 	 	      S = V1 * V1 + V2 * V2;
- 	 	      } while(S >= 1 || S == 0);
+                do {
+                        float U1 = (float)rand() / RAND_MAX;
+                        float U2 = (float)rand() / RAND_MAX;
+                        V1 = 2 * U1 - 1;
+                        V2 = 2 * U2 - 1;
+                        S = V1 * V1 + V2 * V2;
+                } while(S >= 1 || S == 0);
 
- 	       X = V1 * sqrtf(-2 * logf(S) / S);
+                X = V1 * sqrtf(-2 * logf(S) / S);
         } else
- 	       X = V2 * sqrtf(-2 * logf(S) / S);
+                X = V2 * sqrtf(-2 * logf(S) / S);
 
         phase = 1 - phase;
-
         return X;
 }
 
