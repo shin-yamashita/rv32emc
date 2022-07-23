@@ -21,7 +21,7 @@ OBJCP	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 
 #CFLAGS	= -g -Wall -nostartfiles -O2
-CFLAGS	= -g -Wall -O2 $(MFLAG) -nostartfiles -I../include 
+CFLAGS	= -g -Wall -O1 $(MFLAG) -nostartfiles -I../include 
 
 LNKROM   = -Xlinker -R../rvmon
 #LDFLAGS =  -nostdlib -Wl,-Map,$(TARGET).map
@@ -30,7 +30,7 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$(@:.elf=.map),-T,lnkscr.x -nostdlib -L../lib $(LNKR
 
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= gauss.c pi.c ecc.c adcpwm.c memtst.c
+SRCS	= gauss.c pi.c ecc.c adcpwm.c memtst.c sftest.c
 # hello.c fptest.c 
 
 PRGS    = $(SRCS:.c=.elf)

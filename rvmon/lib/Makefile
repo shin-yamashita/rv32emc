@@ -17,20 +17,16 @@ AR	= $(PREFIX)ar
 OBJCP	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 
-CFLAGS	= -g -Wall $(MFLAG) -nostartfiles -O2 -I../include -DTXIRQ
+CFLAGS	= -g -Wall $(MFLAG) -nostartfiles -O1 -I../include -DTXIRQ
 
 LDFLAGS = -g -Wall $(MFLAG) -nostdlib
 ARFLAGS	= crs
 
-SRCS1    = ulib.c uartdrv.c fprint.c strtok.c strlen.c readline.c
+SRCS1    = ulib.c uartdrv.c fprint.c strtok.c strlen.c readline.c expsf.c  logsf.c  powsf.c  sincossf.c  sqrtsf.c
 OBJS1    = $(SRCS1:.c=.o)
 DEPS    = $(SRCS1:.c=.dep)
 
-SRCSM    = expsf.c  logsf.c  powsf.c  sincossf.c  sqrtsf.c
-OBJSM    = $(SRCSM:.c=.o)
-DEPSM    = $(SRCSM:.c=.dep)
-
-all:	libmc.a libmm.a
+all:	libmc.a
 
 libmc.a:	$(OBJS1)
 	$(AR) $(ARFLAGS) libmc.a $(OBJS1)
@@ -51,7 +47,7 @@ libmm.a:	$(OBJSM)
 clean:
 	@rm -f *.abs *.o core* a.out *.bak *~ \#*\#  *.map *.lst *.dep libmc.a fprintf
 
-depend:	$(DEPS) $(DEPSM) 
+depend:	$(DEPS)
 	cp Makefile Makefile.bak
 	sed '/^#----- dependences -----/q' Makefile.bak >Makefile
 	echo >>Makefile
@@ -60,11 +56,16 @@ depend:	$(DEPS) $(DEPSM)
 
 #----- dependences -----
 
+expsf.o: expsf.c ../include/mathsf.h
 fprint.o: fprint.c ../include/stdio.h ../include/types.h \
  ../include/time.h ../include/ulib.h ../include/uartdrv.h \
  ../include/ulib.h
+logsf.o: logsf.c ../include/mathsf.h
+powsf.o: powsf.c ../include/mathsf.h
 readline.o: readline.c ../include/stdio.h ../include/types.h \
  ../include/readline.h
+sincossf.o: sincossf.c ../include/mathsf.h
+sqrtsf.o: sqrtsf.c ../include/mathsf.h ../include/types.h
 strlen.o: strlen.c
 strtok.o: strtok.c
 uartdrv.o: uartdrv.c ../include/stdio.h ../include/types.h \
