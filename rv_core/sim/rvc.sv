@@ -69,16 +69,16 @@ module rvc #( parameter debug = 0 ) (
     .*
   );
 
-  dpram #(.ADDR_WIDTH(13), .init_file_u("prog_u.mem"), .init_file_l("prog_l.mem")) u_dpram (
+  dpram #(.ADDR_WIDTH(14), .init_file_u("prog_u.mem"), .init_file_l("prog_l.mem")) u_dpram (
        .clk  (clk),
 
        .enaA (1'b1),      // read port
-       .addrA(i_adr[14:1]),	// half (16bit) word address
+       .addrA(i_adr[15:1]),	// half (16bit) word address
        .doutA(i_dr),
        
        .enaB (enaB),     // read write port
        .weB  (d_we),
-       .addrB(d_adr[14:2]), // 32bit word address
+       .addrB(d_adr[15:2]), // 32bit word address
        .dinB (d_dw),
        .doutB(d_dr1)
        );

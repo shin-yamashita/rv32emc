@@ -21,7 +21,9 @@ OBJCP	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 
 #CFLAGS	= -g -Wall -nostartfiles -O2
-CFLAGS	= -g -Wall -O2 $(MFLAG) -nostartfiles -I./include 
+#CFLAGS	= -g -Wall -O2 $(MFLAG) -nostartfiles -I./include 
+CFLAGS	= -g -Wall -O1 $(MFLAG) -nostartfiles -I./include 
+# -O1 for no reorder
 
 #LDFLAGS =  -nostdlib -Wl,-Map,$(TARGET).map
 LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x -nostdlib -L./lib
@@ -30,7 +32,7 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x -nostdlib -L./lib
 # -L$(LDSCRIPT)
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c
+SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c sftest.c
 # endian.c
 # rvmon.c
 #fplib.c sr_test.c
@@ -117,10 +119,13 @@ crt0.o: crt0.S
 ecc.o: ecc.c include/stdio.h include/types.h lib/libmc.a 
 fptest.o: fptest.c include/stdio.h include/types.h include/ulib.h \
  include/uartdrv.h lib/libmc.a 
-gauss.o: gauss.c include/stdio.h include/types.h lib/libmc.a 
+gauss.o: gauss.c include/stdio.h include/types.h include/ulib.h \
+ include/uartdrv.h lib/libmc.a 
 hello.o: hello.c include/stdio.h include/types.h include/ulib.h \
  include/uartdrv.h lib/libmc.a 
 mul.o: mul.c include/stdio.h include/types.h include/ulib.h \
  include/uartdrv.h lib/libmc.a 
 pi.o: pi.c include/stdio.h include/types.h include/time.h include/ulib.h \
  include/uartdrv.h lib/libmc.a 
+sftest.o: sftest.c include/stdio.h include/types.h include/mathsf.h \
+ include/time.h include/ulib.h include/uartdrv.h lib/libmc.a 

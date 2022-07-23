@@ -4,6 +4,8 @@
 *.log
 *.a
 *.mem
+*.mcs
+*.prm
 *.lst
 *.map
 *.bak
@@ -27,3 +29,7 @@ rvsim/rv_exp_cinsn.sv
 rvsim/c-optab.h
 rvsim/optab.h
 rvmon/app/coremark/
+*/*/.ip_user_files/
+*/*/ip_user_files/
+*/*/managed_ip_project/
+

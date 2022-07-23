@@ -23,14 +23,21 @@ LDFLAGS = -g -Wall $(MFLAG) -nostdlib
 ARFLAGS	= crs
 
 SRCS1    = ulib.c uartdrv.c fprint.c strtok.c strlen.c readline.c
-# memset.c memclr.c 
 OBJS1    = $(SRCS1:.c=.o)
 DEPS    = $(SRCS1:.c=.dep)
 
-all:	libmc.a
+SRCSM    = expsf.c  logsf.c  powsf.c  sincossf.c  sqrtsf.c
+OBJSM    = $(SRCSM:.c=.o)
+DEPSM    = $(SRCSM:.c=.dep)
+
+all:	libmc.a libmm.a
 
 libmc.a:	$(OBJS1)
 	$(AR) $(ARFLAGS) libmc.a $(OBJS1)
+
+libmm.a:	$(OBJSM)
+	$(AR) $(ARFLAGS) libmm.a $(OBJSM)
+
 
 %.lst:	%.o
 	$(OBJDUMP) -D -S -h $< > $@
@@ -44,7 +51,7 @@ libmc.a:	$(OBJS1)
 clean:
 	@rm -f *.abs *.o core* a.out *.bak *~ \#*\#  *.map *.lst *.dep libmc.a fprintf
 
-depend:	$(DEPS)
+depend:	$(DEPS) $(DEPSM) 
 	cp Makefile Makefile.bak
 	sed '/^#----- dependences -----/q' Makefile.bak >Makefile
 	echo >>Makefile

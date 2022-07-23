@@ -18,7 +18,7 @@ echo Compile tb_$prj with no waveform mode
 
 xelab work.tb_$prj -generic_top "debug=0" -timescale 1ns/1ns -prj tb_$prj.prj -i ../hdl -L unisims_ver -s tb_$prj
 
-prog="hello mul ecc fptest pi gauss"
+prog="hello mul ecc fptest pi gauss sftest"
 
 
 for prg in $prog ; do

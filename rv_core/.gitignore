@@ -11,5 +11,8 @@ sim/*.wdb
 sim/xsim.dir/
 syn/rev/
 sim/.Xil/
+sim/*.pb
+sim/project_*/
+sim/dpi.h
 
 
