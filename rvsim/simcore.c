@@ -197,6 +197,21 @@ void Reg_wr(int ix, u32 data)
     return ;
 }
 
+u32 Reg_fwd_w(int ix, u32 dat) // Register write with fowarding
+{
+    Reg_wr(ix, dat);
+    if(ix == 0) return 0;
+    if(rwa[0].q == ix){
+        if(rwd[0].q == ALU) rwdat[1].d = dat;
+    }else if(rwa[1].q == ix){
+        if(rwd[1].q == ALU) rwdat[1].q = dat;
+    }else if(rwa[2].q == ix){
+        if(rwd[2].q == ALU) rwdat[2].q = dat;
+        else if(rwd[2].q == MDR) mdr.q = dat;
+    }
+    return dat;
+}
+
 const char *Reg_nam(int ix, ex_t ex)
 {
     if(ix == NA) return "--";
@@ -501,22 +516,29 @@ u32 syscall(u32 func, u32 a0, u32 a1, u32 a2){
         //        printf("write(%x %x %x) : %x\n", a0,a1,a2,rv);
         break;
     case SYS_brk:
-        if(!a0) heap_ptr = _end_adr;
-        rv = heap_ptr;
-        heap_ptr += a0;
-                printf("sbrk %x %x %x (%x %x)\n", rv, heap_ptr, _end_adr, a0, a1);
+        if(a0 == 0){
+            rv = _end_adr;
+            heap_ptr = rv;  //rv = heap_ptr;
+        }else{
+            rv = a0;    //heap_ptr;
+            heap_ptr = a0;
+        }
+//        if(!a0) heap_ptr = _end_adr;
+//        rv = heap_ptr;
+//        heap_ptr += a0;
+//                printf("sbrk %x %x %x (%x %x)\n", rv, heap_ptr, _end_adr, a0, a1);
         break;
         //    case SYS_close:
         //        break;
     case SYS_fstat:
-        printf("fstat(%x %x)\n", a0,a1);
-        for(i = 0; i < 32; i++){
-            printf("%02x ", mem_rd(a1+i));
-        }
-        printf("\n");
+//        printf("fstat(%x %x)\n", a0,a1);
+//        for(i = 0; i < 32; i++){
+//            printf("%02x ", mem_rd(a1+i));
+//        }
+//        printf("\n");
         break;
     case SYS_close:
-        printf("close(%x %x)\n", a0,a1);
+//        printf("close(%x %x)\n", a0,a1);
         break;
     default:
         printf(" ecall %d %x %x %x\n", func, a0, a1, a2);
@@ -651,7 +673,8 @@ void decode()
           switch(optab[i].rs2){
           case 0:
             rv = syscall(Reg_fwd(sys_func),Reg_fwd(10),Reg_fwd(11),Reg_fwd(12));
-            Reg_wr(10, rv);
+            Reg_fwd_w(10, rv);
+            //Reg_wr(10, rv);
             break;
           case 1:
             printf("ebreak\n");
