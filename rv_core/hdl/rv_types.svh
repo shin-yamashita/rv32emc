@@ -27,6 +27,7 @@
  typedef logic [25:0]        u26_t;
  typedef logic [26:0]        u27_t;
  typedef logic [27:0]        u28_t;
+ typedef logic [28:0]        u29_t;
  typedef logic [31:0]        u32_t;
  typedef logic signed [31:0] s32_t;
  typedef logic [32:0]        u33_t;

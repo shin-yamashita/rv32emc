@@ -34,7 +34,7 @@ module rv_fpu #(parameter divfen = 1) (
 
   u26_t R, A, B; // unsigned(25:0);	// divf
 
-  // wire
+  // 
 
   function logic is_nan(u32_t flt);
       return (flt[30:23] == 'd255) && (flt[22:0] != 'd0);
@@ -70,6 +70,21 @@ module rv_fpu #(parameter divfen = 1) (
       return rv;
   endfunction
 
+  function u3_t grsg(u26_t sig, int d);
+    u3_t rv;
+    rv = '0;
+    if(d-1 >= 0) rv[2] = sig[d-1];//g
+    if(d-2 >= 0) rv[1] = sig[d-2];//r
+    if(d-3 >= 0) rv[0] = (sig & ((1'b1 << d-2) - 'd1)) != 'd0;
+    return rv;
+  endfunction
+
+  function u4_t rndup(u4_t d);
+    logic ulp, g, r, s;
+    {ulp,g,r,s} = d;
+    return g & (ulp|r|s) ? 4'b1000 : 4'b0000;
+  endfunction
+
   typedef enum logic {Idle, Calc} state_t;
   state_t st;
   u5_t exc;
@@ -77,12 +92,14 @@ module rv_fpu #(parameter divfen = 1) (
   logic nan1r, nan2r, inf1r, inf2r, fz1r, fz2r;   // : boolean;
 
   bit nan1, nan2, inf1, inf2, fz1, fz2;
-  logic sgn1, sgn2, vsgns, rb;
+  logic sgn1, sgn2, vsgns;
+  u3_t grs1, grs2;
   u8_t exp1, exp2; // unsigned(7:0);
   u8_t d	; // unsigned(7:0);
   u9_t vexps ; // unsigned(8:0);
   u26_t sig1, sig2 ; // unsigned(25:0);
   u26_t vsigs; // unsigned(25:0);
+  u29_t sums, vsums;
   u32_t fsigs; // unsigned(31:0);
   u48_t msigs; // unsigned(47:0);
   u33_t rd	; // unsigned(32:0);
@@ -118,20 +135,20 @@ module rv_fpu #(parameter divfen = 1) (
       if(rdy) begin
         case (alu)
         FADD,FSUB : begin // 2 cycle
-          //  if(exc == 'd2) begin
                 nan <= nan1 | nan2 | inf1 | inf2;
                 inf <= inf1 | inf2;
                 if(alu == FSUB) begin // rs1 - rs2
                     sgn2 = ~sgn2;
                 end
-                rb = '0;
+                grs1 = '0;
+                grs2 = '0;
                 if(exp1 > exp2) begin
                     d = exp1 - exp2;
                     vexps = {1'b0, exp1};
                     if(fz2 || d > 'd24) begin
                         sig2 = 'd0;
                     end else begin
-                        rb = sig2[d-1];
+                        grs2 = grsg(sig2, d);
                         sig2 = sig2 >> d;
                     end
                 end else begin
@@ -141,46 +158,44 @@ module rv_fpu #(parameter divfen = 1) (
                         sig1 = '0;
                     end else begin
                         if(d > 0) begin
-                            rb = sig1[d-1];
+                            grs1 = grsg(sig1, d);
                         end
                         sig1 = sig1 >> d;
                     end
                 end
-                if(sgn1) begin
-                    sig1 = 'd0-sig1;
+                if(sgn1 != sgn2) begin  // diff
+                    vsums = {sig1,grs1} - {sig2,grs2};
+                end else begin  // sum
+                    vsums = {sig1,grs1} + {sig2,grs2};
                 end
-                if(sgn2) begin
-                    sig2 = 'd0 - sig2;
-                end
-                vsigs = sig1 + sig2 + rb;	// add/sub
-                if(vsigs[25]) begin	// sigs < 0
-                    vsigs = 'd0-vsigs;
-                    vsgns = 1'b1;
+                if(vsums[28]) begin // vsums < 0
+                    vsums = 'd0 - vsums;
+                    vsgns = ~sgn1;
                 end else begin
-                    vsgns = 1'b0;
+                    vsgns = sgn1;
                 end
                 sgns <= vsgns;
                 exps <= vexps;
-                sigs <= vsigs;
-          //  end else if(exc == 'd1) begin
-            ////
+                sums <= vsums;
+            //// pipe
                 vsgns = sgns;
                 vexps = exps;
-                vsigs = sigs;
-                if(!vsigs) begin
+                vsums = sums;
+                if(!vsums) begin
                     vexps = '0;
-                end else if(vsigs[24]) begin	// normalize
-                    vsigs = {1'b0, vsigs[25:1]} + vsigs[0];
+                end else if(vsums[27]) begin	// normalize
+                    vsums = {1'b0, vsums[28:1]};  // + vsigs[0];
                     vexps = vexps + 'd1;
                 end else begin
-                    d = leadingzero(vsigs, 26) - 'd2;
+                    d = leadingzero(vsums, 29) - 'd2;
                     vexps = vexps - d;
-                    vsigs = vsigs << d;
+                    vsums = vsums << d;
                     if(vexps[8]) begin	// underflow
                         vexps = '0;
-                        vsigs = '0;
+                        vsums = '0;
                     end
                 end
+                vsigs = (vsums + rndup(vsums[3:0])) >> 3;   // round
                 if(nan) begin
                     vexps = 8'hff;
                 end
@@ -190,7 +205,6 @@ module rv_fpu #(parameter divfen = 1) (
                 rwdat[31] <= vsgns;
                 rwdat[30:23] <= vexps[7:0];
                 rwdat[22:0] <= vsigs[22:0];
-          //  end
         end
         FDIV : begin	// 17 cycle rrd2 / rrd1 => rrd1 / rrd2
             if(divfen) begin
