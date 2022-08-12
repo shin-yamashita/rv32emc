@@ -1,0 +1,7 @@
+
+
+verilog work ../ip/xadcif/xadcif.v
+
+verilog work  /opt/Xilinx/Vivado/2020.2/data/verilog/src/glbl.v
+
+sv work --include "../../rv_core/hdl/" ../hdl/rv_xadcif.sv tb_adc.sv

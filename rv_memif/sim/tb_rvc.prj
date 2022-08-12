@@ -1,0 +1,140 @@
+
+
+verilog work ../../rv_core/hdl/dpram_h.v
+
+sv work --include "../../rv_core/hdl/" \
+    ../../rv_core/hdl/pkg_rv_decode.sv\
+    ../../rv_core/hdl/rv_alu.sv\
+    ../../rv_core/hdl/rv_fpu.sv\
+    ../../rv_core/hdl/rv_muldiv.sv\
+    ../../rv_core/hdl/rv_regf.sv\
+    ../../rv_core/hdl/rv_core.sv\
+    ../../rv_core/hdl/dpram.sv\
+    ../hdl/rvc.sv\
+    ../hdl/rv_cache.sv\
+    ../hdl/rv_cache_unit.sv\
+    ../hdl/adrtag.sv\
+    ../../rv_core/hdl/rv_fpu.sv\
+    ../../rv_io/rv_sio.sv\
+    ../../rv_io/rv_xadcif.sv\
+    ../../rv_io/rv_pwm.sv\
+    tb_rvc.sv
+
+verilog work ../hdl/mem_if.v\
+    ../hdl/dpram10m.v
+
+
+verilog work ../ip/ip_user_files/ip/xadcif/xadcif.v\
+    ../ip/ip_user_files/ip/clk_gen/clk_gen.v \
+    ../ip/ip_user_files/ip/clk_gen/clk_gen_clk_wiz.v\
+    ../ip/ip_user_files/ip/axi_ic/sim/axi_ic.v\
+    ../ip/ip_user_files/ipstatic/hdl/axi_interconnect_v1_7_vl_rfs.v\
+    ../ip/ddr3memc/ddr3memc/user_design/rtl/ddr3memc.v\
+    ../ip/ddr3memc/ddr3memc/user_design/rtl/ddr3memc_mig_sim.v
+
+verilog  work \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_ctrl_addr_decode.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_ctrl_read.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_ctrl_reg.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_ctrl_reg_bank.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_ctrl_top.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_ctrl_write.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_ar_channel.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_aw_channel.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_b_channel.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_cmd_arbiter.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_cmd_fsm.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_cmd_translator.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_fifo.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_incr_cmd.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_r_channel.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_simple_fifo.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_w_channel.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_wr_cmd_fsm.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_axi_mc_wrap_cmd.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_a_upsizer.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_axi_register_slice.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_axi_upsizer.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_axic_register_slice.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_carry_and.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_carry_latch_and.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_carry_latch_or.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_carry_or.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_command_fifo.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_comparator.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_comparator_sel.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_comparator_sel_static.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_r_upsizer.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/axi/mig_7series_v4_2_ddr_w_upsizer.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/clocking/mig_7series_v4_2_clk_ibuf.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/clocking/mig_7series_v4_2_infrastructure.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/clocking/mig_7series_v4_2_iodelay_ctrl.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/clocking/mig_7series_v4_2_tempmon.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_arb_mux.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_arb_row_col.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_arb_select.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_bank_cntrl.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_bank_common.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_bank_compare.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_bank_mach.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_bank_queue.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_bank_state.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_col_mach.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_mc.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_rank_cntrl.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_rank_common.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_rank_mach.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/controller/mig_7series_v4_2_round_robin_arb.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ecc/mig_7series_v4_2_ecc_buf.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ecc/mig_7series_v4_2_ecc_dec_fix.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ecc/mig_7series_v4_2_ecc_gen.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ecc/mig_7series_v4_2_ecc_merge_enc.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ecc/mig_7series_v4_2_fi_xor.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ip_top/mig_7series_v4_2_mem_intfc.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ip_top/mig_7series_v4_2_memc_ui_top_axi.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_byte_group_io.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_byte_lane.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_calib_top.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_if_post_fifo.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_mc_phy.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_mc_phy_wrapper.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_of_pre_fifo.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_4lanes.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_ck_addr_cmd_delay.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_dqs_found_cal.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_dqs_found_cal_hr.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_init.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_ocd_cntlr.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_ocd_data.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_ocd_edge.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_ocd_lim.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_ocd_mux.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_ocd_po_cntlr.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_ocd_samp.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_oclkdelay_cal.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_prbs_rdlvl.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_rdlvl.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_tempmon.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_top.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_wrcal.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_wrlvl.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_phy_wrlvl_off_delay.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_prbs_gen.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_ddr_skip_calib_tap.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_poc_cc.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_poc_edge_store.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_poc_meta.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_poc_pd.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_poc_tap_base.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/phy/mig_7series_v4_2_poc_top.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ui/mig_7series_v4_2_ui_cmd.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ui/mig_7series_v4_2_ui_rd_data.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ui/mig_7series_v4_2_ui_top.v \
+ ../ip/ddr3memc/ddr3memc/user_design/rtl/ui/mig_7series_v4_2_ui_wr_data.v \
+
+verilog work  $XILINX_VIVADO/data/verilog/src/glbl.v
+
+sv  work  ./ddr3_model.sv -i ./
+
+
