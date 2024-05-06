@@ -15,6 +15,13 @@ module tb_rvc #(parameter debug = 1) (
  logic clk = 1;
  logic xreset;
  logic rxd, txd;
+ logic sck;
+ logic sdi;
+ logic sdo;
+ logic scs;
+
+ always@(sdo)
+   sdi <= #10 sdo; // spi loopback 
 
  always #5       // 100MHz
         clk <= !clk;

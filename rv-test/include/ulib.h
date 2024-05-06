@@ -55,6 +55,13 @@ _BEGIN_STD_C
 #define PWM     ((volatile u8 *)0xffff0060)  // 
 #define PWMPS   ((volatile u16 *)0xffff0070)    // prescaler
 
+//      rv_spi
+#define SPITXD     ((volatile u8 *)0xffff0080)  // u8 w: tx data  r: write-pointer
+#define SPISCS     ((volatile u8 *)0xffff0081)  // b0: scs b1:tx_empty
+#define SPIRPH     ((volatile u8 *)0xffff0082)  // rx phase
+#define SPITXR     ((volatile u8 *)0xffff0083)  // tx rate
+#define SPIRXD     ((volatile u8 *)0xffff0084)  // rx data
+
 //      ulib.c function prototypes
 
 int get_pout();                 // POUT port shadow register read

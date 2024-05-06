@@ -3,14 +3,14 @@
    <wave_state>
    </wave_state>
    <db_ref_list>
-      <db_ref path="/media/shin/Linux-Ext/github/rv32emc/rv_core/sim/tb_rvc.wdb" id="1">
+      <db_ref path="tb_rvc.wdb" id="1">
          <top_modules>
             <top_module name="\$unit_rv_alu_sv " />
             <top_module name="\$unit_rv_core_sv " />
             <top_module name="\$unit_rv_fpu_sv " />
             <top_module name="\$unit_rv_muldiv_sv " />
             <top_module name="\$unit_rv_regf_sv " />
-            <top_module name="\$unit_rv_sio_sv " />
+            <top_module name="\$unit_rv_sio_sv_3399959059 " />
             <top_module name="\$unit_rvc_sv " />
             <top_module name="\$unit_tb_rvc_sv " />
             <top_module name="glbl" />
@@ -20,17 +20,17 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="61261076fs"></ZoomStartTime>
-      <ZoomEndTime time="61443769fs"></ZoomEndTime>
-      <Cursor1Time time="61307900fs"></Cursor1Time>
+      <ZoomStartTime time="0.000000000 ms"></ZoomStartTime>
+      <ZoomEndTime time="94.900000001 ms"></ZoomEndTime>
+      <Cursor1Time time="8.900000000 ms"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="142"></NameColumnWidth>
-      <ValueColumnWidth column_width="59"></ValueColumnWidth>
+      <NameColumnWidth column_width="133"></NameColumnWidth>
+      <ValueColumnWidth column_width="72"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="242" />
+   <WVObjectSize size="250" />
    <wave_markers>
-      <marker label="" time="28195701" />
+      <marker label="" time="884650000" />
    </wave_markers>
    <wvobject type="logic" fp_name="/tb_rvc/u_rvc/clk">
       <obj_property name="ElementShortName">clk</obj_property>
@@ -47,7 +47,6 @@
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/pout">
       <obj_property name="ElementShortName">pout[7:0]</obj_property>
       <obj_property name="ObjectShortName">pout[7:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/tb_rvc/u_rvc/rxd">
       <obj_property name="ElementShortName">rxd</obj_property>
@@ -84,7 +83,6 @@
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/d_we">
       <obj_property name="ElementShortName">d_we[3:0]</obj_property>
       <obj_property name="ObjectShortName">d_we[3:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/d_dw">
       <obj_property name="ElementShortName">d_dw[31:0]</obj_property>
@@ -137,6 +135,44 @@
    <wvobject type="logic" fp_name="/tb_rvc/u_rvc/irq">
       <obj_property name="ElementShortName">irq</obj_property>
       <obj_property name="ObjectShortName">irq</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider262" type="divider">
+      <obj_property name="label">dbguart</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_uart/txd">
+      <obj_property name="ElementShortName">txd</obj_property>
+      <obj_property name="ObjectShortName">txd</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_uart/rxd">
+      <obj_property name="ElementShortName">rxd</obj_property>
+      <obj_property name="ObjectShortName">rxd</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_uart/rx">
+      <obj_property name="ElementShortName">rx[7:0]</obj_property>
+      <obj_property name="ObjectShortName">rx[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_uart/rxdata">
+      <obj_property name="ElementShortName">rxdata[7:0]</obj_property>
+      <obj_property name="ObjectShortName">rxdata[7:0]</obj_property>
+      <obj_property name="Radix">ASCIIRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_uart/txdata">
+      <obj_property name="ElementShortName">txdata[7:0]</obj_property>
+      <obj_property name="ObjectShortName">txdata[7:0]</obj_property>
+      <obj_property name="Radix">ASCIIRADIX</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_uart/waitst">
+      <obj_property name="ElementShortName">waitst</obj_property>
+      <obj_property name="ObjectShortName">waitst</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_rvc/u_uart/rcvdone">
+      <obj_property name="ElementShortName">rcvdone</obj_property>
+      <obj_property name="ObjectShortName">rcvdone</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_rvc/u_uart/BAUD">
+      <obj_property name="ElementShortName">BAUD[31:0]</obj_property>
+      <obj_property name="ObjectShortName">BAUD[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider155" type="divider">
       <obj_property name="label">rv_core</obj_property>
@@ -776,10 +812,6 @@
    <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/\genblk1.u_rv_fpu /vsgns">
       <obj_property name="ElementShortName">vsgns</obj_property>
       <obj_property name="ObjectShortName">vsgns</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/\genblk1.u_rv_fpu /rb">
-      <obj_property name="ElementShortName">rb</obj_property>
-      <obj_property name="ObjectShortName">rb</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/tb_rvc/u_rvc/u_rv_core/u_rv_alu/\genblk1.u_rv_fpu /exp1">
       <obj_property name="ElementShortName">exp1[7:0]</obj_property>

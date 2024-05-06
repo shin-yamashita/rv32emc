@@ -5,7 +5,7 @@
 `resetall
 `timescale 1ps/1ps
 
-module mem_if (
+module mem_if #(parameter ICACHE_EN = 1)(
 //-- copu clk
 //       input       cpclk,
 //-- bus
@@ -520,7 +520,7 @@ assign S01_AXI_WVALID  = 1'b0;
 assign S01_AXI_ARVALID = 1'b0;
 assign S01_AXI_RREADY  = 1'b1;
 
-rv_cache_unit u_rv_cache_unit (
+rv_cache_unit #(.ICACHE_EN(ICACHE_EN)) u_rv_cache_unit (
 //-- bus
        .cclk         (cclk),		// in  std_logic;
        .xreset       (xreset),	// in  std_logic;

@@ -6,13 +6,23 @@
 `timescale 1ns/1ns
 `include "rv_types.svh"
 
-module rvc #( parameter debug = 0 ) (
+module rvc #(
+  parameter debug = 0,
+  parameter EN_C_insn = 0,
+  parameter fpuen = 0 
+  ) (
   input  logic clk,
 //  input  logic xreset,
   input  u8_t  pin,
   output u8_t  pout,
-  input  logic rxd,
+  input  logic rxd, // uart
   output logic txd,
+
+  output logic sck, // spi i/f
+  input  logic sdi,
+  output logic sdo,
+  output logic scs,
+
 
   // Inouts
   inout [15:0]    ddr3_dq,
@@ -64,7 +74,7 @@ module rvc #( parameter debug = 0 ) (
 
  logic irq;
 
- u32_t d_dr0, d_dr1, d_dr2, d_dr3, d_dr4, d_dr5;
+ u32_t d_dr0, d_dr1, d_dr2, d_dr3, d_dr4, d_dr5, d_dr6;
  u32_t i_dr1, i_dr5;
 // logic pin_en;
  logic enaB, re1;
@@ -75,7 +85,7 @@ module rvc #( parameter debug = 0 ) (
 
 int rst_cnt = 0;
 logic xreset, cclk;
-logic ref_clk, sys_clk, clk80, clk60, clk48, clk100, clk150, clk300, ui_clk;
+logic ref_clk, sys_clk, clk80, clk60, clk50, clk100, clk150, clk300, ui_clk;
 u8_t  pin_s;
 u12_t device_temp;
 
@@ -84,7 +94,7 @@ clk_gen u_clk_gen
     // Clock out ports
     .clk80(clk80),     // output clk80
     .clk60(clk60),     // output clk60
-    .clk48(clk48),     // output clk48
+    .clk50(clk50),     // output clk50
     .clk100(clk100),     // output clk100
     .clk300(clk300),     // output clk300
     .clk200(ref_clk),     // output clk200
@@ -95,7 +105,7 @@ clk_gen u_clk_gen
    // Clock in ports
     .clk_in1(clk));      // input clk_in1
 
-  assign cclk = clk48;
+  assign cclk = clk50;
   assign sys_clk = clk300;
 
 // synthesis translate_off
@@ -128,10 +138,10 @@ clk_gen u_clk_gen
       d_dr0 <= 'd0;
   end
 
-  assign d_dr = d_dr0 | d_dr1 | d_dr2 | d_dr3 | d_dr4 | d_dr5;
+  assign d_dr = d_dr0 | d_dr1 | d_dr2 | d_dr3 | d_dr4 | d_dr5 | d_dr6;
   assign i_dr = i_dr1;  // | i_dr5;
 
-  rv_core #(.Nregs(16), .debug(debug)) u_rv_core (
+  rv_core #(.Nregs(16), .EN_C_insn(EN_C_insn), .debug(debug), .fpuen(fpuen)) u_rv_core (
     .clk  (cclk),     // input  logic clk,
     .xreset(xreset),  // input  logic xreset,
 
@@ -154,7 +164,7 @@ clk_gen u_clk_gen
   logic cs_cache;
   assign cs_cache = {d_adr[31:5],5'h0} == 32'hffff0180;
 
-  mem_if u_memif (
+  mem_if #(.ICACHE_EN(0)) u_memif (
 //-- bus
       .cclk  (cclk),
       .xreset(xreset),
@@ -205,6 +215,8 @@ clk_gen u_clk_gen
   localparam Nb = $clog2(RAMSIZE);  //
 
   assign enaB = (d_re || (d_we != 'd0)) && d_adr < u32_t'(1 << Nb);
+  logic [Nb-2:0] addrA;
+  assign addrA = EN_C_insn ? i_adr[Nb-1:1] : {i_adr[Nb-1:2],1'b0};
 
   dpram #(.ADDR_WIDTH(Nb-2),
           .init_file_u("prog_u.mem"), // upper 16bit (31:16) initial data
@@ -213,7 +225,7 @@ clk_gen u_clk_gen
     .clk  (cclk),
 
     .enaA (1'b1),     // read only port
-    .addrA(i_adr[Nb-1:1]),  // half (16bit) word address
+    .addrA(addrA),    // half (16bit) word address
     .doutA(i_dr1),           // 16bit aligned 32bit read data (instruction)
 
     .enaB (enaB),     // read write port
@@ -286,6 +298,30 @@ clk_gen u_clk_gen
       // LED pwm out
       .led    (led) // u12_t
     );
+
+  logic cs_spi;
+  // ffff0080
+  assign cs_spi = {d_adr[31:5],5'h0} == 32'hffff0080;
+
+  rv_spi u_rv_spi (
+    .clk(cclk), //input  logic clk,
+    .xreset(xreset),  //input  logic xreset,
+// bus
+    .adr(d_adr[4:0]),   //input  u5_t  adr,
+    .cs(cs_spi),    //input  logic cs,
+    .rdy(d_rdy),   //input  logic rdy,
+    .we(d_we),    //input  u4_t  we,
+    .re(d_re),    //input  logic re,
+    .dw(d_dw),    //input  u32_t dw,
+    .dr(d_dr6),    //output u32_t dr,
+// port
+    .spiclk(ref_clk),  //input  logic spiclk,    // spi base clock 200M
+    .sck(sck),   //output logic sck,
+    .sdi(sdi),   //input  logic sdi,
+    .sdo(sdo),   //output logic sdo,
+    .scs(scs)    //output logic scs
+    );
+
 
 endmodule
 

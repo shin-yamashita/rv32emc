@@ -35,6 +35,10 @@ module tb_rvc #(parameter debug = 0) (
 // assign i_dr_match = u_rvc.i_dr == u_rvc.i_dr_b;
 // assign d_dr_match = u_rvc.d_dr1 == u_rvc.d_dr1_b;
 
+// 115200 baud ~~~~|____
+
+ dbguart u_uart (.txd(txd), .rxd(rxd));
+
  assign ir = u_rvc.u_rv_core.IR;
  assign rwdat = u_rvc.u_rv_core.rwdat[0];
 

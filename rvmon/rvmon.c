@@ -18,7 +18,7 @@
 
 #define limit(x, min, max)	((x)<(min)?(min):((x)>(max)?(max):(x)))
 
-#define UBASE	0x4000
+#define UBASE	0x4800
 
 #define ETB	'\027'	// End of Transfer Block
 #define EOT	'\004'	// End of Transfer
@@ -235,10 +235,10 @@ int main(void)
             }
             dumpadr = (u32)dump((u8*)dumpadr, 256);
         }else if(!strcmp("help", argv[0])){
-            puts(//	"    ll  {fn}\n"
+            printf(//	"    ll  {fn}\n"
                 "    d  {addr}      : dump memory\n"
                 "    l  {cmd(.mot)} : load S-record file\n"
-                "    go             : exec cmd (@0x4000)\n"
+                "    go             : exec cmd (@0x%04x)\n", UBASE
             );
         }else if(!strcmp("go", argv[0])){
             usrfunc = (void (*)) UBASE;

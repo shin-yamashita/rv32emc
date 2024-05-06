@@ -5,10 +5,10 @@
 #
 
 #ARCH = rv32ec
-#ARCH = rv32em
+ARCH = rv32em
 #ARCH = rv32emc
 #ARCH = rv32emzfinx
-ARCH = rv32emczfinx
+#ARCH = rv32emczfinx
 
 PREFIX  = /opt/rv32e/bin/riscv32-unknown-elf-
 MFLAG   = -march=$(ARCH) -mabi=ilp32e
@@ -30,7 +30,8 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$(@:.elf=.map),-T,lnkscr.x -nostdlib -L../lib $(LNKR
 
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= gauss.c pi.c ecc.c adcpwm.c memtst.c sftest.c
+SRCS	= gauss.c pi.c ecc.c adcpwm.c memtst.c
+# sftest.c
 # hello.c fptest.c 
 
 PRGS    = $(SRCS:.c=.elf)
@@ -49,6 +50,12 @@ list:	$(SRCS:.c=.lst)
 %.mot:	%.elf
 #	$(OBJCP) -O srec -S -R .stack $< $@
 	$(OBJCP) -O srec --srec-forceS3 -S -R .stack $< $@
+
+%.bin:	%.elf
+	$(OBJCP) -O binary -S -R .stack $< $@
+
+%.mem:	%.bin
+	od -An -tx4 -v $< > $@
 
 %.lst:	%.elf
 	$(OBJDUMP) -D -S -h $< > $@

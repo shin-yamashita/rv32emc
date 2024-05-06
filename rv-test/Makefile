@@ -5,10 +5,10 @@
 #
 
 #ARCH = rv32ec
-#ARCH = rv32em
+ARCH = rv32em
 #ARCH = rv32emc
 #ARCH = rv32emzfinx
-ARCH = rv32emczfinx
+#ARCH = rv32emczfinx
 
 PREFIX  = /opt/rv32e/bin/riscv32-unknown-elf-
 MFLAG   = -march=$(ARCH) -mabi=ilp32e
@@ -32,7 +32,8 @@ LDFLAGS = $(MFLAG) -Wl,-Map,$@.map,-T,rv32ldscr.x -nostdlib -L./lib
 # -L$(LDSCRIPT)
 LDLIBS  = -lmc -lm -lc -lgcc
 
-SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c sftest.c
+SRCS	= hello.c fptest.c gauss.c pi.c ecc.c mul.c
+# sftest.c
 # endian.c
 # rvmon.c
 #fplib.c sr_test.c

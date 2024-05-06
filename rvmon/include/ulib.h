@@ -55,6 +55,13 @@ _BEGIN_STD_C
 #define PWM     ((volatile u8 *)0xffff0060)  // 
 #define PWMPS   ((volatile u16 *)0xffff0070)    // prescaler
 
+//      rv_spi
+#define SPITXD     ((volatile u8 *)0xffff0080)  // u8 w: tx data  r: write-pointer
+#define SPISCS     ((volatile u8 *)0xffff0081)  // b0: scs b1:reset fifo pointer
+#define SPIRPH     ((volatile u8 *)0xffff0082)  // rx phase
+#define SPITXR     ((volatile u8 *)0xffff0083)  // tx rate
+#define SPIRXD     ((volatile u8 *)0xffff0084)  // rx data SPIRXD[0]~[15]
+
 //      memif/rv_chache
 #define CACHECTRL       ((volatile u8 *)0xffff0180)     // calib_complete, i-clean(2), d-flash(1), d-clean(0)
 
@@ -115,7 +122,8 @@ static inline u32 get_gp(){u32 gp;__asm__("mv %0,gp" : "=r" (gp));return gp;}
 // CPU clock frequency (Hz)
 //#define f_clk	100e6f
 //#define f_clk	60e6f
-#define f_clk	48e6f
+//#define f_clk	48e6f
+#define f_clk	50e6f
 //#define f_clk	42e6f
 //#define f_clk	36e6f
 //#define f_clk	30e6f

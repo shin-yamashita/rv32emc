@@ -4,10 +4,10 @@
 #
 
 #ARCH = rv32ec
-#ARCH = rv32em
+ARCH = rv32em
 #ARCH = rv32emc
 #ARCH = rv32emzfinx
-ARCH = rv32emczfinx
+#ARCH = rv32emczfinx
 
 PREFIX  = /opt/rv32e/bin/riscv32-unknown-elf-
 MFLAG   = -march=$(ARCH) -mabi=ilp32e

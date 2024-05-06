@@ -5,8 +5,8 @@ source xilinx_env.sh
 bitfn=rev/rvc.bit
 #bitfn=./rvcchg.bit
 
-hw_server=e6520         # remote machine name
-#hw_server=localhost    # local
+#hw_server=e6520         # remote machine name
+hw_server=localhost    # local
 hw_target=*/xilinx_tcf/Digilent/210319B26865A   # Arty-A7 board の USB JTAG
 
 if [ $# -ge 1 ]; then

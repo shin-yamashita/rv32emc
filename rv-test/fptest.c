@@ -56,8 +56,8 @@ int main()
 	compare_test(-0.0f, -0.0f);
 #endif
 	for(x = 0.003f; x < 2.0f; x *= 1.41f){
-	//	print_dbl(x);
-		printf("%8.5f ", fu(x));
+		print_dbl(x);
+	//	printf("%8.5f ", fu(x));
 		for(j = 0; j < 100; j++){
 			if((100*x) >= j) putchar('*');
 			else		break;

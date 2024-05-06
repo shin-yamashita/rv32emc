@@ -10,7 +10,7 @@ sv work ../hdl/rv_core.sv
 sv work ../hdl/dpram.sv
 sv work ./rvc.sv
 
-sv work ../../rv_io/rv_sio.sv
+sv work ../../rv_io/rv_sio.sv ./dbguart.sv
 
 verilog work  $XILINX_VIVADO/data/verilog/src/glbl.v
 

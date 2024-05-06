@@ -5,8 +5,8 @@ source xilinx_env.sh
 bitfn=rev/rvc.bit
 #bitfn=./rvcchg.bit
 
-hw_server=e6520         # remote machine name
-#hw_server=localhost    # local
+#hw_server=e6520         # remote machine name
+hw_server=localhost    # local
 
 if [ $# -ge 1 ]; then
   bitfn=$1      # argv[1] : bit file 

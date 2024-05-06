@@ -5,7 +5,7 @@ OUTPUT_ARCH(riscv)
 
 MEMORY
 {
-  ram    : o = 0x00004000, l = 0x0008c00
+  ram    : o = 0x00004800, l = 0x0008c00
 }
 SECTIONS
 {

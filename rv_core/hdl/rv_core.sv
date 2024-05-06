@@ -10,6 +10,7 @@ import  pkg_rv_decode::*;
 
 module rv_core #(parameter Nregs = 16,
                  parameter debug = 0,
+                 parameter EN_C_insn = 1,
                  parameter fpuen = 1 ) (
   input  logic clk,
   input  logic xreset,
@@ -188,8 +189,8 @@ assign i_re = 1'b1;
 
   parameter ECALL = 32'h00000073;
 
-  assign c_insn = IR[1:0] != 2'b11;
-  assign c_insna = ira[1:0] != 2'b11;
+  assign c_insn = EN_C_insn && (IR[1:0] != 2'b11);
+  assign c_insna = EN_C_insn && (ira[1:0] != 2'b11);
   assign pcinc = c_insn ? 'd2 : 'd4;
   assign pcinca = c_insna ? 'd2 : 'd4;
   assign {eir, c_imm} = exp_cinsn(IR[15:0]);

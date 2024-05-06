@@ -18,6 +18,7 @@ source xilinx_env.sh
 
 echo Simulation Tool: Viavdo Simulator $prj
 
+xsc c_main.c
 xsim -g -wdb tb_$prj.wdb tb_$prj
 
 chkerr

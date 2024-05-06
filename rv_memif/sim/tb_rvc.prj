@@ -18,6 +18,7 @@ sv work --include "../../rv_core/hdl/" \
     ../../rv_io/rv_sio.sv\
     ../../rv_io/rv_xadcif.sv\
     ../../rv_io/rv_pwm.sv\
+    ../../rv_io/rv_spi.sv\
     tb_rvc.sv
 
 verilog work ../hdl/mem_if.v\

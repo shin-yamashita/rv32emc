@@ -19,6 +19,7 @@ fi
 #-generic_top "debug=0"
 
 echo Simulation Tool: Viavdo Simulator $prj
+rm -fr xsim.dir
 
 xelab work.tb_$prj work.glbl -timescale 1ns/1ps -prj tb_$prj.prj -i ../hdl -L unisims_ver -L secureip -s tb_$prj -debug typical
 

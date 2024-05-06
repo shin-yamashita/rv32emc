@@ -6,7 +6,7 @@
 `timescale 1ns/1ns
 `include "rv_types.svh"
 
-module rv_cache_unit (
+module rv_cache_unit #(parameter ICACHE_EN = 1)(
 // bus
     input  logic cclk,   //	: in  std_logic;
     input  logic xreset, //	: in  std_logic;
@@ -155,7 +155,9 @@ rv_cache #(.base(8'h20)) u_rv_cache_d (
  assign rlast1  = rlast && i_rid;
  assign rready  = !i_rid ? rready0 : rready1;
 
-rv_cache #(.base(8'h20)) u_rv_cache_i (
+generate
+  if(ICACHE_EN) begin
+    rv_cache #(.base(8'h20)) u_rv_cache_i (
         .xrst    (xreset),
 
 // chahe clear / flush request / busy status
@@ -197,6 +199,14 @@ rv_cache #(.base(8'h20)) u_rv_cache_i (
         .rlast  	(rlast1),	//         : in    std_logic;      // rd_en
         .rready 	(rready1)	//         : out   std_logic       //
     );
+  end else begin
+    assign i_rdy = 1'b1;
+    assign arvalid1 = 1'b0;
+    assign rready1 = 1'b1;
+    assign arlen1 = '0;
+    assign araddr1 = '0;
+  end
+endgenerate
 
   // control registers
 //  process(cs, we, adr, dw)

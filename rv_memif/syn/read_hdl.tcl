@@ -16,6 +16,7 @@ read_verilog -library xil_defaultlib -sv {
   ../../rv_io/rv_sio.sv
   ../../rv_io/rv_xadcif.sv
   ../../rv_io/rv_pwm.sv
+  ../../rv_io/rv_spi.sv
 }
 
 read_verilog -library xil_defaultlib {

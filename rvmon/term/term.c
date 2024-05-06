@@ -59,7 +59,7 @@ baudcode (int baud)
 //        "/dev/ttyUSB1",
 //};
 //#define Ndev	(sizeof(dev)/sizeof(char*))
-#define MAXDEV 5
+#define MAXDEV 8
 
 int
 open_serial (int brate)
